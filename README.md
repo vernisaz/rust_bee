@@ -13,3 +13,7 @@ The language is described [here](./doc/RUSTBEE.md)
 ## Bulding
 
 It's self building tool, however it needs bootstraping. 7Bee is used for the purpose.
+
+## Scripting examples
+
+Some examples of using **RustBee** can be found [here](https://gitlab.com/tools6772135/rusthub/-/tree/master/src/script). 
