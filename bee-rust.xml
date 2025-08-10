@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <!DOCTYPE bee PUBLIC "-//Dmitriy Rogatkin//DTD Bee Project Builder 1.0//EN"
+    "https://raw.githubusercontent.com/drogatkin/7Bee/master/bee.dtd" [
+    <!ENTITY project "rb">
+    <!ENTITY simzip "../simple_rust_zip">
+    <!ENTITY simtime "../simtime">
+    <!ENTITY crates "C:\Users\sunil\projects\crates">
+    ]>
+<!-- 
+   Rust project RB
+   Copyright (c) 2025 Dmitriy Rogatkin    -->
+<!-- URLs for download crates:
+	Crate simtime: https://github.com/vernisaz/simtime.git
+    Crate simzip: https://github.com/vernisaz/simple_rust_zip.git
+-->
+
+<bee name="&project;" type="project">
+    <variable name="RUSTC">rustc</variable>
+    <variable name="src">main.rs</variable> 
+
+    <target name="version update" dir=".">
+        <dependency>
+           <function name="allnewer">
+              <parameter value="./*.rs"/>
+              <parameter value="&project;" />
+           </function>
+       </dependency>
+       <dependency>
+           <expression>
+              <operator name="eq">
+                <function name ="timestamp">
+                   <parameter value="ver.rs"/>
+                </function>
+                <value/>
+              </operator>
+          </expression>
+     </dependency>
+     <block>
+         <echo>Generating ver.rs</echo>
+       <function name="write">
+         <parameter value="ver.rs" type="file"/>
+         <parameter>// auto generated
+pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
+      (&amp;&quot;1.15.0x-bootstrap&quot;, 1, &amp;&quot;</parameter>
+         <parameter>
+             <function name="now"/>
+         </parameter>
+         <parameter>&quot;)
+}</parameter>       
+       </function>
+      </block>
+    </target>
+   
+  <target name="crates dir" dir=".">
+      <dependency>
+         <operator name="lt"> 
+           <function name="timestamp">
+              <parameter value="&crates;"/>
+          </function>
+          <value/>
+        </operator>
+     </dependency>
+     <block>
+        <echo>Creates &crates;</echo>
+        <function name="mkd">
+            <parameter value="&crates;"/>
+        </function>
+     </block>
+  </target>
+ 
+  <target name="time" dir="&simtime;">
+      <dependency>
+           <function name="anynewer">
+              <parameter value="&simtime;/*.rs" />
+              <parameter value="&crates;/libsimtime.rlib" />
+           </function>
+     </dependency>
+     <dependency target="crates dir"/>
+     <block>
+     <echo>Compiling crate simtime in &crates; ...</echo>
+      <task exec="RUSTC">
+         <parameter value="--crate-type=lib"/>
+         <parameter value="--crate-name"/>
+        <parameter value="simtime"/>
+        <parameter value="--edition"/>
+        <parameter value="2021"/>
+       <parameter value="--out-dir"/>
+       <parameter>&crates;</parameter>
+       <parameter value="lib.rs"/>
+      <onexit>
+        <if>
+          <expression>
+             <operator name="neq"><value variable="resultcode"/><value>0</value></operator>
+          </expression>
+          <block type="then">
+                 <echo>Error(s) at compilation time</echo>
+                 <function name="stop">
+		        	<parameter value="1"/>
+                 </function>
+          </block>
+       </if>
+      </onexit>
+      <onexception>
+    	<block>
+             <echo>Exception at compilation time</echo>
+             <echo variable="~#error#~"/>
+             <function name="stop">
+    			<parameter value="-1"/>
+             </function>
+    	</block>
+      </onexception>
+    </task>
+    </block>
+  </target>
+  
+  <target name="simzip" dir="&simzip;">
+      <dependency>
+           <function name="anynewer">
+              <parameter value="&simzip;/src/*.rs" />
+              <parameter value="&crates;/libsimzip.rlib" />
+           </function>
+     </dependency>
+     <dependency target="time"/>
+
+     <block>
+     <echo>Compiling crate simzip ...</echo>
+      <task exec="RUSTC">
+         <parameter value="-L"/>
+        <parameter value="&crates;"/>
+         <parameter value="--crate-type=lib"/>
+         <parameter value="--crate-name"/>
+        <parameter value="simzip"/>
+        <parameter value="--edition"/>
+        <parameter value="2021"/>
+       <parameter value="--out-dir"/>
+       <parameter value="&crates;"/>
+       <parameter value="src/lib.rs"/>
+      <onexit>
+        <if>
+          <expression>
+             <operator name="neq"><value variable="resultcode"/><value>0</value></operator>
+          </expression>
+          <block type="then">
+                 <echo>Error(s) at compilation time</echo>
+                 <function name="stop">
+		        	<parameter value="1"/>
+                 </function>
+          </block>
+       </if>
+      </onexit>
+      <onexception>
+    	<block>
+             <echo>Exception at compilation time</echo>
+             <echo variable="~#error#~"/>
+             <function name="stop">
+    			<parameter value="-1"/>
+             </function>
+    	</block>
+      </onexception>
+    </task>
+    </block>
+  </target>
+  
+  <target name="build" dir=".">
+     <dependency target="version update" />
+     <dependency target="simzip" />
+    <dependency>
+           <function name="allnewer">
+              <parameter value="bee-rust.xml" />
+              <parameter value="&project;" />
+           </function>
+    </dependency>
+      <echo>Compiling ${src} ...</echo>
+      <task exec="RUSTC">
+        <parameter value="-A"/>
+        <parameter value="warnings"/>
+        <parameter value="--extern"/>
+        <parameter value="simtime=&crates;/libsimtime.rlib"/>
+        <parameter value="--extern"/>
+        <parameter value="simzip=&crates;/libsimzip.rlib"/>
+       <parameter value="-o"/>
+       <parameter value="&project;"/>
+       <parameter variable="src"/>
+      <onexit>
+        <if>
+          <expression>
+             <operator name="neq"><value variable="resultcode"/><value>0</value></operator>
+          </expression>
+          <block type="then">
+                 <echo>Error(s) at compilation</echo>
+                 <function name="stop">
+		        	<parameter value="1"/>
+                 </function>
+          </block>
+       </if>
+      </onexit>
+      <onexception>
+    	<block>
+             <echo>Exception at compilation</echo>
+             <echo variable="~#error#~"/>
+             <function name="stop">
+    			<parameter value="-1"/>
+             </function>
+    	</block>
+      </onexception>
+    </task>
+  </target>
+ 
+  <target name="run" dir=".">
+      <dependency target="build"/>
+      <dependency>true</dependency>
+      <task exec="./&project;">
+          <parameter variable="~#args#~"/>
+      </task>
+  </target>
+</bee>

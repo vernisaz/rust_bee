@@ -1,0 +1,112 @@
+# a build script for the project RustBee using itself
+# if you are on Windows and have an error like : error: linking with link.exe failed: exit code: 1 
+# rustup toolchain install stable-x86_64-pc-windows-gnu
+# rustup default stable-x86_64-pc-windows-gnu
+
+project  =rb
+main=src${~/~}main
+common =..${~/~}simscript${~/~}comm-build.7b:file
+crate_dir=..${~/~}crates
+comp opts=[--extern,simzip]
+
+mode=mode:prop
+if {
+	eq(mode,release) then {
+		array(-C,opt-level=3)
+		array(comp opts, ~~)
+		assign(comp opts, ~~)
+	}
+}
+
+target extra_clean {
+    dependency {true}
+    rm  (
+        ${~cwd~}${~/~}${project},
+        ${~cwd~}${~/~}src${~/~}ver.rs
+    )
+}
+
+target crate {
+	dependency{target(version update)}
+}
+
+target install::Install RustBee everyone's use  {
+    dependency {true}
+    ask(Are you going to install the ${project}? [N/y/l],n)
+    if {
+       or{
+         eq(${~~},y)
+         eq(${~~},Y)
+       }
+       then {
+	    if {
+	      eq(windows,~os~)
+	      then {    
+	           display(Windows install)
+	           env(HOMEPATH)
+	           assign(rustbee,${~~}${~/~}.rustbee${~/~}bin)
+		       mkd(rustbee)
+	           cp(rb.exe,rustbee)
+	           display(Installed ${~~} in ${rustbee})
+	           # add to PATH if needed
+	           env(PATH)
+	           assign(path,~~) 
+	           if {
+	               contains (path, .rustbee${~/~}bin)
+	               else {
+	                  display(Set env PATH)
+	                  #exec setx (PATH, %path%;${rustbee} )
+	               }
+	           }
+	      }
+	      else {
+	        if {
+	            neq(${User}, root)
+	            then {
+	                display(Please run the script as an administrator)
+	            }
+	            else {
+                   exec cp(${~cwd~}/${project},/usr/local/bin)
+                   display(Installed.)
+	            }
+	        }
+	      }
+	    }
+      }
+    }
+    if {
+       or{
+         eq(${~~},l)
+         eq(${~~},L)
+       }
+       then {
+       }
+    }
+}
+
+target version update : . {
+    dependency {
+         anynewer(${~cwd~}${~/~}*.rs,${~cwd~}${~/~}${project}${ext})
+    }
+    dependency {
+      eq {
+        timestamp(${~cwd~}${~/~}src${~/~}ver.rs)
+        # none
+      }
+    }
+
+    dependency {
+         anynewer(${~cwd~}${~/~}bee.7b,${~cwd~}${~/~}${project}${ext})
+    }
+
+    display(Generating ver.rs)
+    now()
+       
+    write(${~cwd~}${~/~}src${~/~}ver.rs,"// auto generated
+pub fn version() -> (&'static str, u32, &'static str) {
+      (&\"1.15.01\", 147, & \"",${~~},"\")
+}")  # 
+}
+
+include(env.7b);
+include(common);
