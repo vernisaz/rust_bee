@@ -29,7 +29,7 @@
            <expression>
               <operator name="eq">
                 <function name ="timestamp">
-                   <parameter value="ver.rs"/>
+                   <parameter value="src/ver.rs"/>
                 </function>
                 <value/>
               </operator>
@@ -38,7 +38,7 @@
      <block>
          <echo>Generating ver.rs</echo>
        <function name="write">
-         <parameter value="ver.rs" type="file"/>
+         <parameter value="src/ver.rs" type="file"/>
          <parameter>// auto generated
 pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
       (&amp;&quot;1.15.0x-bootstrap&quot;, 1, &amp;&quot;</parameter>
