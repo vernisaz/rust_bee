@@ -156,7 +156,12 @@ just append content
     * -C zip dir, dir with a possible file wildcard name (all directories below are processed)
     * -B zip dir, dir with a possible file wildcard name (no traverse of directories). There's a possibility
 of using an array of file paths, however to prevent an array flatten, use a name a var storing a name of the array of paths, like:
-> assign(+TJWS libs, TJWS libs); zip(${distro dir}${~/~}rds-${version}.zip,-B lib, +TJWS libs)<br/>
+```
+assign(+TJWS libs, TJWS libs);
+zip(${distro dir}${~/~}rds-${version}.zip,
+  -B lib,
+  +TJWS libs) # it's a reference to an array of component paths
+```
 The function returns the stored zip path, or nothing in  a case of errors.
 
 A result of a function or a block is stored in a temporary variable ~~ and can be consumed in the next operation. 

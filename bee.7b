@@ -8,11 +8,12 @@ main=src${~/~}main
 common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 comp opts=[--extern,simzip]
+version=1.15.01
 
 mode=mode:prop
 if {
 	eq(mode,release) then {
-		array(-C,opt-level=3)
+		array(-C,opt-level=3,--cfg, feature="release")
 		array(comp opts, ~~)
 		assign(comp opts, ~~)
 	}
@@ -84,6 +85,29 @@ target install::Install RustBee everyone's use  {
     }
 }
 
+target package {
+	dependency {
+        target(build)
+    }
+    dependency {
+    	anynewer(bee.7b,.${~/~}rustbee-${version}.zip)
+    }
+    zip(.${~/~}rustbee-${version}.zip,
+	-B ${project},
+	.${~/~}bee.7b,
+	-B ${project},
+	.${~/~}env.7b,
+	-B ${project},
+	.${~/~}doc${~/~}RUSTBEE.md,
+	-B ${project},
+	.${~/~}README.md,
+	-B ${project},
+	.${~/~}rb${ext},
+	-B ${project},
+	.${~/~}addpath.sh)
+	display(done ${~~})
+}
+
 target version update : . {
     dependency {
          anynewer(${~cwd~}${~/~}*.rs,${~cwd~}${~/~}${project}${ext})
@@ -104,7 +128,7 @@ target version update : . {
        
     write(${~cwd~}${~/~}src${~/~}ver.rs,"// auto generated
 pub fn version() -> (&'static str, u32, &'static str) {
-      (&\"1.15.01\", 147, & \"",${~~},"\")
+      (&\"${version}\", 147, & \"",${~~},"\")
 }")  # 
 }
 
