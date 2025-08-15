@@ -10,11 +10,13 @@ advantages over 7Bee as:
 
 ## Syntax highlights
 RB build script defines at least one build target. Several build
-targets can be dependent. A script variable can be defined in the form:
+targets can be dependent.
+
+A script variable can be defined in the form:
 
     name=value[:type]
 
-Name and value can be anything, but if a name includes spaces or symbols like `=, ;, {,( ` then the
+Name and value can be everything, but if a name includes spaces or symbols like `=, ;, {,( ` then the
 name has to be quoted. If a name should include a quote, then use \ for escaping it.
 The same rule is applied for a value. If one of the following characters `:, ;, [` is included in 
 a value  then the value has to be quoted, for example:
@@ -24,12 +26,12 @@ Although any name is allowed, all names starting with
 *~* and ending with *~* are reserved.
 
 - A name as ~~ is reserved for a result previous operation, it is similar to $? of a Bash script
-- A separator for parts of a path is \~separator\~
+- A separator for parts of a path is \~separator\~ or \~/\~
 - A paths separator is \~path_separator\~
 - An array of a command line arguments is \~args\~
 - A string representing the current OS is \~os\~
-- A current working directory \~cwd\~
-- An index of the current loop iteration \~index\~
+- A current working directory is \~cwd\~
+- The index of the current loop iteration is \~index\~
 
 You can break a line by adding \ at the end.
 
@@ -164,7 +166,7 @@ zip(${distro dir}${~/~}rds-${version}.zip,
 ```
 The function returns the stored zip path, or nothing in  a case of errors.
 
-A result of a function or a block is stored in a temporary variable ~~ and can be consumed in the next operation. 
+A result of a function or a block is stored in a temporary variable **\~\~** and can be consumed in the next operation. 
 
 ### String interpolation
 It allows to extend any value by processing template variables  like:
@@ -172,12 +174,14 @@ It allows to extend any value by processing template variables  like:
        ${name}
 
 The name is a name of some variable. Since a substituted value has to be interpolated as well,
-the process is recursive. It doesn't do check for looping, and you need to verify if it happens.
+the process is recursive. It doesn't do check for looping though, and you need to prevent of it happens.
 
 ### name or value?
-Rustbee resolves this ambiguity in the following manner. First it considers the value as a name of a variable and is looking for it. If the variable with such name wasn't found, then the value is considered as a literal value. 
+Rustbee resolves this ambiguity in the following manner. First it considers the value as a name of a variable and is looking for it.
+If the variable with such name wasn't found, then the value is considered as a literal value. 
 A string interpolation is applied at the end of any variant. 
 
 ## Examples
 
-An example of a script for building a Java project, can be found [there](https://github.com/drogatkin/JustDSD/blob/master/bee-java.rb).
+An example of a script for building a Java project, can be found [there](https://github.com/drogatkin/JustDSD/blob/master/bee-java.rb
+Another example is [common Rust scriptd](https://github.com/vernisaz/simscript).

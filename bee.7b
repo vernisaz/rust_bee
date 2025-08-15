@@ -1,5 +1,5 @@
 # a build script for the project RustBee using itself
-# if you are on Windows and have an error like : error: linking with link.exe failed: exit code: 1 
+# if you are on Windows and have an error like : error: linking with link.exe failed: exit code: 1 , then do
 # rustup toolchain install stable-x86_64-pc-windows-gnu
 # rustup default stable-x86_64-pc-windows-gnu
 
