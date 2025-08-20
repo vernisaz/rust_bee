@@ -19,10 +19,9 @@ if {
 	}
 }
 
-target extra_clean {
+target clean_extra {
     dependency {true}
     rm  (
-        ${~cwd~}${~/~}${project},
         ${~cwd~}${~/~}src${~/~}ver.rs
     )
 }
