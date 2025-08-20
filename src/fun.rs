@@ -1739,8 +1739,13 @@ impl GenBlockTup {
         }
     }
 
-    pub fn parameter(&self, log: &Log, i: usize, fun_block: &GenBlock, res_prev: &Option<VarVal>) -> Box<String> {  
-        self.expand_parameter(&log, &fun_block.params[i], fun_block, res_prev)
+    pub fn parameter(&self, log: &Log, i: usize, fun_block: &GenBlock, res_prev: &Option<VarVal>) -> Box<String> {
+        if !fun_block.params.is_empty() && i < fun_block.params.len() {
+            self.expand_parameter(&log, &fun_block.params[i], fun_block, res_prev)
+        } else {
+            log.error(&format!("Calling for parameter {i} in non existing parameter of {:?}", fun_block.name));
+            Box::new(String::new())
+        }
     }
 
     pub fn expand_parameter(&self, log: &Log, param_val: &String, fun_block: &GenBlock, res_prev: &Option<VarVal>) -> Box<String> {
