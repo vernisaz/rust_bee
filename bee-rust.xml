@@ -9,7 +9,11 @@
 <!-- 
    Rust project RB
    Copyright (c) 2025 Dmitriy Rogatkin    -->
-<!-- URLs for download crates:
+<!-- URLs to download 7Bee building tool:
+	source: https://github.com/drogatkin/7Bee
+	binary: https://sourceforge.net/projects/seven-bee/files/latest/download
+-->
+<!-- URLs to download crates:
 	Crate simtime: https://github.com/vernisaz/simtime.git
     Crate simzip: https://github.com/vernisaz/simple_rust_zip.git
 -->
