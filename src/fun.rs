@@ -1692,6 +1692,28 @@ impl GenBlockTup {
                     Err(msg) => log.error(&format!{"Zip error: {msg}"})
                 }
             },
+            "cfg" => {
+                let cfg_path;
+                if cfg!(target_os = "macos") {
+                    match std::env::var("HOME") {
+                        Ok(path) => cfg_path = format!("{path}/Library/Application Support"),
+                        Err(_) => cfg_path = String::new(),
+                    }
+                } else if cfg!(unix) {
+                    match std::env::var("HOME") {
+                        Ok(path) => cfg_path = format!("{path}/.config"),
+                        Err(_) => cfg_path = String::new(),
+                    }
+                } else if cfg!(windows) {
+                    match std::env::var("LOCALAPPDATA") {
+                        Ok(path) => cfg_path = path,
+                        Err(_) => cfg_path = String::new()
+                    }
+                } else {
+                    cfg_path = String::new();
+                }
+                return Some(VarVal::from_string(cfg_path))
+            }
             _ => todo!("unimplemented func: {:?} at {}", fun_block.name, &fun_block.script_line)
         }
         None
