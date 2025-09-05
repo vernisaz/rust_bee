@@ -108,7 +108,7 @@ A function can be one of the following:
 - **anynewer**, compares the modification time of a file specified by first parameter with
 the second one. Use \* to consider a file with the latest modification time in the specified directory
 - **array**, converts a list of parameters to an array, which can be consumed as the function result
-- **as_jar**, returns jar file name for given Maven description
+- **as_jar**, returns jar file name for given Maven description - groupId:artifactId:version
 - **as_url**, returns a download URL of an artifact specified by a parameter
 - **ask**, prompts a console using first parameter, and then read a user input, second parameter is used for the default answer, when a user press the enter
 - **assign**, first parameter is a *name* of variable, the second is a value, the function returns a previous value under the name, if any,
