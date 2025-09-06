@@ -1394,6 +1394,9 @@ fn process_lex_header(_log: &Log, value : &str, _vars: &HashMap<String, VarVal>)
                         buf.clear();
                         state = HdrState::WorkDiv;
                     },
+                    HdrState::InNameQt | HdrState::InPathQt | HdrState::InWorkQt => {
+                        buf.push(c)
+                    },
                     _ => todo!("state: {:?}", state)
                 }
 

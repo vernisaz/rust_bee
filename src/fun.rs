@@ -444,7 +444,9 @@ impl GenBlockTup {
                             None => sep_can,
                             Some(val) => &val.value.clone(),
                         };
-                        let values = range_as_val.value.split(sep_val);
+                        // expand template variables
+                        let range_as_val = process_template_value(&log, &range_as_val.value, &naked_block, prev_res);
+                        let values = range_as_val.split(sep_val);
                         for var_el in values {
                             range.push(var_el.to_string())
                         }
