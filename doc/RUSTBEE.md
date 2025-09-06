@@ -25,13 +25,14 @@ a value  then the value has to be quoted, for example:
 Although any name is allowed, all names starting with
 *~* and ending with *~* are reserved.
 
-- A name as ~~ is reserved for a result previous operation, it is similar to $? of a Bash script
-- A separator for parts of a path is \~separator\~ or \~/\~
-- A paths separator is \~path_separator\~
-- An array of a command line arguments is \~args\~
-- A string representing the current OS is \~os\~
-- A current working directory is \~cwd\~
+- The name as ~~ is reserved for a result previous operation, it is similar to $? of a Bash script
+- The separator for parts of a path is \~separator\~ or \~/\~
+- The paths separator is \~path_separator\~
+- The array of a command line arguments is \~args\~
+- The string representing the current OS is \~os\~
+- The current working directory is \~cwd\~
 - The index of the current loop iteration is \~index\~
+- The script file name is ~script~
 
 You can break a line by adding \ at the end.
 
@@ -108,7 +109,7 @@ A function can be one of the following:
 - **anynewer**, compares the modification time of a file specified by first parameter with
 the second one. Use \* to consider a file with the latest modification time in the specified directory
 - **array**, converts a list of parameters to an array, which can be consumed as the function result
-- **as_jar**, returns jar file name for given Maven description
+- **as_jar**, returns jar file name for given Maven description - groupId:artifactId:version
 - **as_url**, returns a download URL of an artifact specified by a parameter
 - **ask**, prompts a console using first parameter, and then read a user input, second parameter is used for the default answer, when a user press the enter
 - **assign**, first parameter is a *name* of variable, the second is a value, the function returns a previous value under the name, if any,
@@ -147,7 +148,7 @@ otherwise returns false
 - **read**, reads a file content specified by a parameter
 - **rm**, removes files defined in parameters
 - **rmdir**, **rmdira** removes an empty directory (rmdir), or a directory with all content (rmdira) specified in parameters
-- **scalar** | **join** , if a parameter is an array, then concatenates all elements using a separator specified by second parameter 
+- **scalar** | **join** , if a parameter is an array, then concatenates all elements using a separator specified by second parameter
 - **set_env**, set the environment key specified by first parameter to the value specified by the second one
 - **timestamp**, returns a timestamp of a file specified by a parameter
 - **write**, writes to the file specified by first parameter, content of the rest parameters
