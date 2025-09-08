@@ -243,7 +243,7 @@ impl GenBlockTup {
                                     //let target_bor = target.0.borrow_mut();
                                     return exec_target(&log, & target)
                                 },
-                                _ => ()
+                                _ => log.warning(&format!("Target {} not found and ignored", dep_block.params[0])),
                             }
                         },
                         "anynewer" => {
