@@ -1812,7 +1812,7 @@ pub fn process(log: &Log, file: & str, block: GenBlockTup) -> io::Result<()> {
     let mut scoped_block = block; 
     let mut current_name = "".to_string();
     while state != LexState::End {
-        // consider returnin partial lexem for example interrupted by a comment
+        // consider returning a partial lexem for example, interrupted by a comment
         let ( lex, mut state2, line) = read_lex(log, &mut all_chars, state);
         log.debug(&format!("Lex: {:?}, line: {}/{}, state: {:?}", lex, all_chars.line, all_chars.line_offset, state2));
         match lex {
@@ -1917,6 +1917,7 @@ pub fn process(log: &Log, file: & str, block: GenBlockTup) -> io::Result<()> {
                                                 let parent_scoped_block = scoped_block.parent();
                                                 if let Some(block) = parent_scoped_block {
                                                     if !has_root(&clone_var) {
+                                                    // TODO consider not CWD but the current script directory
                                                         let cwd = scoped_block.search_up(&::CWD.to_string());
                                                         if let Some(cwd) = cwd {
                                                             clone_var = cwd.value + std::path::MAIN_SEPARATOR_STR + &clone_var
@@ -1931,7 +1932,7 @@ pub fn process(log: &Log, file: & str, block: GenBlockTup) -> io::Result<()> {
                                                     }
                                                 }
                                             },
-                                            _ => log.error(&format!("An include location variable {} isn't type file , the include is ignored at {}", &value, all_chars.line)),
+                                            _ => log.error(&format!("The include location variable {} isn't type file , the include is ignored at {}", &value, all_chars.line)),
                                         }
                                     },
                                     None => {
