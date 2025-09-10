@@ -1800,10 +1800,6 @@ fn process_array_value(_log: &Log, value : &str) -> Result<Vec<String>, String> 
 }
 
 pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()> {
-    /*let current_script_path =  match block.search_up_block(&String::from("~script_path~")) {
-        Some(path_block) => path_block..value,
-        _ => "".to_string()
-    }*/
     let current_script_path = block.add_var(String::from("~script_path~"), VarVal::from_string(&file.parent().unwrap().display().to_string()));
     let mut all_chars =  match  open(file) {
         Err(e) => return Err(e),
@@ -1923,10 +1919,14 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
                                                 if let Some(block) = parent_scoped_block {
                                                     let mut include_path = PathBuf::from(var_val);
                                                     if !include_path.has_root() {
-                                                    // TODO consider not CWD but the current script directory
-                                                        let cwd = scoped_block.search_up(&::CWD.to_string());
-                                                        if let Some(cwd) = cwd {
-                                                            include_path = PathBuf::from(cwd.value).join(include_path)
+                                                        match scoped_block.search_up(&String::from("~script_path~")) {
+                                                            Some(var) => include_path = PathBuf::from(var.value).join(include_path),
+                                                            _ => {
+                                                                let cwd = scoped_block.search_up(&::CWD.to_string());
+                                                                if let Some(cwd) = cwd {
+                                                                    include_path = PathBuf::from(cwd.value).join(include_path)
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                     match process(&log, &include_path, block.clone()) {
@@ -1948,10 +1948,14 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
                                         if let Some(block) = parent_scoped_block {
                                             let mut include_path = PathBuf::from(temp_expand);
                                             if !include_path.has_root() {
-                                            // TODO consider not CWD but the current script directory
-                                                let cwd = scoped_block.search_up(&::CWD.to_string());
-                                                if let Some(cwd) = cwd {
-                                                    include_path = PathBuf::from(cwd.value).join(include_path)
+                                                match scoped_block.search_up(&String::from("~script_path~")) {
+                                                    Some(var) => include_path = PathBuf::from(var.value).join(include_path),
+                                                    _ => {
+                                                        let cwd = scoped_block.search_up(&::CWD.to_string());
+                                                        if let Some(cwd) = cwd {
+                                                            include_path = PathBuf::from(cwd.value).join(include_path)
+                                                        }
+                                                    }
                                                 }
                                             }
                                             if let Err(e) = 
@@ -2099,8 +2103,5 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
         Some(var) => {scoped_block.add_var(String::from("~script_path~"), var);},
         _ => {scoped_block.remove_var(&String::from("~script_path~"));}
     }
-    /*if !.is_empty() {
-        block.add_var(String::from("~script_path~"), VarVal::from_string(current_script_path));
-    }*/
     Ok(())
 }
