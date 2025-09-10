@@ -33,6 +33,7 @@ Although any name is allowed, all names starting with
 - The current working directory is \~cwd\~
 - The index of the current loop iteration is \~index\~
 - The script file name is ~script~
+- The current path to the current script \~script_path\~ (useful to specify path to an include script)
 
 You can break a line by adding \ at the end.
 

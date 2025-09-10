@@ -2,7 +2,7 @@
 use std::{fs::File,
           io::{self, Read},
           collections::HashMap,
-          env,
+          env, path::{PathBuf},
           cell::RefCell,
           rc::Rc,
          };
@@ -10,7 +10,7 @@ use log::Log;
 use fun::{GenBlock, BlockType, GenBlockTup};
 use fun::PREV_VAL;
 use get_property;
-use util::{has_root, vec_to_str};
+use util::{vec_to_str};
 
 const BUF_SIZE: usize = 256;
 
@@ -228,7 +228,7 @@ impl Reader {
     }
 }
 
-fn open(file: &str) -> io::Result<Reader> {
+fn open(file: &PathBuf) -> io::Result<Reader> {
 
     Ok(Reader {
         reader : File::open(file)?,
@@ -1799,7 +1799,12 @@ fn process_array_value(_log: &Log, value : &str) -> Result<Vec<String>, String> 
     Err(value.to_string())
 }
 
-pub fn process(log: &Log, file: & str, block: GenBlockTup) -> io::Result<()> {
+pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()> {
+    /*let current_script_path =  match block.search_up_block(&String::from("~script_path~")) {
+        Some(path_block) => path_block..value,
+        _ => "".to_string()
+    }*/
+    let current_script_path = block.add_var(String::from("~script_path~"), VarVal::from_string(&file.parent().unwrap().display().to_string()));
     let mut all_chars =  match  open(file) {
         Err(e) => return Err(e),
         Ok(r) => r,
@@ -1913,19 +1918,20 @@ pub fn process(log: &Log, file: & str, block: GenBlockTup) -> io::Result<()> {
                                       // println!("found {:?}", var);
                                         match var.val_type {
                                             VarType::File => {
-                                                let mut clone_var = *process_template_value(&log, &var.value, &scoped_block.0.as_ref().borrow_mut(), &None);
+                                                let var_val = *process_template_value(&log, &var.value, &scoped_block.0.as_ref().borrow_mut(), &None);
                                                 let parent_scoped_block = scoped_block.parent();
                                                 if let Some(block) = parent_scoped_block {
-                                                    if !has_root(&clone_var) {
+                                                    let mut include_path = PathBuf::from(var_val);
+                                                    if !include_path.has_root() {
                                                     // TODO consider not CWD but the current script directory
                                                         let cwd = scoped_block.search_up(&::CWD.to_string());
                                                         if let Some(cwd) = cwd {
-                                                            clone_var = cwd.value + std::path::MAIN_SEPARATOR_STR + &clone_var
+                                                            include_path = PathBuf::from(cwd.value).join(include_path)
                                                         }
                                                     }
-                                                    match process(&log, clone_var.as_str(), block.clone()) {
+                                                    match process(&log, &include_path, block.clone()) {
                                                         Err(e) => {
-                                                            log.error(&format!("Can't process an include script {clone_var} at {0}, problem: {e}", all_chars.line));
+                                                            log.error(&format!("Can't process an include script {include_path:?} at {0}, problem: {e}", all_chars.line));
                                                             return Err(e)
                                                         },
                                                         _ => ()
@@ -1936,20 +1942,21 @@ pub fn process(log: &Log, file: & str, block: GenBlockTup) -> io::Result<()> {
                                         }
                                     },
                                     None => {
-                                        let mut temp_expand = *process_template_value(&log, &value, &scoped_block.0.as_ref().borrow_mut(), &None);
-                                        log.debug(&format!{"Expand an include template {}", temp_expand});
+                                        let temp_expand = *process_template_value(&log, &value, &scoped_block.0.as_ref().borrow_mut(), &None);
+                                        log.debug(&format!{"Expand the include template {}", temp_expand});
                                         let parent_scoped_block = scoped_block.parent();
                                         if let Some(block) = parent_scoped_block {
-                                            // TODO fn expand_path(path: impl AsRef<str>, block: GenBlockTup) -> String 
-                                            if !has_root(&temp_expand) {
+                                            let mut include_path = PathBuf::from(temp_expand);
+                                            if !include_path.has_root() {
+                                            // TODO consider not CWD but the current script directory
                                                 let cwd = scoped_block.search_up(&::CWD.to_string());
                                                 if let Some(cwd) = cwd {
-                                                    temp_expand = cwd.value + std::path::MAIN_SEPARATOR_STR + &temp_expand
+                                                    include_path = PathBuf::from(cwd.value).join(include_path)
                                                 }
                                             }
                                             if let Err(e) = 
-                                                process(&log, &temp_expand, block.clone()) {
-                                                    log.error(&format!("Can't process an include script {} at {}, problem: {}", temp_expand, all_chars.line, e));
+                                                process(&log, &include_path, block.clone()) {
+                                                    log.error(&format!("Can't process an include script {include_path:?} at {}, problem: {}", all_chars.line, e));
                                                     return Err(e)
                                                 }
                                         }
@@ -2088,6 +2095,12 @@ pub fn process(log: &Log, file: & str, block: GenBlockTup) -> io::Result<()> {
         }
         state = state2;
     }
-    
+    match current_script_path {
+        Some(var) => {scoped_block.add_var(String::from("~script_path~"), var);},
+        _ => {scoped_block.remove_var(&String::from("~script_path~"));}
+    }
+    /*if !.is_empty() {
+        block.add_var(String::from("~script_path~"), VarVal::from_string(current_script_path));
+    }*/
     Ok(())
 }

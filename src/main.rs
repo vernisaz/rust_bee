@@ -1,16 +1,14 @@
 extern crate simtime as time;
-use std::{fs::{self,File},env,};
-use std::path::Path;
-use std::io::{self, Write, BufRead, Error, ErrorKind};
-//use regex::Regex;
-use std::cell::RefCell;
-use std::rc::{Rc};
-use std::time::{SystemTime};
-use std::sync::RwLock;
-use std::collections::HashMap;
+use std::{fs::{self,File},env,
+    path::{Path,PathBuf},
+    io::{self, Write, BufRead, Error, ErrorKind},
+    cell::RefCell,
+    rc::{Rc},
+    time::{SystemTime},
+    sync::RwLock,
+    collections::HashMap, ops::ControlFlow};
 #[cfg(feature = "release")]
 use std::panic;
-use std::ops::ControlFlow;
 
 mod help;
 mod ver;
@@ -327,7 +325,7 @@ fn main() -> io::Result<()> {
      
      let sys_time = SystemTime::now();
      
-     let lex_res = lex::process(&log, &path, lex_tree.clone());
+     let lex_res = lex::process(&log, &PathBuf::from(path), lex_tree.clone());
       if target_help {
           let tree = lex_tree.0.borrow();
           log.message("Targets");

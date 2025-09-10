@@ -179,6 +179,10 @@ impl GenBlockTup {
         //let mut current_bl = self.0.borrow_mut();
         self.0.borrow_mut().vars.insert(name, val)
     }
+    
+    pub fn remove_var(&self, name: &String) -> Option<VarVal> {
+        self.0.borrow_mut().vars.remove(name)
+    }
 
     pub fn search_up(&self, name: &String) -> Option<VarVal> {
         let  current_bl = self.0.borrow();
