@@ -118,7 +118,7 @@ no value parameter means cleaning the variable parameter
 - **calc**, a calculator function, it uses one parameter specifying an expression, **float** values are used and four operations accordingly their priority, parenthesis are acknowledged
 - **canonicalize** | **absolute**,  converts a path if a relative to an absolute form in the current directory context
 - **cfg**, return the common path using for storing app config data
-- **contains** | **find**, check if first parameter contains a content of the second. Returns value of true if contains
+- **contains** | **find**, check if first parameter contains a content of the second. Returns value of true if it contains
 - **cp**, file copy command similar used for Unix. Pairs of parameter are not limited
 - **cropname**, cut a part of the name specified by fist parameter by a matching second one (\* means a variable part and can be ommited at the end) 
 and replace it with 3rd parameter when it's specified
