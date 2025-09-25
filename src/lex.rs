@@ -5,12 +5,12 @@ use std::{fs::File,
           env, path::{PathBuf},
           cell::RefCell,
           rc::Rc,
-         };
-use log::Log;
-use fun::{GenBlock, BlockType, GenBlockTup};
-use fun::PREV_VAL;
-use get_property;
-use util::{vec_to_str};
+    };
+use crate::log::Log;
+use crate::fun::{GenBlock, BlockType, GenBlockTup};
+use crate::fun::PREV_VAL;
+use crate::get_property;
+use crate::util::{vec_to_str};
 
 const BUF_SIZE: usize = 256;
 
@@ -1922,7 +1922,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
                                                         match scoped_block.search_up(&String::from("~script_path~")) {
                                                             Some(var) => include_path = PathBuf::from(var.value).join(include_path),
                                                             _ => {
-                                                                let cwd = scoped_block.search_up(&::CWD.to_string());
+                                                                let cwd = scoped_block.search_up(&crate::CWD.to_string());
                                                                 if let Some(cwd) = cwd {
                                                                     include_path = PathBuf::from(cwd.value).join(include_path)
                                                                 }
@@ -1951,7 +1951,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
                                                 match scoped_block.search_up(&String::from("~script_path~")) {
                                                     Some(var) => include_path = PathBuf::from(var.value).join(include_path),
                                                     _ => {
-                                                        let cwd = scoped_block.search_up(&::CWD.to_string());
+                                                        let cwd = scoped_block.search_up(&crate::CWD.to_string());
                                                         if let Some(cwd) = cwd {
                                                             include_path = PathBuf::from(cwd.value).join(include_path)
                                                         }

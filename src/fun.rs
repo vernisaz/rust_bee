@@ -12,13 +12,13 @@ use std::{collections::HashMap,
         fmt};
 #[cfg(unix)]
 use std::os::unix::fs::OpenOptionsExt;
-use lex::{process_template_value, VarVal, VarType};
-use log::Log;
+use crate::lex::{process_template_value, VarVal, VarType};
+use crate::log::Log;
 //use http::{Request,Response};
-use util::{self,format_time,has_root};
-use get_property;
-use ver;
-use ::CWD;
+use crate::util::{self,format_time,has_root};
+use crate::get_property;
+use crate::ver;
+use crate::CWD;
 
 pub const PREV_VAL : &str = "~~";
 
@@ -1287,7 +1287,7 @@ impl GenBlockTup {
                     let key = *self.parameter(&log, 0, fun_block, res_prev);
                     let val = *self.parameter(&log, 1, fun_block, res_prev);
                     log.debug(&format!("Set env {} to {}", &key, val));
-                    std::env::set_var(key, val)
+                    unsafe { std::env::set_var(key, val) }
                 }
             },
             "env" => {

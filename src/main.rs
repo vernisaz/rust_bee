@@ -100,7 +100,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
                options.push(CmdOption::DryRun)
           } else if arg.starts_with("-d") || arg.starts_with("-diagnostic") {
                options.push(CmdOption::Diagnostics);
-               env::set_var("RUST_BACKTRACE", "1")
+               unsafe {env::set_var("RUST_BACKTRACE", "1") }
           } else if arg.starts_with("-r")  {
                options.push(CmdOption::ForceRebuild);
           } else if arg.starts_with("-D")  {
@@ -111,7 +111,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
                     let name = &prop_def[0..pos];
                     let val = &prop_def[pos+1..];
                     set_property(&name.to_string(), &val.to_string());
-                    env::set_var(name, val)
+                    unsafe { env::set_var(name, val) }
                } else {
                     log.error(&format!("Invalid property definition: {}", &arg))
                }
@@ -252,7 +252,7 @@ fn main() -> io::Result<()> {
                          let path1 = &path.clone().unwrap();
                          let path1 = Path::new(path1);
                          let cwd = path1.parent().unwrap().to_str().unwrap();
-                         env::set_var("PWD", &cwd);
+                         unsafe { env::set_var("PWD", &cwd) }
                          lex_tree.add_var(String::from(CWD), lex::VarVal::from_string(cwd));
                     } else {
                          let err = format!("Script {} not found", file.clone().unwrap_or("*".to_string()));
@@ -278,7 +278,7 @@ fn main() -> io::Result<()> {
                                    let name = &prop_def[0..pos];
                                    let val = &prop_def[pos+1..];
                                    set_property(&name.to_string(), &val.to_string());
-                                   env::set_var(name, val)
+                                   unsafe { env::set_var(name, val) }
                               } else {
                                    log.error(&format!("Invalid property definition: {}", &prop_def))
                               }    
