@@ -18,7 +18,7 @@ You can use **RustBee** itself for building after you built the starter version.
 The RustBee [script](./bee.7b) has **install** target for installing the tool.
 
 ## Version
-The current version is **1.15.01**
+The current version is **1.15.03**.
 
 ## Scripting examples
 
