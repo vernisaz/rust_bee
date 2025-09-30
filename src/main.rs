@@ -71,7 +71,6 @@ pub fn get_properties() -> impl IntoIterator <Item = (String, String)> {
         }
         _ => {let ret: HashMap<String, String> = HashMap::new(); ret}
     }
-    
 }
 
 fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Vec<&'a String>, Vec<String>) {
@@ -116,12 +115,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
           } else if arg.starts_with("-r")  {
                options.push(CmdOption::ForceRebuild);
           } else if arg.starts_with("-D")  {
-               let prop_def = &arg[2..];
-               let eq_pos = prop_def.find('=');
-               if eq_pos.is_some() {
-                    let pos = eq_pos.unwrap();
-                    let name = &prop_def[0..pos];
-                    let val = &prop_def[pos+1..];
+               if let Some((name,val)) = &arg[2..].split_once('=') {
                     set_property(&name.to_string(), &val.to_string());
                     //unsafe { env::set_var(name, val) }
                } else {
@@ -284,18 +278,15 @@ fn main() -> io::Result<()> {
                     let file = File::open(filename)?;
                     let lines = io::BufReader::new(file).lines();
                     for line in lines {
-                         if let Ok(prop_def) = line {
-                             
-                              if let Some(pos) = prop_def.find('=') {
-                                   let name = &prop_def[0..pos];
-                                   let val = &prop_def[pos+1..];
-                                   set_property(&name.to_string(), &val.to_string());
-                                   unsafe { env::set_var(name, val) }
-                              } else {
-                                   log.error(&format!("Invalid property definition: {}", &prop_def))
-                              }    
-                         }
-                     }
+                        if let Ok(prop_def) = line {
+                            if let Some((name,val)) = prop_def.split_once('=') {
+                                set_property(&name.to_string(), &val.to_string());
+                                   //unsafe { env::set_var(name, val) }
+                            } else {
+                                log.error(&format!("Invalid property definition: {}", &prop_def))
+                            }    
+                        }
+                    }
                }
                CmdOption::TargetHelp => target_help = true
           }
