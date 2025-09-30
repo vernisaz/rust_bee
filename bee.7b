@@ -8,7 +8,7 @@ main=src${~/~}main
 common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 comp opts=[--extern,simzip]
-version=1.15.03
+version=1.15.04
 
 mode=mode:prop
 if {
@@ -126,7 +126,7 @@ target version update : . {
        
     write(${~cwd~}${~/~}src${~/~}ver.rs,"// auto generated
 pub fn version() -> (&'static str, u32, &'static str) {
-      (&\"${version}\", 147, & \"",${~~},"\")
+      (&\"${version}\", 149, & \"",${~~},"\")
 }")  # 
 }
 

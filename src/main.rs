@@ -63,6 +63,17 @@ pub fn get_property(name: &String) -> Option<String> {
      }
 }
 
+pub fn get_properties() -> impl IntoIterator <Item = (String, String)> {
+    match SYSTEM_PROPERTIES.read() {
+        Ok(props) => {
+            let ret = props.clone().unwrap();
+            ret
+        }
+        _ => {let ret: HashMap<String, String> = HashMap::new(); ret}
+    }
+    
+}
+
 fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Vec<&'a String>, Vec<String>) {
      let (mut options, mut targets, mut run_args) = (Vec::new(), Vec::new(), Vec::new());
      let mut arg_n = 0;

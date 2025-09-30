@@ -806,7 +806,7 @@ impl GenBlockTup {
                         let path =  Path::new(&work_dir);
                         if path.exists() {
                             if cfg!(windows) {
-                               cwd = path::absolute(path).unwrap().into_os_string().into_string().unwrap()
+                                cwd = path::absolute(path).unwrap().into_os_string().into_string().unwrap()
                             } else {
                                 cwd = path.canonicalize().unwrap().into_os_string().into_string().unwrap()
                             }
@@ -834,11 +834,13 @@ impl GenBlockTup {
                         let mut command = Command::new(&exec);
                         let status = if cwd.is_empty() { command
                             .args(&params)
+                            .envs(crate::get_properties())
                             .stdin(Stdio::null())
                              .spawn()
                          } else {
                             command.current_dir(&cwd).args(&params)
                                 .stdin(Stdio::null())
+                                .envs(crate::get_properties())
                                 .spawn()
                          };
                          if status.is_ok() {
@@ -849,6 +851,7 @@ impl GenBlockTup {
                         if fun_block.out .is_some() {
                             let output = if cwd.is_empty() { Command::new(&exec)
                                 .args(&params)
+                                .envs(crate::get_properties())
                                 .output() 
                             } else {
                                     Command::new(&exec).current_dir(&cwd).args(&params)
@@ -873,6 +876,7 @@ impl GenBlockTup {
                         } else {
                             let status = if cwd.is_empty() { Command::new(&exec)
                                 .args(&params)
+                                .envs(crate::get_properties())
                                 .status() 
                             } else {
                                     Command::new(&exec).current_dir(&cwd).args(&params)
@@ -1287,12 +1291,16 @@ impl GenBlockTup {
                     let key = *self.parameter(&log, 0, fun_block, res_prev);
                     let val = *self.parameter(&log, 1, fun_block, res_prev);
                     log.debug(&format!("Set env {} to {}", &key, val));
-                    unsafe { std::env::set_var(key, val) }
+                    //unsafe { env::set_var(key, val) }
+                    crate::set_property(&key, &val)
                 }
             },
             "env" => {
                 let key = *self.parameter(&log, 0, fun_block, res_prev);
-                if let std::result::Result::Ok(val) = std::env::var(key) {
+                if let Some(val) = crate::get_property(&key) {
+                    return Some(VarVal::from_string(val))
+                }
+                if let Ok(val) = env::var(key) {
                     return Some(VarVal::from_string(val))
                 }
             },
