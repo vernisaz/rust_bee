@@ -854,7 +854,7 @@ impl GenBlockTup {
                                 .envs(crate::get_properties())
                                 .output() 
                             } else {
-                                    Command::new(&exec).current_dir(&cwd).args(&params)
+                                    Command::new(&exec).envs(crate::get_properties()).current_dir(&cwd).args(&params)
                                     .output()
                             };
                             // command is always async, simply output is waiting
@@ -879,7 +879,7 @@ impl GenBlockTup {
                                 .envs(crate::get_properties())
                                 .status() 
                             } else {
-                                    Command::new(&exec).current_dir(&cwd).args(&params)
+                                    Command::new(&exec).envs(crate::get_properties()).current_dir(&cwd).args(&params)
                                     .status()
                             };
                             match status {
