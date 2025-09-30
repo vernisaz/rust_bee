@@ -313,14 +313,14 @@ fn main() -> io::Result<()> {
           });
      }
      let Some(mut path) = path else {
-          log.error(&format!{"No script file found in ./"});
-          return Ok(()) //Err(Error::new(ErrorKind::Other,"No script file found in ./"))
+          log.error(&format!{"No script file found in {:?}", env::current_dir()});
+          return Ok(())
      };
      if !Path::new(&path).exists() {
           path += SCRIPT_EXT;
           if !Path::new(&path).is_file() {
               log.error(&format!{"Script file {path:#} not found"});
-              return Ok(()) //Err(Error::new(ErrorKind::Other, format!("File {} not found", path)))
+              return Ok(())
           }
           
      }
