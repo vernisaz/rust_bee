@@ -111,7 +111,8 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
                options.push(CmdOption::DryRun)
           } else if arg.starts_with("-d") || arg.starts_with("-diagnostic") {
                options.push(CmdOption::Diagnostics);
-               unsafe {env::set_var("RUST_BACKTRACE", "1") }
+               //unsafe {env::set_var("RUST_BACKTRACE", "1") }
+               set_property(&"RUST_BACKTRACE".to_string(), &"1".to_string())
           } else if arg.starts_with("-r")  {
                options.push(CmdOption::ForceRebuild);
           } else if arg.starts_with("-D")  {
@@ -122,7 +123,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
                     let name = &prop_def[0..pos];
                     let val = &prop_def[pos+1..];
                     set_property(&name.to_string(), &val.to_string());
-                    unsafe { env::set_var(name, val) }
+                    //unsafe { env::set_var(name, val) }
                } else {
                     log.error(&format!("Invalid property definition: {}", &arg))
                }
