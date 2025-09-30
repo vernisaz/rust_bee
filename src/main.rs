@@ -65,7 +65,7 @@ pub fn get_property(name: &String) -> Option<String> {
 
 pub fn get_properties() -> impl IntoIterator <Item = (String, String)> {
     match SYSTEM_PROPERTIES.read() {
-        Ok(props) => {
+        Ok(props) if props.is_some() => {
             let ret = props.clone().unwrap();
             ret
         }
