@@ -29,6 +29,8 @@ pub fn insert_ctrl_char(in_str:&String) -> String {
                     EscState::No => state = EscState::Suspect,
                     EscState::Suspect => {
                         state = EscState::No;
+                        chars[next] = '\\';
+                        next += 1;
                         chars[next] = c;
                         next += 1
                     },
