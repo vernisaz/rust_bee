@@ -126,7 +126,7 @@ target version update : . {
        
     write(${~cwd~}${~/~}src${~/~}ver.rs,"// auto generated
 pub fn version() -> (&'static str, u32, &'static str) {
-      (&\"${version}\", 149, & \"",${~~},"\")
+      (&\"${version}\", 152, & \"",${~~},"\")
 }")  # 
 }
 
