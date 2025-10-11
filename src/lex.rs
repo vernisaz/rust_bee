@@ -61,7 +61,9 @@ enum LexState {
     InQtLex,
     InQtValue,
     Escape,
-    EscapeValue,  // --> EscapeQtValue
+    EscapeQt, // for Lexem
+    EscapeValue,
+    EscapeQtValue,
     EscapeBreakValue,
     BlankOrEnd,
     RangeStart,
@@ -271,11 +273,18 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         //last_nb = buffer.chars().count()
                         //return (Lexem::Value(buffer[0..buf_fill].iter().collect()), state);
                     },
-                    LexState::Escape => {
+                    LexState::EscapeQt => {
                         state = LexState::InQtLex ;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
+                    LexState::Escape => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InLex
+                    }
                     LexState::EscapeValue => {
                         state = LexState::InQtValue ;
                         buffer[buf_fill] = c;
@@ -346,6 +355,13 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
+                    LexState::EscapeQt => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InQtLex
+                    }
                     LexState::InParamBlank | LexState::InQtParam | LexState::InQtValue | LexState::InArrayVal |
                      LexState::BlankOrEnd | LexState::Comment | LexState::BlankInValue => {
                         buffer[buf_fill] = c;
@@ -411,23 +427,25 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
             },
             '\\' => {
                 match state {
-                    LexState::InQtLex | LexState::QuotedStart => state = LexState::Escape,
+                    LexState::InQtLex | LexState::QuotedStart => state = LexState::EscapeQt,
                     LexState::InParam => state = LexState::EscapeParam,
                     LexState::InQtValue => state = LexState::EscapeValue,
                     LexState::InQtParam => state = LexState::EscapeQtParam,
                     LexState::Escape => {
-                        state = LexState::InLex; // was InQtLex
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::InLex => {
-                        state = LexState::Escape
-                    }
-                    LexState::Begin => {
                         state = LexState::InLex;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
+                    LexState::EscapeQt => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InQtLex
+                    }
+                    LexState::InLex | LexState::Begin => {
+                        state = LexState::Escape
+                    }
                     LexState::BlankOrEnd => {
                         state = LexState::InLex;
                     },
@@ -499,12 +517,17 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
@@ -570,6 +593,11 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                     },
                     LexState::EscapeValue => {
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
+                    }
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
@@ -620,12 +648,19 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::EscapeParam => {
                         buffer[buf_fill] = '\\';
@@ -688,12 +723,19 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InParam;
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::EscapeEndArray => {
                         state = LexState::InArrayVal;
@@ -718,7 +760,8 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
             },
             '{' => {
                 match state {
-                    LexState::InValue | LexState::InQtParam | LexState::InQtLex | LexState::InParam | LexState::Comment | LexState::InQtValue | LexState::InArrayVal => {
+                    LexState::InValue | LexState::InQtParam | LexState::InQtLex | LexState::InParam |
+                       LexState::Comment | LexState::InQtValue | LexState::InArrayVal => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
@@ -738,12 +781,33 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     LexState::BlockStart => {
                         return (Lexem::BlockHdr("".to_string()), state, reader.line);
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQt => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InQtLex
+                    }
+                    LexState::Escape => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InLex
+                    }
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
@@ -752,6 +816,13 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InValue;
                     },
+                    LexState::EscapeParam => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InParam
+                    }
                     LexState::InBreak | LexState::StartValue | LexState::BlankInValue => {
                         buffer[buf_fill] = c;
                         buf_fill += 1; 
@@ -791,12 +862,19 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         
                         return (Lexem::BlockEnd(Some(buffer[0..buf_fill].iter().collect())), state, reader.line);
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
@@ -835,12 +913,19 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
@@ -885,12 +970,19 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = c;
@@ -933,12 +1025,19 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::EscapeEndArray => {
                         buffer[buf_fill] = '\\';
@@ -982,12 +1081,19 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InValue;
                     },
-                    LexState::EscapeValue => {
+                   LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::InBreak => {
                         buffer[buf_fill] = c;
@@ -1036,12 +1142,19 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InValue
                     }
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
                     }
                     LexState::EscapeParam => {
                         buffer[buf_fill] = c;
@@ -1092,12 +1205,33 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InValue;
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
+                    }
+                    LexState::EscapeQt => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InQtLex
+                    }
+                    LexState::Escape => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InLex
                     }
                     LexState::EscapeQtParam => {
                         buffer[buf_fill] = '\\';
@@ -1151,12 +1285,33 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InValue;
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
+                    }
+                    LexState::EscapeQt => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InQtLex
+                    }
+                    LexState::Escape => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InLex
                     }
                     LexState::InBreak | LexState::StartValue => {
                         buffer[buf_fill] = c;
@@ -1203,12 +1358,33 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InValue;
                     },
-                    LexState::EscapeValue => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
+                    }
+                    LexState::EscapeQt => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InQtLex
+                    }
+                    LexState::Escape => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InLex
                     }
                     LexState::EscapeEndArray => {
                         buffer[buf_fill] = '\\';
@@ -1256,13 +1432,34 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1; 
                         state = LexState::InParam;
                     },
-                    LexState::EscapeValue  => {
+                    LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
-                        buf_fill += 1; 
+                        buf_fill += 1;
                         buffer[buf_fill] = c;
-                        buf_fill += 1; 
-                        state = LexState::InQtValue;
-                    },
+                        buf_fill += 1;
+                        state = LexState::InQtValue
+                    }
+                    LexState::EscapeValue => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InValue
+                    }
+                    LexState::EscapeQt => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InQtLex
+                    }
+                    LexState::Escape => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InLex
+                    }
                     LexState::EscapeQtParam => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1; 
