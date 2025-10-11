@@ -460,7 +460,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InQtParam;
                     },
-                    LexState::InValue  | LexState::BlankInValue => {
+                    LexState::InValue  | LexState::BlankInValue | LexState::StartValue => {
                         state = LexState::EscapeBreakValue;
                     },
                     LexState::EscapeBreakValue | LexState::EscapeEndArray => {

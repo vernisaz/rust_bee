@@ -48,9 +48,20 @@ pub fn insert_ctrl_char(in_str:&String) -> String {
                         next += 1
                     },
                     EscState::Suspect => {
-                        state = EscState::Esc;
-                        esc = 64 * (c.to_digit(10).unwrap() as u8 - '0'.to_digit(10).unwrap() as u8)
-                    },
+                        match c {
+                            '0'..'4' => {
+                                state = EscState::Esc;
+                                esc = 64 * (c.to_digit(10).unwrap() as u8 - '0'.to_digit(10).unwrap() as u8)
+                            },
+                            _ => {
+                                state = EscState::No;
+                                chars[next] = '\\';
+                                next += 1;
+                                chars[next] = c;
+                                next += 1
+                            },
+                        }
+                    }    
                     EscState::Esc => {
                         state = EscState::Oct2;
                         esc += 8 * (c.to_digit(10).unwrap() as u8 - '0'.to_digit(10).unwrap() as u8)
@@ -85,6 +96,13 @@ pub fn insert_ctrl_char(in_str:&String) -> String {
         }
         
     }
+    match state {
+        EscState::Suspect => {
+            chars[next] = '\\';
+        }
+        EscState::No | EscState::Oct2 | EscState::Esc => ()
+    }
+                
     chars[0..next].iter().collect()
 }
 
