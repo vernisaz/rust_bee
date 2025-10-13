@@ -429,7 +429,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                 match state {
                     LexState::InQtLex | LexState::QuotedStart => state = LexState::EscapeQt,
                     LexState::InParam => state = LexState::EscapeParam,
-                    LexState::InQtValue => state = LexState::EscapeValue,
+                    LexState::InQtValue => state = LexState::EscapeQtValue,
                     LexState::InQtParam => state = LexState::EscapeQtParam,
                     LexState::Escape => {
                         state = LexState::InLex;
