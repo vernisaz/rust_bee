@@ -461,11 +461,6 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     LexState::StartParam | LexState::InParamBlank => {
                         state = LexState::EscapeParam;
                     }
-                    /*LexState::InParamBlank => {
-                        state = LexState::EscapeParam;
-                       // buffer[buf_fill] = c;
-                       // buf_fill += 1;
-                    },*/
                     LexState::Comment => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
@@ -803,8 +798,6 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         state = LexState::InQtLex
                     }
                     LexState::Escape => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InLex
@@ -853,7 +846,6 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                 }
             },
             '}' => {
-                //println!("{:?}", state);
                 match state {
                     LexState::Begin | LexState::BlockStart | LexState::BlockEnd => {
                         state = LexState::BlockEnd;
@@ -922,7 +914,12 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     } ,
-                    LexState::InParamBlank => {
+                    LexState::Escape => {
+                        state = LexState::InLex;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                    }
+                    LexState::InParamBlank | LexState::EscapeParam=> {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
@@ -957,7 +954,6 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     _ => todo!("state: {:?} at {}", state, reader.line)
                 }
             },
-
             ':' => {
                 match state {
                     LexState::BlankOrEnd | LexState::Begin => {
@@ -1030,6 +1026,11 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     } ,
+                    LexState::Escape => {
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InLex
+                    }
                     LexState::InParamBlank => {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
@@ -1084,6 +1085,11 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
+                     LexState::Escape => {
+                        state = LexState::InLex;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                    }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -1170,6 +1176,11 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InParam
+                    }
+                    LexState::Escape => {
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InLex
                     }
                     LexState::InBreak => {
                         buffer[buf_fill] = c;
