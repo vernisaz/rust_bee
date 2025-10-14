@@ -6,7 +6,7 @@
 project  =rb
 main=src${~/~}main
 common =..${~/~}simscript${~/~}comm-build.7b:file
-crate_dir=../rusthub/src/rust${~/~}crates
+crate_dir=..${~/~}crates
 comp opts=[--extern,simzip]
 version=1.15.05
 
@@ -126,7 +126,7 @@ target version update : . {
        
     write(${~cwd~}${~/~}src${~/~}ver.rs,"// auto generated
 pub fn version() -> (&'static str, u32, &'static str) {
-      (&\"${version}\", 154, & \"",${~~},"\")
+      (&\"${version}\", 155, & \"",${~~},"\")
 }")  # 
 }
 
