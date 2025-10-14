@@ -6,7 +6,7 @@
 project  =rb
 main=src${~/~}main
 common =..${~/~}simscript${~/~}comm-build.7b:file
-crate_dir=..${~/~}crates
+crate_dir=../rusthub/src/rust${~/~}crates
 comp opts=[--extern,simzip]
 version=1.15.05
 

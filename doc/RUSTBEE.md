@@ -16,9 +16,9 @@ A script variable can be defined in the form:
 
     name=value[:type]
 
-Name and value can be everything, but if a name includes spaces or symbols like `=, ;, {,(` then the
+Name and value can be everything, but if a name includes spaces or symbols like `=, ;, ,{,(` then the
 name has to be quoted. If a name should include a quote, then use \ for escaping it.
-The same rule is applied for a value. If one of the following characters `:, ;, [` is included in 
+The same rule is applied for a value. If one of the following characters `:, ,;` is included in 
 a value  then the value has to be quoted, for example:
 
     json lib="org.glassfish:javax.json:1.1.4":rep-maven
