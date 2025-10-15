@@ -22,6 +22,9 @@ The same rule is applied for a value. If one of the following characters `:, ,;`
 a value  then the value has to be quoted, for example:
 
     json lib="org.glassfish:javax.json:1.1.4":rep-maven
+    
+Note that `blank` has to be escaped only on the end of a name or value.
+
 Although any name is allowed, all names starting with
 *~* and ending with *~* are reserved.
 
@@ -41,7 +44,7 @@ A function call is defined as:
 
     function_name [name](parameter1,....)
 
-If a function parameter includes one of the following symbols `,, ;, )` then it has to be escaped as described above.
+If a function parameter includes one of the following symbols `,, ,)` then it has to be escaped as described above.
 
 A target is defined as :
 
