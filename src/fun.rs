@@ -757,7 +757,7 @@ impl GenBlockTup {
             },
             "eq" => {
                 // TODO reuse common code with neq
-                log.debug(&format!("comparing {:?} and {:?}", self.parameter(&log, 0, fun_block, res_prev), self.parameter(&log, 1, fun_block, res_prev)));
+                log.debug(&format!("comparing eq {:?} and {:?}", self.parameter(&log, 0, fun_block, res_prev), self.parameter(&log, 1, fun_block, res_prev)));
                 return Some(VarVal::from_bool(self.parameter(&log, 0, fun_block, res_prev) == self.parameter(&log, 1, fun_block, res_prev)) )
             },
             "exec" | "aexec" => {

@@ -32,7 +32,7 @@ target crate {
 target install::Install RustBee everyone's use  {
     dependency {true}
     ask(Are you going to install the ${project}? [N/y/l],n)
-    if {
+    if { # swith to case
        or{
          eq(${~~},y)
          eq(${~~},Y)
@@ -46,14 +46,20 @@ target install::Install RustBee everyone's use  {
 	           assign(rustbee,${~~}${~/~}.rustbee${~/~}bin)
 		       mkd(rustbee)
 	           cp(rb.exe,rustbee)
-	           display(Installed ${~~} in ${rustbee})
+	           if {
+	           		eq(~~, ${rustbee}${~/~}rb.ext) then {
+	           			display(Installed ${~~} in ${rustbee})
+	           		} else {
+	           			display(Installation has failed)
+	           		}
+	           }
 	           # add to PATH if needed
 	           env(PATH)
 	           assign(path,~~) 
 	           if {
 	               contains (path, .rustbee${~/~}bin)
 	               else {
-	                  display(Set env PATH)
+	                  display(Add in env %PATH%;${rustbee})
 	                  #exec setx (PATH, %path%;${rustbee} )
 	               }
 	           }
@@ -65,8 +71,14 @@ target install::Install RustBee everyone's use  {
 	                display(Please run the script as an administrator)
 	            }
 	            else {
-                   exec cp(${~cwd~}/${project},/usr/local/bin)
-                   display(Installed.)
+                   cp(${~cwd~}/${project},/usr/local/bin)
+                   if {
+		           		eq(~~, /usr/local/bin/${project}) then {
+		           			display(Installed.)
+		           		} else {
+		           			display(Installation has failed ${~~}.)
+		           		}
+		           }
 	            }
 	        }
 	      }
@@ -126,7 +138,7 @@ target version update : . {
        
     write(${~cwd~}${~/~}src${~/~}ver.rs,"// auto generated
 pub fn version() -> (&'static str, u32, &'static str) {
-      (&\"${version}\", 155, & \"",${~~},"\")
+      (&\"${version}\", 156, & \"",${~~},"\")
 }")  # 
 }
 

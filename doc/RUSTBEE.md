@@ -103,7 +103,7 @@ Currently *if*, *while*, *case*, and *for*  operators are supported. More detail
         }
        [ else {
            # when nothing matches
-         }
+         } ]
     }
 ```
 Ifs,  fors, cases, and whiles  can be nested.
@@ -122,7 +122,7 @@ no value parameter means cleaning the variable parameter
 - **canonicalize** | **absolute**,  converts a path if a relative to an absolute form in the current directory context
 - **cfg**, return the common path using for storing app config data
 - **contains** | **find**, check if first parameter contains a content of the second. Returns value of true if it contains
-- **cp**, file copy command similar used for Unix. Pairs of parameter are not limited
+- **cp**, file copy command similar used for Unix. Pairs of parameter are not limited. The function return an array of successfully copied paths.
 - **cropname**, cut a part of the name specified by fist parameter by a matching second one (\* means a variable part and can be ommited at the end) 
 and replace it with 3rd parameter when it's specified
 - **display** - display a message specified by a parameter
@@ -144,7 +144,7 @@ returns an array of files which have the later date
 - **neq**,  compares two parameters and returns true if they are not equal, only one parameter compares with *None*
 - **not** , invert boolean value of the expression of the parameter 
 - **now**, shows the current time and date in ISO 8601, or in a format specified by a parameter, the following letters are allowed in the format: W, MMM-DD-YY hh:mm:ss Z
-- **number**, converts an argument in a number and returns as a result  
+- **number**, converts an argument in a number and returns as the result  
 - **or**, considers parameters as boolean values and returns true of first true parameter,
 otherwise returns false
 - *panic*, a parameter specifies a panic message, and stops the script execution
