@@ -43,7 +43,7 @@ target install::Install RustBee everyone's use  {
 		       mkd(rustbee)
 	           cp(rb.exe,rustbee)
 	           if {
-	           		eq(~~, ${rustbee}${~/~}rb.ext) then {
+	           		eq(~~, ${rustbee}${~/~}${project}.exe) then {
 	           			display(Installed ${~~} in ${rustbee})
 	           		} else {
 	           			display(Installation has failed)
