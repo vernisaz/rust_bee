@@ -130,7 +130,8 @@ and replace it with 3rd parameter when it's specified
 - **eq**, compares two parameters and returns true if they are equal, only one parameter compares it with *None*
 - **exec**, executes a process on the underline OS, a name of a process separated by a blank from *exec*, 
 parameters are parameters of the process, a current directory, and a variable to keep the process stdout can be
-specified after a process name separated by ':', otherwise stdout will appear on screen
+specified after a process name separated by ':', otherwise stdout will appear on screen. A process result is stored
+in the function result
 - **filename**, returns a filename of a parameter, no extension
 - **files**, return an array of file paths matching patterns specified by parameters
 - **file_filter** | **filter** , shrink an array specified my first parameters by filter values specified by extra parameters
