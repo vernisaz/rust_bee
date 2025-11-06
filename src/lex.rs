@@ -613,7 +613,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InQtValue
                     }
-                    LexState::InParam => {
+                    LexState::InParam | LexState::EscapeParam => {
                         state = LexState::InParamBlank;
                         last_nb = buf_fill;
                         buffer[buf_fill] = c;
