@@ -8,18 +8,18 @@ Soon, I decided to rewrite it in Rust. Maior disadvantage of 7Bee was using XML 
 So one of the goals of Rust Bee was getting rid of XML, reduce the scripts footprint and make them easy readable.
 
 ## Rust Bee scripting language
-The language is described [here](./doc/RUSTBEE.md)
+The language is described [here](./doc/RUSTBEE.md).
 
 ## Bulding
 
 It's self building tool, however it needs bootstraping. [7Bee](https://github.com/drogatkin/7Bee) is used for the
 [purpose](./bee-rust.xml).
-You can use **RustBee** itself for building after you built the starter version.
+You can use **RustBee** itself for building it after you built the starter version.
 
-The RustBee [script](./bee.7b) has **install** target for installing the tool.
+The RustBee [script](./bee.7b) has the **install** target for installing the tool.
 
 ## Version
-The current version is **1.15.04**.
+The current version is **1.15.05**.
 
 ## Scripting examples
 
