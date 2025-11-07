@@ -23,7 +23,11 @@ a value  then the value has to be quoted, for example:
 
     json lib="org.glassfish:javax.json:1.1.4":rep-maven
     
-Note that `blank` has to be escaped only on the end of a name or value.
+The special characters can be escaped instead of quoting, like:
+
+    json lib=org.glassfish\:javax.json\:1.1.4:rep-maven
+    
+Note that trailing `blank` has to be escaped in a name or a value.
 
 Although any name is allowed, all names starting with
 *~* and ending with *~* are reserved.
@@ -68,7 +72,7 @@ A dependency can be:
 - **true**, for unconditional execution of the target
 
 A body of a target contains a sequence of operators and functions. 
-Currently *if*, *while*, *case*, and *for*  operators are supported. More details on syntax of them:
+Currently `if`, `while`, `case`, and `for`  operators are supported. More details on syntax of them:
 
 ### if
 ```
