@@ -16,7 +16,7 @@ A script variable can be defined in the form:
 
     name=value[:type]
 
-Name and value can be everything, but if a name includes spaces or symbols like `=, ;, ,{,(` then the
+Name and value can be anything, but if a name includes spaces or symbols like `=, ;, ,{,(` then the
 name has to be quoted. If a name should include a quote, then use \ for escaping it.
 The same rule is applied for a value. If one of the following characters `:, ,;` is included in 
 a value  then the value has to be quoted, for example:
@@ -194,5 +194,5 @@ A string interpolation is applied at the end of any variant.
 
 ## Examples
 
-An example of a script for building a Java project, can be found [there](https://github.com/drogatkin/JustDSD/blob/master/bee-java.rb
+An example of a script for building a Java project, can be found [there](https://github.com/drogatkin/JustDSD/blob/master/bee-java.rb)
 Another example is [common Rust scriptd](https://github.com/vernisaz/simscript).
