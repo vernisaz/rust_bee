@@ -356,7 +356,7 @@ impl GenBlockTup {
     }
 
     pub fn exec(&self, log: &Log, prev_res: &Option<VarVal>) -> Option<VarVal> {
-        let block_type = self.borrow().block_type.clone();
+        let block_type = &self.borrow().block_type;
         log.debug(&format!("processing block {:?}", block_type));
         match  block_type {
             BlockType::Scope | BlockType::Then | BlockType::Else | BlockType::Choice => {
@@ -430,6 +430,10 @@ impl GenBlockTup {
                     log.error(&format!("A 'for' range isn't specified at {}", naked_block.script_line));
                     return None
                 };
+                if range_as_opt.is_empty() {
+                    log.error(&format!("A 'for' range isn't specified at {}", naked_block.script_line));
+                    return None
+                }
                 let range_as_var = self.prev_or_search_up(&range_as_opt, prev_res);
                 
                 if range_as_var.is_some() {
