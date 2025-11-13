@@ -356,7 +356,7 @@ impl GenBlockTup {
     }
 
     pub fn exec(&self, log: &Log, prev_res: &Option<VarVal>) -> Option<VarVal> {
-        let block_type = &self.borrow().block_type;
+        let block_type = self.borrow().block_type.clone();
         log.debug(&format!("processing block {:?}", block_type));
         match  block_type {
             BlockType::Scope | BlockType::Then | BlockType::Else | BlockType::Choice => {
