@@ -2231,42 +2231,42 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
                         }
                     },
                     "eq" => {
-                        let  inner_block = GenBlock::new(BlockType::Eq);
+                        let mut inner_block = GenBlock::new(BlockType::Eq);
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "if" => {
-                        let inner_block = GenBlock::new(BlockType::If);
+                        let mut inner_block = GenBlock::new(BlockType::If);
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "then" => {
-                        let inner_block = GenBlock::new(BlockType::Then);
+                        let mut inner_block = GenBlock::new(BlockType::Then);
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "neq" => {
-                        let inner_block = GenBlock::new(BlockType::Neq);
+                        let mut inner_block = GenBlock::new(BlockType::Neq);
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "else" => {
-                        let inner_block = GenBlock::new(BlockType::Else);
+                        let mut inner_block = GenBlock::new(BlockType::Else);
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "or" => {
-                        let inner_block = GenBlock::new(BlockType::Or);
+                        let mut inner_block = GenBlock::new(BlockType::Or);
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "and" => {
-                        let inner_block = GenBlock::new(BlockType::And);
+                        let mut inner_block = GenBlock::new(BlockType::And);
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "not" => {
-                        let inner_block = GenBlock::new(BlockType::Not);
+                        let mut inner_block = GenBlock::new(BlockType::Not);
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
@@ -2279,13 +2279,13 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "" => {
-                        let inner_block = GenBlock::new(BlockType::Scope);
+                        let mut inner_block = GenBlock::new(BlockType::Scope);
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));// *scoped_block = GenBlock::new(BlockType::Scope);
                     },
                     "dependency" => {
-                        let inner_block = GenBlock::new(BlockType::Dependency);
-        
+                        let mut inner_block = GenBlock::new(BlockType::Dependency);
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add_dep(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "while" => {
