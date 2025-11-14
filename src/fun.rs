@@ -377,7 +377,6 @@ impl GenBlockTup {
                     let child_nak = child.borrow();
                     if child_nak. block_type == BlockType::Function && child_nak.name == Some("include".into()) 
                     || child_nak. block_type == BlockType::Target {
-                        drop(child_nak);
                         continue
                     }
                     drop(child_nak);
@@ -588,19 +587,17 @@ impl GenBlockTup {
                     log.error(&format!("No 'while' control variable {} at {}", &control, &naked_block.script_line));
                     return None
                 }
-                let children = &naked_block.children.clone();
-                //println!{"control {:?}", &control_var};
+                let children = naked_block.children.clone();
+                //drop(naked_block);
                 let mut val = control_var.unwrap().is_true();
-                drop(naked_block);
-                //println!{"do loop for {val}"};
                 while val {
-                    for child in children {
+                    for child in &children {
                         res = child.exec(&log, &res)
                     } 
                     let control_var = self.search_up(&control); // will be always found
                     val = control_var.unwrap().is_true()
                 }
-                 res
+                res
             },
             BlockType::Case => {
                 let mut res = match prev_res {

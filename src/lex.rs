@@ -2223,50 +2223,51 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
                             inner_block.name = Some(name);
                             inner_block.dir = Some(work);
                             inner_block.flex = Some(path);
+                            inner_block.script_line = all_chars.line;
                             //println!{"name {:?} dir {:?} flex {:?}", inner_block.name, inner_block.dir, inner_block.flex}
                             scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                         } else {
-                            log.error(&format!("Target {} is already exists", &name));
+                            log.error(&format!("Target {} is already exists at {}", &name, all_chars.line));
                         }
                     },
                     "eq" => {
                         let  inner_block = GenBlock::new(BlockType::Eq);
-        
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "if" => {
                         let inner_block = GenBlock::new(BlockType::If);
-        
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "then" => {
                         let inner_block = GenBlock::new(BlockType::Then);
-        
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "neq" => {
                         let inner_block = GenBlock::new(BlockType::Neq);
-        
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "else" => {
                         let inner_block = GenBlock::new(BlockType::Else);
-        
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "or" => {
                         let inner_block = GenBlock::new(BlockType::Or);
-        
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "and" => {
                         let inner_block = GenBlock::new(BlockType::And);
-        
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "not" => {
                         let inner_block = GenBlock::new(BlockType::Not);
-        
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "for" => {
@@ -2274,11 +2275,12 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
                         inner_block.name = Some(name);
                         inner_block.dir = Some(work);
                         inner_block.flex = Some(path);
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "" => {
                         let inner_block = GenBlock::new(BlockType::Scope);
-        
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));// *scoped_block = GenBlock::new(BlockType::Scope);
                     },
                     "dependency" => {
@@ -2289,17 +2291,20 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()>
                     "while" => {
                         let mut inner_block = GenBlock::new(BlockType::While);
                         inner_block.name = Some(name);
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "case" => {
                         let mut inner_block = GenBlock::new(BlockType::Case);
                         inner_block.name = Some(name); // var holding analyzed pattern
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                     },
                     "choice" if parent_type == BlockType::Case => {
                         let mut inner_block = GenBlock::new(BlockType::Choice);
                        // println!{"added choice {type_hdr} -> {name}"};
                         inner_block.name = Some(name); 
+                        inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))))
                     },
                     _ => log.error(&format!("unknown block {} of {:?} at {}:{}", type_hdr, &parent_type, all_chars.line, all_chars.line_offset))
