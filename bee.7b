@@ -9,13 +9,15 @@ common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 comp opts=[--extern,simzip]
 version=1.15.05
-build=157
+build=158
 
-mode=mode:prop
+include(env.7b);
+
 if {
-	eq(mode,release) then {
+	eq(Mode,release) then {
 		array(comp opts, -C,opt-level=3,--cfg, feature="release")
 		assign(comp opts, ~~)
+		display(Release build)
 	}
 }
 
@@ -135,5 +137,4 @@ pub fn version() -> (&'static str, u32, &'static str) {
 }")  # 
 }
 
-include(env.7b);
 include(common);

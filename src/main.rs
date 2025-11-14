@@ -110,7 +110,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
                options.push(CmdOption::DryRun)
           } else if arg.starts_with("-d") || arg.starts_with("-diagnostic") {
                options.push(CmdOption::Diagnostics);
-               //unsafe {env::set_var("RUST_BACKTRACE", "1") }
+               unsafe {env::set_var("RUST_BACKTRACE", "1") }
                set_property(&"RUST_BACKTRACE".to_string(), &"1".to_string())
           } else if arg.starts_with("-r")  {
                options.push(CmdOption::ForceRebuild);
