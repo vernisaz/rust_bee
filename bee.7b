@@ -91,10 +91,12 @@ target install::Install RustBee everyone's use  {
       	  	  env(HOME)
       	  	  assign(install dir,${~~}/.rb)
       	  	  mkd(install dir) # just in case
+      	  	  cp(addpath.sh,install dir)
       	  	  cp(rb,install dir)
 	          if {
 	           	 eq(~~, ${install dir}${~/~}${project}) then {
 	           			display(Installed ${~~} in ${install dir}, do not forget to run 'addpath.sh')
+	           			display(You may also append calling the script in  ~/.profile as `. $HOME/.rb/addpath.sh`)
 	           	 } else {
 	           			display(Installation has failed)
 	             }
