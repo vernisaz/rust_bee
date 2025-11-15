@@ -14,9 +14,10 @@ The language is described [here](./doc/RUSTBEE.md).
 
 It's self building tool, however it needs bootstraping. [7Bee](https://github.com/drogatkin/7Bee) is used for the
 [purpose](./bee-rust.xml).
-You can use **RustBee** itself for building it after you built the starter version.
+You can use **RustBee** itself for building it after you built the starter version. 
 
-The RustBee [script](./bee.7b) has the **install** target for installing the tool.
+The RustBee [script](./bee.7b) has one dependency [SimScipt](https://github.com/vernisaz/simscript).
+Clone it first. You can use the **install** target for installing the tool after.
 
 ## Version
 The current version is **1.15.05**.
