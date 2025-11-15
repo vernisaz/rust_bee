@@ -83,7 +83,24 @@ target install::Install RustBee everyone's use  {
 	    }
       }
       choice l | L {
-      	display(Local installation is coming soon)
+    	if {
+	      eq(windows,~os~) then {
+      	      display(Local installation on Windows is coming soon)
+      	  } else {
+      	  	  display(Unix local install)
+      	  	  env(HOME)
+      	  	  assign(install dir,${~~}/.rb)
+      	  	  mkd(install dir) # just in case
+      	  	  cp(rb,install dir)
+	          if {
+	           	 eq(~~, ${install dir}${~/~}${project}) then {
+	           			display(Installed ${~~} in ${install dir}, do not forget to run 'addpath.sh')
+	           	 } else {
+	           			display(Installation has failed)
+	             }
+	          }
+      	  }
+      	}
       } else {
     	display(No install option is provided)
       }
