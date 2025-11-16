@@ -19,6 +19,13 @@ You can use **RustBee** itself for building it after you built the starter versi
 The RustBee [script](./bee.7b) has one dependency [SimScipt](https://github.com/vernisaz/simscript).
 Clone it first at its directory level as `rust_bee`. You can use the **install** target of the script for installing the tool.
 
+### Dependencies
+The following crates will be required to build the **RustBee**
+- [SimTime](https://github.com/vernisaz/simtime)
+- [SimZip](https://github.com/vernisaz/simple_rust_zip)
+
+Their repositories need to be checked out before building the **RustBee**.
+
 ## Version
 The current version is **1.15.05**.
 
