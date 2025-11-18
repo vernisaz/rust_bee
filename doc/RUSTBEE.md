@@ -177,15 +177,15 @@ zip(${distro dir}${~/~}rds-${version}.zip,
 ```
 The function returns the stored zip path, or nothing in  a case of errors.
 
-A result of a function or a block is stored in a temporary variable **\~\~** and can be consumed in the next operation. 
+The result of a function or a block is stored in a temporary variable `\~\~` and can be consumed in the next operation. 
 
 ### String interpolation
-It allows to extend any value by processing template variables  like:
+It allows to extend any value by processing template variables  in the form:
 
        ${name}
 
 The name is a name of some variable. Since a substituted value has to be interpolated as well,
-the process is recursive. It doesn't do check for looping though, and you need to prevent of it happens.
+the process is recursive. It doesn't do check for looping though, and you need to prevent of it happening.
 
 ### name or value?
 Rustbee resolves this ambiguity in the following manner. First it considers the value as a name of a variable and is looking for it.
