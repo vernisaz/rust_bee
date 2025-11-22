@@ -5,6 +5,7 @@ use std::{fs::File,
           env, path::{PathBuf},
           cell::RefCell,
           rc::Rc,
+          error::Error,
     };
 use crate::log::Log;
 use crate::fun::{GenBlock, BlockType, GenBlockTup};
@@ -2026,12 +2027,9 @@ fn process_array_value(_log: &Log, value : &str) -> Result<Vec<String>, String> 
     Err(value.to_string())
 }
 
-pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> io::Result<()> {
+pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box<dyn Error>> {
     let current_script_path = block.add_var(String::from("~script_path~"), VarVal::from_string(&file.parent().unwrap().display().to_string()));
-    let mut all_chars =  match  open(file) {
-        Err(e) => return Err(e),
-        Ok(r) => r,
-    };
+    let mut all_chars = open(file)?;
     
     //let mut func_stack = Vec::new();
     //let mut block_stack : Vec<&mut GenBlock> = Vec::new();

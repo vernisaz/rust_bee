@@ -1,11 +1,12 @@
 extern crate simtime as time;
 use std::{fs::{self,File},env,
     path::{Path,PathBuf},
-    io::{self, Write, BufRead, Error, ErrorKind},
+    io::{self, Write, BufRead},
     cell::RefCell,
     rc::{Rc},
     time::{SystemTime},
     sync::RwLock,
+    error::Error,
     collections::HashMap, ops::ControlFlow};
 #[cfg(feature = "release")]
 use std::panic;
@@ -191,7 +192,7 @@ fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
      None
 }
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     #[cfg(feature = "release")]
     panic::set_hook(Box::new(|panic_info| {
           if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
@@ -263,7 +264,7 @@ fn main() -> io::Result<()> {
                     } else {
                          let err = format!("Script {} not found", file.clone().unwrap_or("*".to_string()));
                          log.error(&err);
-                         return Err(Error::new(ErrorKind::Other, err))
+                         return Err(err.into())
                     }
                },
                CmdOption::ForceRebuild => {
