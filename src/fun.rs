@@ -2555,28 +2555,25 @@ fn fill_dir( res: &mut Vec<String>, dir: &Path, start: &Option<&str>, end: &Opti
     match dir.read_dir() {
         Ok(dir) => {
             for entry in dir {
-                if let Ok(entry) = entry {
-                    if let Ok(entry_type) = entry.file_type() {
-                        let name = entry.file_name().to_str().unwrap().to_owned();
-                        let accept = !start.is_none() && name.starts_with(start.unwrap()) &&
-                            !end.is_none() && name.ends_with(end.unwrap()) ||
-                        start.is_none() && !end.is_none() && name.ends_with(end.unwrap()) ||
-                        !start.is_none() && name.starts_with(start.unwrap()) && end.is_none() ||
-                        start.is_none() && end.is_none(); 
-                        if entry_type.is_file() {
-                            if accept {res.push(entry.path().into_os_string().into_string().unwrap())}
-                        } else if entry_type.is_dir() {
-                            if subdir {
-                                fill_dir(res, &entry.path(), start, end, subdir, dir_name)
-                            }
-                            if dir_name && accept {
-                                res.push(entry.path().into_os_string().into_string().unwrap())
-                            }
+                if let Ok(entry) = entry && let Ok(entry_type) = entry.file_type() {
+                    let name = entry.file_name().to_str().unwrap().to_owned();
+                    let accept = !start.is_none() && name.starts_with(start.unwrap()) &&
+                        !end.is_none() && name.ends_with(end.unwrap()) ||
+                    start.is_none() && !end.is_none() && name.ends_with(end.unwrap()) ||
+                    !start.is_none() && name.starts_with(start.unwrap()) && end.is_none() ||
+                    start.is_none() && end.is_none(); 
+                    if entry_type.is_file() {
+                        if accept {res.push(entry.path().into_os_string().into_string().unwrap())}
+                    } else if entry_type.is_dir() {
+                        if subdir {
+                            fill_dir(res, &entry.path(), start, end, subdir, dir_name)
+                        }
+                        if dir_name && accept {
+                            res.push(entry.path().into_os_string().into_string().unwrap())
                         }
                     }
                 }
             }
- 
         }
         _ => ()
     }

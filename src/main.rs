@@ -57,24 +57,19 @@ pub fn get_property(name: &String) -> Option<String> {
      let props = SYSTEM_PROPERTIES.read().unwrap();
      let map = props.as_ref().unwrap();
      let ret = map.get(name);
-     if let Some(val) = ret {
-          Some(val.to_string())
-     } else {
-          None
-     }
+     ret.map(|val| val.to_string())
 }
 
 pub fn get_properties() -> impl IntoIterator <Item = (String, String)> {
     match SYSTEM_PROPERTIES.read() {
         Ok(props) if props.is_some() => {
-            let ret = props.clone().unwrap();
-            ret
+            props.clone().unwrap()
         }
         _ => {let ret: HashMap<String, String> = HashMap::new(); ret}
     }
 }
 
-fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Vec<&'a String>, Vec<String>) {
+fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&'a String>, Vec<String>) {
      let (mut options, mut targets, mut run_args) = (Vec::new(), Vec::new(), Vec::new());
      let mut arg_n = 0;
      while arg_n < args.len() {
@@ -83,12 +78,12 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
          //println!("analizing {}", arg);
           if arg.starts_with("-h") {
               options.push(CmdOption::Help)
-          } else if arg == &"-f" || arg.starts_with("-file") || arg.starts_with("-build") {
+          } else if arg == "-f" || arg.starts_with("-file") || arg.starts_with("-build") {
                arg_n += 1;
                if arg_n < len {
                     options.push(CmdOption::ScriptFile(args[arg_n].to_string()))
                } else {
-                    log.error(&format!("No file path specified in -file option"))
+                    log.error("No file path specified in -file option")
                }
           } else if arg.starts_with("-s") || arg.starts_with("-find") {
                arg_n += 1;
@@ -103,7 +98,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
                     options.push(CmdOption::SearchUp(None));
                     break
                }
-          } else if arg.starts_with("-version") || arg == &"-V" {
+          } else if arg.starts_with("-version") || arg == "-V" {
                options.push(CmdOption::Version)
           } else if arg.starts_with("-v") || arg.starts_with("-verbose") {
                options.push(CmdOption::Verbose)
@@ -115,8 +110,8 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
                set_property(&"RUST_BACKTRACE".to_string(), &"1".to_string())
           } else if arg.starts_with("-r")  {
                options.push(CmdOption::ForceRebuild);
-          } else if arg.starts_with("-D")  {
-               if let Some((name,val)) = &arg[2..].split_once('=') {
+          } else if let Some(stripped) = arg.strip_prefix("-D")  {
+               if let Some((name,val)) = &stripped.split_once('=') {
                     set_property(&name.to_string(), &val.to_string());
                     //unsafe { env::set_var(name, val) }
                } else {
@@ -126,13 +121,13 @@ fn parse_command<'a>(log: &'a Log, args: &'a Vec<String>) -> (Vec<CmdOption>, Ve
                arg_n += 1;
                if arg_n < len {
                     if args[arg_n].starts_with("-") {
-                         log.error(&"No property file specified");
+                         log.error("No property file specified");
                          arg_n -= 1;
                          continue
                     }
                     options.push(CmdOption::PropertyFile(args[arg_n].to_string()))
                } else {
-                    log.error(&"Property file isn't specified".to_string());
+                    log.error("Property file isn't specified");
                     break
                }
           } else if arg.starts_with("-q") {
@@ -165,16 +160,14 @@ fn is_bee_scrpt(file_path: &str) -> bool {
 }
 
 fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
-     let binding = fs::canonicalize(&dir.to_path_buf()).ok()?; 
+     let binding = fs::canonicalize(dir).ok()?; 
      let mut curr_dir = binding.as_path();
      while curr_dir.is_dir() {
           match  name  {
                None =>  for entry in fs::read_dir(curr_dir).unwrap() {
                          let path = entry.ok()?.path();
-                         if path.is_file() {
-                              if is_bee_scrpt(path.file_name()?.to_str()?) {
-                                   return Some(path.to_str().unwrap().to_string())
-                              }
+                         if path.is_file() && is_bee_scrpt(path.file_name()?.to_str()?) {
+                              return Some(path.to_str().unwrap().to_string())
                          }
                     }
                Some(name) => {
@@ -225,7 +218,7 @@ fn main() -> Result<(), Box<dyn Error>> {
      lex_tree.add_var(String::from(CWD),  lex::VarVal::from_string(&cwd));
      //println!("additional ars {:?}", lex_tree.search_up(&String::from("~args~")));
      let mut target_help = false;
-     if options.iter().position(|x| *x == CmdOption::Quiet).is_some() {
+     if options.contains(&CmdOption::Quiet) {
           log.quiet = true
      }
      if !log.quiet {
@@ -240,7 +233,7 @@ fn main() -> Result<(), Box<dyn Error>> {
           //println!("{:?}", opt);
           match opt {
                CmdOption::Version => (),
-               CmdOption::Help => { log.message(&format!("{}", help::get_help())); return Ok(())},
+               CmdOption::Help => { log.message(&help::get_help().to_string()); return Ok(())},
                CmdOption::Verbose => log.verbose = true,
                CmdOption::Diagnostics => log.debug = true,
                CmdOption::Quiet => log.quiet = true,
@@ -254,12 +247,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                },
                CmdOption::SearchUp(file) => {
                     log.log(&format!("Search: {:?}", file));
-                    path = find_script(&Path::new("."), &file);
+                    path = find_script(Path::new("."), file);
                     if path.is_some() {
                          let path1 = &path.clone().unwrap();
                          let path1 = Path::new(path1);
                          let cwd = path1.parent().unwrap().to_str().unwrap();
-                         unsafe { env::set_var("PWD", &cwd) }
+                         unsafe { env::set_var("PWD", cwd) }
                          lex_tree.add_var(String::from(CWD), lex::VarVal::from_string(cwd));
                     } else {
                          let err = format!("Script {} not found", file.clone().unwrap_or("*".to_string()));
@@ -278,15 +271,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                CmdOption::PropertyFile(filename) => {
                     let file = File::open(filename)?;
                     let lines = io::BufReader::new(file).lines();
-                    for line in lines {
-                        if let Ok(prop_def) = line {
-                            if let Some((name,val)) = prop_def.split_once('=') {
-                                set_property(&name.to_string(), &val.to_string());
-                                   //unsafe { env::set_var(name, val) }
-                            } else {
-                                log.error(&format!("Invalid property definition: {}", &prop_def))
-                            }    
-                        }
+                    for prop_def in lines.map_while(Result::ok) {
+                        if  prop_def.is_empty() { continue }
+                        if let Some((name,val)) = prop_def.split_once('=') {
+                            set_property(&name.to_string(), &val.to_string());
+                                //unsafe { env::set_var(name, val) }
+                        } else {
+                             log.error(&format!("Invalid property definition: {}", &prop_def))
+                        }    
                     }
                }
                CmdOption::TargetHelp => target_help = true
@@ -294,20 +286,17 @@ fn main() -> Result<(), Box<dyn Error>> {
      }
      
      if path.is_none() {
-          let mut paths = fs::read_dir(&"./").unwrap();
+          let mut paths = fs::read_dir("./").unwrap();
           //let re = Regex::new(r"bee.*\.rb|.7b").unwrap(); if re.is_match(file_path)
           let _ = paths.try_for_each(|each| {
                if let Ok(p) = each {
                     let p = p.path();
-                    if p.is_file() {
-                         if let Some(file_name) = p.file_name() {
-                              if let Some(file_name) = file_name.to_str() {
-                                   if is_bee_scrpt(&file_name) {
-                                        path = Some(file_name.to_string());
-                                        return ControlFlow::Break(())
-                                   }
-                              }
-                         }
+                    if p.is_file() 
+                       && let Some(file_name) = p.file_name() 
+                       && let Some(file_name) = file_name.to_str()
+                       && is_bee_scrpt(file_name) {
+                        path = Some(file_name.to_string());
+                        return ControlFlow::Break(())
                     }
                }
                ControlFlow::Continue(())
@@ -335,16 +324,13 @@ fn main() -> Result<(), Box<dyn Error>> {
           log.message("Targets");
          for child_tree in &tree.children {
                 let child = child_tree.0.borrow();
-               if child .block_type == fun::BlockType::Target {
-                    if let Some(name) = &child.name {
+               if child .block_type == fun::BlockType::Target 
+                    && let Some(name) = &child.name {
                          log.message(&format!("{name} - {}", &child.flex.clone().unwrap_or("".to_string())))
-                    }
                }
          }
-      } else {
-          if lex_res.is_ok() {
-               fun::run(&log, lex_tree, &mut real_targets)?
-          }
+      } else if lex_res.is_ok() {
+         fun::run(&log, lex_tree, &mut real_targets)?
       }
      
      if let Ok(elapsed) = sys_time.elapsed() {

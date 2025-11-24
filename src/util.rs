@@ -138,7 +138,7 @@ pub fn format_time(fmt_str: impl AsRef<str>,  time: SystemTime) -> String {
         match state {
         DateFmtState::M => format!{"{m}"},
         DateFmtState::MM => format!{"{m:0>2}"},
-        DateFmtState::MMM => format!{"{}", SHORT_MONTH[(m-1) as usize]},
+        DateFmtState::MMM => SHORT_MONTH[(m-1) as usize].to_string(),
         DateFmtState::D => format!{"{d}"},
         DateFmtState::DD => format!{"{d:0>2}"},
         DateFmtState::Y => format!{"{y:0>2}"},
