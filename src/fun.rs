@@ -1,7 +1,7 @@
 use std::{collections::HashMap,
         cell::RefCell,
         rc::{Rc, Weak},
-        io::{self, Write, Error, ErrorKind},
+        io::{self, Write},
         path::Path,
         time::SystemTime,
         fs::{self, OpenOptions, File, remove_file, create_dir_all, remove_dir, remove_dir_all, copy, rename},
@@ -9,7 +9,7 @@ use std::{collections::HashMap,
         process::{Command, Stdio},
         ops::Deref,
         path::{self, MAIN_SEPARATOR_STR,PathBuf,MAIN_SEPARATOR},
-        fmt};
+        fmt, error::Error};
 #[cfg(unix)]
 use std::os::unix::fs::OpenOptionsExt;
 use crate::lex::{process_template_value, VarVal, VarType};
@@ -1470,7 +1470,7 @@ impl GenBlockTup {
                     None => "".to_string()
                     };
                 for i in 0.. fun_block.params.len() {
-                    let mut file = *self.parameter(&log, i, fun_block, res_prev);
+                    let mut file = *self.parameter(log, i, fun_block, res_prev);
                     if !file.is_empty() {
                         if !has_root(&file) {
                             file = cwd.clone() + MAIN_SEPARATOR_STR + &file
@@ -1493,14 +1493,14 @@ impl GenBlockTup {
                     // return a vector then
                     let mut res = Vec::new();
                     for i in 0..fun_block.params.len() {
-                        match self.calc(*self.parameter(&log, i, &fun_block, &res_prev)) {
+                        match self.calc(*self.parameter(log, i, &fun_block, &res_prev)) {
                             Ok(cur) => res .push(cur.to_string()),
                             _ => continue
                         }
                     }
                     return Some(VarVal::from_vec(&res))
                 } else {
-                    match self.calc(*self.parameter(&log, 0, &fun_block, &res_prev)) {
+                    match self.calc(*self.parameter(log, 0, &fun_block, &res_prev)) {
                         Ok(res) => {
                             return Some(VarVal::from_f64(res))
                         },
@@ -1511,7 +1511,7 @@ impl GenBlockTup {
                 }
             },
             "number" => {
-                let val = *self.parameter(&log, 0, fun_block, res_prev);
+                let val = *self.parameter(log, 0, fun_block, res_prev);
                 let num = if val.is_empty() {
                     0
                 } else {
@@ -1530,10 +1530,7 @@ impl GenBlockTup {
                 let mut zip_path = *self.parameter(&log, 0, fun_block, res_prev);
                 let cwd = fun_block.search_up(&CWD.to_string());
                 if !has_root(&zip_path) {
-                    match cwd {
-                        Some(ref cwd) => zip_path = cwd.value.clone() + MAIN_SEPARATOR_STR + &zip_path,
-                        _ => ()
-                    }
+                    if let Some(ref cwd) = cwd { zip_path = cwd.value.clone() + MAIN_SEPARATOR_STR + &zip_path }
                 }
                 if zip_path.find('.').is_none() {
                     zip_path += ".zip"
@@ -1545,14 +1542,14 @@ impl GenBlockTup {
                 let mut current_op = 1;
                 // consider also flatten vec first and then iterate
                 while current_op < flatten_params.len() {
-                    let op = *self.expand_parameter(&log, &flatten_params[current_op], fun_block, res_prev);
+                    let op = *self.expand_parameter(log, &flatten_params[current_op], fun_block, res_prev);
                     //println!{"{op} -> {}", &flaten_params[current_op]}
                     if op.starts_with("-A") || op.starts_with("-E") {
                         let name = &op[3..].trim_start();
                         //normalize_path(&mut name);
                         current_op += 1;
                         // think of to work with array parameters
-                        let cont = *self.expand_parameter(&log, &flatten_params[current_op], fun_block, res_prev);
+                        let cont = *self.expand_parameter(log, &flatten_params[current_op], fun_block, res_prev);
                         let mut entry = simzip::ZipEntry::new(name.to_string(), cont.as_bytes().to_vec());
                         if op.starts_with("-E") {
                             entry.attributes.insert(simzip::Attribute::Exec);
@@ -1565,7 +1562,7 @@ impl GenBlockTup {
                             Some(&op[3..])
                         } else { None };
                         current_op+=1;
-                        let mut files = *self.expand_parameter(&log, &flatten_params[current_op], fun_block, res_prev);
+                        let mut files = *self.expand_parameter(log, &flatten_params[current_op], fun_block, res_prev);
                         // consider also processing arrays
                         //println!{"files ext {files}"}
                         if !has_root(&files) {
@@ -1588,12 +1585,12 @@ impl GenBlockTup {
                             } else {
                                 (Some(&filename[0..pos]), Some(&filename[pos+1..]))
                             };
-                            zip_dir(&log, &mut zip, parent_files, path, start, end)
+                            zip_dir(log, &mut zip, parent_files, path, start, end)
                         } else {
                             if files.is_dir() {
-                                zip_dir(&log, &mut zip, files, path, None, None)
+                                zip_dir(log, &mut zip, files, path, None, None)
                             } else if files.is_file() {
-                                if !zip.add(simzip::ZipEntry::from_file(&files.as_os_str().to_str().unwrap().to_string(), path.map(str::to_string).as_ref())) {
+                                if !zip.add(simzip::ZipEntry::from_file(&files.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                                     log.warning(&format!{"Zip entry {1:?}/{0} already exists", &files.as_os_str().to_str().unwrap(), &path})
                                 }
                             } else {
@@ -1624,7 +1621,7 @@ impl GenBlockTup {
                             }
                         } else {
                             let mut values = vec![];
-                            let val = *self.expand_parameter(&log, &flatten_params[current_op], fun_block, res_prev);
+                            let val = *self.expand_parameter(log, &flatten_params[current_op], fun_block, res_prev);
                             //println!{"single {val}"}
                             values.push(val.clone());
                             values
@@ -1664,7 +1661,7 @@ impl GenBlockTup {
                                                     start.is_none() && !end.is_none() && name.ends_with(end.unwrap()) ||
                                                     !start.is_none() && name.starts_with(start.unwrap()) && end.is_none() ||
                                                     start.is_none() && end.is_none() {
-                                                        if !zip.add(simzip::ZipEntry::from_file(&entry.path().as_os_str().to_str().unwrap().to_string(), path.map(str::to_string).as_ref())) {
+                                                        if !zip.add(simzip::ZipEntry::from_file(&entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                                                             log.warning(&format!{"Zip entry {1:?}/{0} already exists", &name, &path} )
                                                         }
                                                     }
@@ -1685,7 +1682,7 @@ impl GenBlockTup {
                                             for entry in dir {
                                                 if let Ok(entry) = entry {
                                                     if entry.file_type().unwrap().is_file() {
-                                                        if !zip.add(simzip::ZipEntry::from_file(&entry.path().as_os_str().to_str().unwrap().to_string(), path.map(str::to_string).as_ref())) {
+                                                        if !zip.add(simzip::ZipEntry::from_file(&entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                                                             log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path} )
                                                         }
                                                     }
@@ -1749,9 +1746,9 @@ impl GenBlockTup {
             if parent_bare.vars.contains_key(&name) {
                 break
             } else if parent_bare.block_type == BlockType::Main {
-                if close_scope .is_some() {
+                if let Some(close_scope) = close_scope {
                     drop(parent_bare);
-                    parent = close_scope.unwrap();
+                    parent = close_scope
                 }
                 break
             } else {
@@ -1769,7 +1766,7 @@ impl GenBlockTup {
         } else {
             let val = match fun_block.prev_or_search_up(&fun_block.params[1], res_prev) {
                 Some(var) => var,
-                None => VarVal::from_string(*process_template_value(&log, &fun_block.params[1], &fun_block, res_prev))
+                None => VarVal::from_string(*process_template_value(log, &fun_block.params[1], fun_block, res_prev))
             };
             let mut parent_nak = parent.0.borrow_mut();
             parent_nak.vars.insert(name, val)
@@ -1778,7 +1775,7 @@ impl GenBlockTup {
 
     pub fn parameter(&self, log: &Log, i: usize, fun_block: &GenBlock, res_prev: &Option<VarVal>) -> Box<String> {
         if !fun_block.params.is_empty() && i < fun_block.params.len() {
-            self.expand_parameter(&log, &fun_block.params[i], fun_block, res_prev)
+            self.expand_parameter(log, &fun_block.params[i], fun_block, res_prev)
         } else {
             log.error(&format!("Calling for parameter {i} in non existing parameter of {:?}", fun_block.name));
             Box::new(String::new())
@@ -1786,15 +1783,15 @@ impl GenBlockTup {
     }
 
     pub fn expand_parameter(&self, log: &Log, param_val: &String, fun_block: &GenBlock, res_prev: &Option<VarVal>) -> Box<String> {
-        let param = fun_block.prev_or_search_up(&param_val, res_prev);
+        let param = fun_block.prev_or_search_up(param_val, res_prev);
         log.debug(&format!("looking for {:?} of {:?} as {:?}", param_val, &fun_block.block_type, param));
         match param {
-            None => process_template_value(&log, &param_val, &fun_block, res_prev),
+            None => process_template_value(log, param_val, fun_block, res_prev),
             // TODO extend  val.value accordingly val.val_type
             Some(val) => {
                 let var = match val.val_type {
                     VarType::Environment  => {
-                        match env::var(val.value.to_string()) {
+                        match env::var(&val.value) {
                             Ok(val) => val,
                             Err(_e) => val.value 
                         }
@@ -1809,7 +1806,7 @@ impl GenBlockTup {
                     //VarType::Array => util:: vec_to_str( &val.values),
                     _ => if val.values.is_empty() {val.value} else {util:: vec_to_str( &val.values)}
                 };
-                process_template_value(&log, &var.to_string(), &fun_block, res_prev)
+                process_template_value(log, &var.to_string(), fun_block, res_prev)
             }
         }
     }
@@ -1818,18 +1815,18 @@ impl GenBlockTup {
         let Some(vec_param) = val else { return None};
         if vec_param.val_type == VarType::Array {
             let first_el = self.prev_or_search_up(&vec_param.values[0], res_prev);
-            let mut collect_str = if first_el.is_some() {
-                first_el.unwrap().value.to_owned()
+            let mut collect_str = if let Some(el) = first_el {
+                el.value.to_owned()
             } else {
                 vec_param.values[0].to_owned()
             }
                 ;
             for next_idx in 1..vec_param.values.len() {
-                collect_str.push_str(&sep);
+                collect_str.push_str(sep);
                 let next_el = self.prev_or_search_up(&vec_param.values[next_idx], res_prev);
                 //collect_str.push_str(&next_el.unwrap_or(&vec_param.values[next_el]));
-                if next_el.is_some() {
-                    collect_str.push_str(&next_el.unwrap().value)
+                if let Some(val) = next_el {
+                    collect_str.push_str(&val.value)
                 } else {
                     collect_str.push_str(&vec_param.values[next_idx])
                 }
@@ -2096,7 +2093,7 @@ impl GenBlockTup {
                     }
                     match state {
                         CalcState::Start | CalcState::Oper => {
-                            sub_res_vec.push((res.clone(),deffered_res.clone(),op.clone(),deffered_op.clone()));
+                            sub_res_vec.push((res,deffered_res,op,deffered_op));
                             res = Default::default();
                             deffered_res = Default::default();
                             op = Default::default();
@@ -2251,7 +2248,7 @@ impl GenBlockTup {
     }
 }
 
-pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> io::Result<()> {
+pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(),Box<dyn Error>> {
     block.exec(log, &None); // execute Main
     if targets.is_empty() { 
         let mut tar_name : Option<String> = None;
@@ -2264,7 +2261,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> io::Resu
         let Some(tar_name) = tar_name else {
             let error = "No targets found in the script".to_string();
             log.error(&error);
-            return Err(Error::new(ErrorKind::Other, error))
+            return Err(error.into())
         };
         targets.push(tar_name)
     }
@@ -2277,13 +2274,13 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> io::Resu
             let ch_block = bl.0.borrow();
             if ch_block.block_type == BlockType::Target && ch_block.name.as_ref().unwrap() == target { 
                 drop(ch_block);
-                log.log(&format!("target: {}", exec_target(&log, & bl)));
+                log.log(&format!("target: {}", exec_target(log, & bl)));
                 continue 'targets
             }
         }
         let error = format!("No target {} found", target).to_string();
         log.error(&error);
-        return Err(Error::new(ErrorKind::Other, error))
+        return Err(error.into())
     }
     
     Ok(())
@@ -2307,10 +2304,8 @@ pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
                 Some(var) => var.value
             };
             // calculate it upon current cwd
-            if !has_root(&dir) {
-                if let Some(cwd) = gl_cwd {
-                    dir = cwd.value + std::path::MAIN_SEPARATOR_STR + &dir
-                }
+            if !has_root(&dir) && let Some(cwd) = gl_cwd {
+                dir = cwd.value + std::path::MAIN_SEPARATOR_STR + &dir
             }
             let path =  Path::new(&dir);
             if path.exists() {
@@ -2324,7 +2319,7 @@ pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
     drop(target);
     let target = target_bl.borrow();
     for dep in &target.deps {
-        need_exec |= dep.eval_dep(&log, &None)
+        need_exec |= dep.eval_dep(log, &None)
     }
     if !need_exec && target.search_up(&"~force-build-target~".to_string()).is_some() {
         need_exec = true
@@ -2335,7 +2330,7 @@ pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
         let children = target.children.clone();
         drop(target);
         for child in children {
-            res = child.exec(&log, &res)
+            res = child.exec(log, &res)
         }
     } else {
         log.debug(&format!("no need to run: {:?}", &target_bl.borrow().name))
@@ -2364,17 +2359,17 @@ pub fn exec_anynewer(block:&GenBlockTup, p1: &String, p2: &String) -> bool {
         return newest(p1) > newest(p2)
     };
     
-    let t1 = if has_root(&p1) {newest(p1)} else {
+    let t1 = if has_root(p1) {newest(p1)} else {
         newest(&(cwd.value.clone() + MAIN_SEPARATOR_STR + p1))
     };
-    let t2 = if has_root(&p2) {newest(p2)} else {
+    let t2 = if has_root(p2) {newest(p2)} else {
         newest(&(cwd.value + MAIN_SEPARATOR_STR + p2))
     };
     //println!{"modified {:?} and {:?}", t1, t2};
     t1 > t2
 }
 
-fn dir_ext_param(parameter: &String) -> (Option<String>,Option<String>) {
+fn dir_ext_param(parameter: &str) -> (Option<String>,Option<String>) {
     let path_end = parameter.rfind('/');
     if path_end.is_none() {
         return (None,None)
@@ -2392,7 +2387,7 @@ fn dir_ext_param(parameter: &String) -> (Option<String>,Option<String>) {
 fn find_newer(dir1: &str, ext1: &str, dir2 : &Option<String>, ext2 : &Option<String>) -> Vec<String> {
     let mut result = Vec::new();
         
-    let paths = fs::read_dir(&dir1);
+    let paths = fs::read_dir(dir1);
     if paths.is_err() {
         return result
     }
@@ -2444,25 +2439,21 @@ pub fn newest(mask : &str) -> Option<SystemTime> {
             let entry = entry.unwrap();
             let path = entry.path();
             if path.is_file() { 
-                  if let Some(path1) = path.file_name() {
-                       if let Some(file_path) = path1.to_str() {
-                          if str_name1.len() == 1 || 
-                             (pos == 0 && file_path.ends_with(&str_name1[1..])) ||
-                             (pos == str_name1.len()-1 && file_path.starts_with(&str_name1[0..pos])) ||
-                             (file_path.starts_with(&str_name1[0..pos]) && file_path.ends_with(&str_name1[pos+1..]) && file_path.len() >= str_name1.len()) {
-                                let current_last = last_modified(&path.into_os_string().into_string().unwrap());
-                                match last {
-                                    None => last = current_last,
-                                    Some(time) => {
-                                        if let Some(time2) = current_last {
-                                            if time2 > time {
-                                                last = current_last;
-                                            }
-                                        }
+                  if let Some(path1) = path.file_name() && let Some(file_path) = path1.to_str() {
+                      if str_name1.len() == 1 || 
+                         (pos == 0 && file_path.ends_with(&str_name1[1..])) ||
+                         (pos == str_name1.len()-1 && file_path.starts_with(&str_name1[0..pos])) ||
+                         (file_path.starts_with(&str_name1[0..pos]) && file_path.ends_with(&str_name1[pos+1..]) && file_path.len() >= str_name1.len()) {
+                            let current_last = last_modified(&path.into_os_string().into_string().unwrap());
+                            match last {
+                                None => last = current_last,
+                                Some(time) => {
+                                    if let Some(time2) = current_last && time2 > time {
+                                        last = current_last;
                                     }
                                 }
-                            }    
-                       }
+                            }
+                        }    
                   }
              } else {
                 let dir_entry_path = entry.path().into_os_string().into_string().unwrap();
@@ -2472,10 +2463,8 @@ pub fn newest(mask : &str) -> Option<SystemTime> {
                 match last {
                     None => last = last_dir,
                     Some(time) => {
-                        if let Some(time2) = last_dir {
-                            if time2 > time {
-                                last = last_dir
-                            }
+                        if let Some(time2) = last_dir && time2 > time {
+                             last = last_dir
                         }
                     }
                 }
@@ -2506,7 +2495,7 @@ fn matches(name: &str, filter: &str) -> bool {
                _  => {
                     let start = &filter[0..pos];
                     let end = &filter[pos+1..];
-                    name.starts_with(&start) && name.ends_with(&end)
+                    name.starts_with(start) && name.ends_with(&end)
                }
             }
         } 
@@ -2517,27 +2506,24 @@ fn zip_dir (log: &Log, zip: &mut simzip::ZipInfo, dir: &Path, path:Option<&str>,
     match dir.read_dir() {
         Ok(dir) => {
             for entry in dir {
-                if let Ok(entry) = entry {
-                    if let Ok(file_type) = entry.file_type() { 
-                        let name = entry.file_name().to_str().unwrap().to_owned();
-                        if file_type.is_file() {
-                            if !mask_start.is_none() && name.starts_with(mask_start.unwrap()) &&
-                                mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
-                            mask_start.is_none() && !mask_end.is_none() && name.ends_with(mask_end.unwrap()) ||
-                            !mask_start.is_none() && name.starts_with(mask_start.unwrap()) && mask_end.is_none() ||
-                            mask_start.is_none() && mask_end.is_none() {
-                                if !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap().to_string(), path.map(str::to_string).as_ref())) {
-                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path})
-                                }
-                            }
-                        }  else if file_type.is_dir() {
-                            let zip_path = match path {
-                                None => name,
-                                Some(path) => path.to_owned() + "/" + &name
-                            };
-                            zip_dir(&log, zip, &entry.path(), Some(&zip_path), mask_start, mask_end)
-                        }   
-                    }
+                if let Ok(entry) = entry && let Ok(file_type) = entry.file_type() { 
+                    let name = entry.file_name().to_str().unwrap().to_owned();
+                    if file_type.is_file() {
+                        if !mask_start.is_none() && name.starts_with(mask_start.unwrap()) &&
+                            mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
+                        mask_start.is_none() && !mask_end.is_none() && name.ends_with(mask_end.unwrap()) ||
+                        !mask_start.is_none() && name.starts_with(mask_start.unwrap()) && mask_end.is_none() ||
+                        mask_start.is_none() && mask_end.is_none() 
+                            && !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path})
+                        }
+                    }  else if file_type.is_dir() {
+                        let zip_path = match path {
+                            None => name,
+                            Some(path) => path.to_owned() + "/" + &name
+                        };
+                        zip_dir(log, zip, &entry.path(), Some(&zip_path), mask_start, mask_end)
+                    }   
                 }               
             }
         }

@@ -146,7 +146,7 @@ pub fn format_time(fmt_str: impl AsRef<str>,  time: SystemTime) -> String {
         DateFmtState::h |  DateFmtState::hh => format!{"{h:0>2}"},
         DateFmtState::m | DateFmtState::mm => format!{"{min:0>2}"},
         DateFmtState::s | DateFmtState::ss => format!{"{s:0>2}"},
-        DateFmtState::W => format!{"{}", time::DAYS_OF_WEEK[w as usize]},
+        DateFmtState::W => time::DAYS_OF_WEEK[w as usize].to_string(),
         DateFmtState::z | DateFmtState::Z => format!{"{:0>2}{:0>2}", tz/60, tz%60},
         _ => "".to_string()
        }
@@ -287,7 +287,7 @@ pub fn format_time(fmt_str: impl AsRef<str>,  time: SystemTime) -> String {
     res
 }
 
-pub fn vec_to_str(arr: &Vec<String>) -> String {
+pub fn vec_to_str(arr: &[String]) -> String {
     match arr.iter().map(|current| current.to_string()).reduce(|first, current| first + "\t" + &current) {
         Some(val) => val.to_owned(),
         None =>  String::new()
