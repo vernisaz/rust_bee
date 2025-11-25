@@ -159,7 +159,7 @@ impl VarVal {
     pub fn is_true(& self) -> bool {
         match self.val_type {
             VarType::Environment  => {
-                match env::var(self.value.to_string()) {
+                match env::var(&self.value) {
                     Ok(val) => val == "true",
                     Err(_e) => self.value == "true"
                 }
@@ -1618,7 +1618,7 @@ fn process_lex_header(_log: &Log, value : &str, _vars: &HashMap<String, VarVal>)
                         buf.clear();
                     },
                     HdrState::InNameBlank => {
-                        name = buf[0..last_blank].into_iter().collect();
+                        name = buf[0..last_blank].iter().collect();
                         buf.clear();
                         state = HdrState::WorkDiv;
                     },
@@ -1714,7 +1714,7 @@ fn process_lex_header(_log: &Log, value : &str, _vars: &HashMap<String, VarVal>)
             path = buf.into_iter().collect();
         },
         HdrState::InPathBlank=> {
-            path = buf[0..last_blank].into_iter().collect();
+            path = buf[0..last_blank].iter().collect();
         },
         HdrState::NameStart | HdrState::WorkDiv | HdrState::PathDiv=> (),
         _ => todo!("state: {:?}", state)
@@ -1768,11 +1768,8 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
                        // println!("looking {:?}", buf_var);
                         // check name for ~~ and then use global thread local
                         let res = if var == PREV_VAL {
-                            match res_prev {
-                                None => None,
-                                Some(prev) => Some(prev.clone())
-                            }
-                        } else {vars.search_up( &var)};
+                            res_prev
+                        } else {&vars.search_up( &var)};
                         match res {
                             Some(var) => {
                                // println!("found {:?}", var);
@@ -1851,7 +1848,7 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
     let expanded_val:String = buf.into_iter().collect();
     if was_replacement {
         log.debug(&format!{"expanding {}", &expanded_val});
-        return process_template_value(log, &expanded_val, vars, &res_prev)
+        return process_template_value(log, &expanded_val, vars, res_prev)
     }
     Box::new(expanded_val)
 }
@@ -2053,8 +2050,8 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                let c_b = 
                 if value.starts_with("[") && value.ends_with("]") {
                     let res = process_array_value(log, &value);
-                    if res.is_ok() {
-                        VarVal::from_vec(&res.unwrap())
+                    if let Ok(res) = res {
+                        VarVal::from_vec(&res)
                     } else {
                         log.error(&format!{"The array isn't well defined: {} at {}:{}", &value, all_chars.line, all_chars.line_offset});
                         VarVal::from_string(&value)
@@ -2071,7 +2068,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
             },
             Lexem::Function(name) => {
                 // name can be function + main argument
-                let (type_hdr,name,work,path) = *process_lex_header(&log, &name, &scoped_block.0.as_ref().borrow_mut().vars) ;
+                let (type_hdr,name,work,path) = *process_lex_header(log, &name, &scoped_block.0.as_ref().borrow_mut().vars) ;
                 let mut func = GenBlock::new(BlockType::Function);
                 //fun::GenBlockTup(Rc::new(RefCell::new(GenBlock::new(BlockType::Function))));
                 func.name = Some(type_hdr);
@@ -2167,7 +2164,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                         }
                                     },
                                     None => {
-                                        let temp_expand = *process_template_value(&log, &value, &scoped_block.0.as_ref().borrow_mut(), &None);
+                                        let temp_expand = *process_template_value(log, &value, &scoped_block.0.as_ref().borrow_mut(), &None);
                                         log.debug(&format!{"Expand the include template {}", temp_expand});
                                         let parent_scoped_block = scoped_block.parent();
                                         if let Some(block) = parent_scoped_block {
@@ -2184,7 +2181,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                                 }
                                             }
                                             if let Err(e) = 
-                                                process(&log, &include_path, block.clone()) {
+                                                process(log, &include_path, block.clone()) {
                                                     log.error(&format!("Can't process an include script {include_path:?} at {}, problem: {}", all_chars.line, e));
                                                     return Err(e)
                                                 }

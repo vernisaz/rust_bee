@@ -345,10 +345,8 @@ impl GenBlockTup {
         for ch in &naked_block.children {
             let ch_block = ch.borrow();
             if ch_block.block_type == BlockType::Target {
-                if let Some(blk_name) = &ch_block.name {
-                    if blk_name == name {
-                        return  Some(ch.clone())
-                    }
+                if let Some(blk_name) = &ch_block.name && blk_name == name {
+                    return  Some(ch.clone())
                 }
             }
         }
@@ -360,10 +358,7 @@ impl GenBlockTup {
         log.debug(&format!("processing block of {:?}", block_type));
         match  block_type {
             BlockType::Scope | BlockType::Then | BlockType::Else | BlockType::Choice => {
-                let mut res = match prev_res {
-                    None => None,
-                    Some(var) => Some(var.clone())
-                };
+                let mut res = prev_res.as_ref().map(|var| var.clone());
                 let children = &self.0.borrow().children.clone();
                 for child in children {
                     res = child.exec(log, &res)
@@ -414,10 +409,7 @@ impl GenBlockTup {
                 self.exec_fun(log, &naked_block, prev_res)
             },
             BlockType::For => {
-                let mut res = match prev_res {
-                    None => None,
-                    Some(var) => Some(var.clone())
-                };
+                let mut res = prev_res.as_ref().map(|var| var.clone());
                 let mut range = Vec::new();
                 let naked_block = self.borrow();
                 let Some(name) = &naked_block.name.clone() else {
@@ -527,9 +519,10 @@ impl GenBlockTup {
                 if len < 1 {
                     log.error(&format!("At least one argument has to be specified in eq at {}", &naked_block.script_line))
                 }
+
                 let mut before_res = children[0].exec(log, prev_res);
-                for idx in 1..len {
-                    let res = children[idx].exec(&log, prev_res);
+                for child in children.iter().take(len).skip(1) {
+                    let res = child.exec(log, prev_res);
                     match res {
                         None => {
                             match before_res {
@@ -710,10 +703,8 @@ impl GenBlockTup {
             }
             "writea" => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) {
-                    if let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
-                        fname = cwd.value + MAIN_SEPARATOR_STR + &fname
-                    }
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 if let Ok(mut file) =  OpenOptions::new()
                     .read(true)
@@ -1013,10 +1004,8 @@ impl GenBlockTup {
             }
             "read" => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) {
-                    if let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
-                        fname = cwd.value + MAIN_SEPARATOR_STR + &fname
-                    }
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 let file_content = &fs::read_to_string(&fname).ok();
                 return match file_content {
@@ -1029,10 +1018,8 @@ impl GenBlockTup {
             },
             "absolute" | "canonicalize" => {
                 let mut path = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&path) {
-                    if let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
-                        path = cwd.value + MAIN_SEPARATOR_STR + &path
-                    }
+                if !has_root(&path) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                    path = cwd.value + MAIN_SEPARATOR_STR + &path
                 }
                 #[cfg(any(unix, target_os = "redox"))]
                 if name == "canonicalize" {
@@ -1069,7 +1056,7 @@ impl GenBlockTup {
                         dir1 = cwd.value.clone() + MAIN_SEPARATOR_STR + &dir1
                     }
                     if let Some(ref dir2v) = dir2 && !has_root(dir2v) {
-                        dir2 = Some(cwd.value + MAIN_SEPARATOR_STR + &dir2v)
+                        dir2 = Some(cwd.value + MAIN_SEPARATOR_STR + dir2v)
                     }
                 }
                 log.debug(&format!{"newerthen: {:?}/{:?} then {:?}/{:?}", &dir1, &ext1, &dir2, &ext2});
@@ -1144,7 +1131,7 @@ impl GenBlockTup {
                         let parts = param.value.split(':');
                         let mav_parts: Vec<_> = parts.collect();
                         //https://repo1.maven.org/maven2/com/baomidou/mybatis-plus-boot-starter/3.5.3.1/mybatis-plus-boot-starter-3.5.3.1.jar
-                        return Some(VarVal::from_string(&format!("https://repo1.maven.org/maven2/{}/{}/{}/{}-{}.jar", &mav_parts[0].replace(".", "/"), &mav_parts[1], &mav_parts[2], &mav_parts[1], &mav_parts[2])))
+                        return Some(VarVal::from_string(format!("https://repo1.maven.org/maven2/{}/{}/{}/{}-{}.jar", &mav_parts[0].replace(".", "/"), &mav_parts[1], &mav_parts[2], &mav_parts[1], &mav_parts[2])))
                     },
                     _ => ()
                    }
@@ -1163,7 +1150,7 @@ impl GenBlockTup {
                                 return None
                             }
                             //let mav_parts: Vec<_> = parts.collect();
-                            return Some(VarVal::from_string(&format!("{}-{}.jar", parts[1], parts[2])))
+                            return Some(VarVal::from_string(format!("{}-{}.jar", parts[1], parts[2])))
                         },
                         _ => ()
                     }
@@ -1315,7 +1302,7 @@ impl GenBlockTup {
                         } else {
                             (Some(&filename[0..star_pos]), Some(&filename[star_pos+1..]))
                         };
-                        fill_dir(&mut res, &dir, &start, &end, recursive, false)
+                        fill_dir(&mut res, dir, &start, &end, recursive, false)
                     }
                 }
                 return Some(VarVal::from_vec(&res))
@@ -1501,9 +1488,7 @@ impl GenBlockTup {
                 // -B : file or wildcard files to add without sub directories, and it can be var name of an array
                 let mut zip_path = *self.parameter(log, 0, fun_block, res_prev);
                 let cwd = fun_block.search_up(&CWD.to_string());
-                if !has_root(&zip_path) {
-                    if let Some(ref cwd) = cwd { zip_path = cwd.value.clone() + MAIN_SEPARATOR_STR + &zip_path }
-                }
+                if !has_root(&zip_path) && let Some(ref cwd) = cwd { zip_path = cwd.value.clone() + MAIN_SEPARATOR_STR + &zip_path }
                 if zip_path.find('.').is_none() {
                     zip_path += ".zip"
                 }

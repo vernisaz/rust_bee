@@ -9,7 +9,7 @@ common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 comp opts=[--extern,simzip]
 version=1.15.05
-build=159
+build=160
 
 include(env.7b);
 
@@ -152,7 +152,7 @@ target version update : . {
        
     write(${~cwd~}${~/~}src${~/~}ver.rs,"// auto generated
 pub fn version() -> (&'static str, u32, &'static str) {
-      (&\"${version}\", ${build}, & \"",${~~},"\")
+      (\"${version}\", ${build}, \"",${~~},"\")
 }")  # 
 }
 
