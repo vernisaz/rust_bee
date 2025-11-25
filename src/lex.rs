@@ -1696,19 +1696,19 @@ fn process_lex_header(_log: &Log, value : &str, _vars: &HashMap<String, VarVal>)
     }
     match state {
         HdrState::InType => {
-            lex_type = buf.into_iter().collect();
+            lex_type = buf.iter().collect();
         },
         HdrState::InName => {
-            name = buf.into_iter().collect();
+            name = buf.iter().collect();
         },
         HdrState::InNameBlank => {
-            name = buf[0..last_blank].into_iter().collect();
+            name = buf[0..last_blank].iter().collect();
         },
         HdrState::InWork => {
-            work_dir = buf.into_iter().collect();
+            work_dir = buf.iter().collect();
         },
         HdrState::InWorkBlank => {
-            work_dir = buf[0..last_blank].into_iter().collect();
+            work_dir = buf[0..last_blank].iter().collect();
         },
         HdrState::InPath => {
             path = buf.into_iter().collect();
@@ -1780,7 +1780,7 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
                                match var.val_type {
                                     VarType::Environment  => {
                                       //  println!("looking for {} in env", var.value);
-                                        let _env = match env::var(var.value.to_string()) {
+                                        let _env = match env::var(&var.value) {
                                             Ok(val) => {
                                                 for vc in val.chars() {
                                                     buf.push(vc);
@@ -1851,7 +1851,7 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
     let expanded_val:String = buf.into_iter().collect();
     if was_replacement {
         log.debug(&format!{"expanding {}", &expanded_val});
-        return process_template_value(&log, &expanded_val, &vars, &res_prev)
+        return process_template_value(log, &expanded_val, vars, &res_prev)
     }
     Box::new(expanded_val)
 }
@@ -2028,7 +2028,7 @@ fn process_array_value(_log: &Log, value : &str) -> Result<Vec<String>, String> 
 }
 
 pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box<dyn Error>> {
-    let current_script_path = block.add_var(String::from("~script_path~"), VarVal::from_string(&file.parent().unwrap().display().to_string()));
+    let current_script_path = block.add_var(String::from("~script_path~"), VarVal::from_string(file.parent().unwrap().display().to_string()));
     let mut all_chars = open(file)?;
     
     //let mut func_stack = Vec::new();
@@ -2052,7 +2052,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                // consider it can be an array in form [v1,v2,...vn]
                let c_b = 
                 if value.starts_with("[") && value.ends_with("]") {
-                    let res = process_array_value(&log, &value);
+                    let res = process_array_value(log, &value);
                     if res.is_ok() {
                         VarVal::from_vec(&res.unwrap())
                     } else {
@@ -2139,7 +2139,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                       // println!("found {:?}", var);
                                         match var.val_type {
                                             VarType::File => {
-                                                let var_val = *process_template_value(&log, &var.value, &scoped_block.0.as_ref().borrow_mut(), &None);
+                                                let var_val = *process_template_value(log, &var.value, &scoped_block.0.as_ref().borrow_mut(), &None);
                                                 let parent_scoped_block = scoped_block.parent();
                                                 if let Some(block) = parent_scoped_block {
                                                     let mut include_path = PathBuf::from(var_val);
@@ -2154,7 +2154,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                                             }
                                                         }
                                                     }
-                                                    match process(&log, &include_path, block.clone()) {
+                                                    match process(log, &include_path, block.clone()) {
                                                         Err(e) => {
                                                             log.error(&format!("Can't process an include script {include_path:?} at {0}, problem: {e}", all_chars.line));
                                                             return Err(e)
@@ -2210,7 +2210,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                        BlockType::Main
                    };*/
                 current_name.clear();
-                let (type_hdr,name,work,path) = *process_lex_header(&log, &value, &scoped_block.0.as_ref().borrow_mut().vars) ;
+                let (type_hdr,name,work,path) = *process_lex_header(log, &value, &scoped_block.0.as_ref().borrow_mut().vars) ;
                 log.debug(&format!("Type: {}, name: {}, work dir: '{}', path; '{}'", type_hdr,name,work,path));
                 match type_hdr.as_str() {
                     "target" => {

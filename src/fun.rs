@@ -129,7 +129,7 @@ impl fmt::Debug for GenBlock {
 impl GenBlock {
     pub fn new (block_type: BlockType) -> GenBlock {
         GenBlock {
-            block_type : block_type,
+            block_type,
             ..Default::default()
         }
     }
@@ -245,7 +245,7 @@ impl GenBlockTup {
                             match target {
                                 Some(target) => {
                                     //let target_bor = target.0.borrow_mut();
-                                    return exec_target(&log, & target)
+                                    return exec_target(log, & target)
                                 },
                                 _ => log.warning(&format!("Target {} not found and ignored", dep_block.params[0])),
                             }
@@ -272,7 +272,7 @@ impl GenBlockTup {
                         let r1 : Option<VarVal> =
                          match p1_block.block_type {
                              BlockType::Function => {
-                                p1.exec_fun(&log, &p1_block, prev_res)
+                                p1.exec_fun(log, &p1_block, prev_res)
                              },
                              _ => { todo!("block: {:?}", p1_block.block_type)}
                         };
@@ -282,7 +282,7 @@ impl GenBlockTup {
                                 let p2_block = p2.0.borrow();
                                   match p2_block.block_type {
                                     BlockType::Function => {
-                                        p2.exec_fun(&log, &p2_block, prev_res)
+                                        p2.exec_fun(log, &p2_block, prev_res)
                                     },
                                     _ => { todo!("block: {:?}", p2_block.block_type);
                                     }
@@ -313,7 +313,7 @@ impl GenBlockTup {
                     //let len = dep_block.children.len();
                     log.debug(&format!("orig {} children", &dep_block.children.len()));
                     for child in &dep_block.children {
-                       if child.exec(&log, prev_res).unwrap_or(VarVal::from_bool(false)).is_true() {
+                       if child.exec(log, prev_res).unwrap_or(VarVal::from_bool(false)).is_true() {
                             return true
                        }
                     }
@@ -366,7 +366,7 @@ impl GenBlockTup {
                 };
                 let children = &self.0.borrow().children.clone();
                 for child in children {
-                    res = child.exec(&log, &res)
+                    res = child.exec(log, &res)
                 } 
                 res 
             },
@@ -380,24 +380,24 @@ impl GenBlockTup {
                         continue
                     }
                     drop(child_nak);
-                    res = child.exec(&log, &res);
+                    res = child.exec(log, &res);
                 } 
                 res
             }
             BlockType::If => {
                 let naked_block = self.borrow();
                 let children = &naked_block.children;
-                let mut res = children[0].exec(&log, prev_res);
+                let mut res = children[0].exec(log, prev_res);
                 log.debug(&format!("if cond evaluated as {:?}", res));
                 if res.as_ref().unwrap_or(&VarVal::from_bool(false)).is_true() {
                     if children[1].borrow().block_type == BlockType::Then { 
-                      res = children[1].exec(&log, prev_res)
+                      res = children[1].exec(log, prev_res)
                     }
                 } else {
                     if children.len() == 2 &&  children[1].borrow().block_type == BlockType::Else {
-                         res = children[1].exec(&log, prev_res)
+                         res = children[1].exec(log, prev_res)
                     } else if children.len() == 3 &&  children[2].borrow().block_type == BlockType::Else {
-                        res = children[2].exec(&log, prev_res)
+                        res = children[2].exec(log, prev_res)
                     }
                 } 
                 if children.len() > 3 {
@@ -411,7 +411,7 @@ impl GenBlockTup {
                 for param in &naked_block.params {
                     log.debug(&format!("parameter; {}", param))
                 } 
-                self.exec_fun(&log, &naked_block, prev_res)
+                self.exec_fun(log, &naked_block, prev_res)
             },
             BlockType::For => {
                 let mut res = match prev_res {
@@ -433,7 +433,7 @@ impl GenBlockTup {
                     log.error(&format!("A 'for' range isn't specified at {}", naked_block.script_line));
                     return None
                 }
-                let range_as_var = self.prev_or_search_up(&range_as_opt, prev_res);
+                let range_as_var = self.prev_or_search_up(range_as_opt, prev_res);
                 
                 if range_as_var.is_some() {
                     let range_as_val = range_as_var.unwrap();
@@ -446,7 +446,7 @@ impl GenBlockTup {
                             log.error(&format!("A 'for' values separator isn't specified at {}", naked_block.script_line));
                             return None
                         };
-                        let sep_var = self.search_up(&sep_can);
+                        let sep_var = self.search_up(sep_can);
                         let sep_val = match sep_var {
                             None => sep_can,
                             Some(val) => &val.value.clone(),
@@ -463,7 +463,7 @@ impl GenBlockTup {
                             log.error(&format!("A 'for' values separator isn't specified at {}", naked_block.script_line));
                             return None
                     };
-                    let sep_var = self.search_up(&sep_can);
+                    let sep_var = self.search_up(sep_can);
                     let sep_val = match sep_var {
                         None => sep_can,
                         Some(val) => &val.value.clone(),
@@ -485,7 +485,7 @@ impl GenBlockTup {
                     }
                     
                     for child in children {
-                        res = child.exec(&log, &res)
+                        res = child.exec(log, &res)
                     } 
                 }     
                 res    
@@ -495,7 +495,7 @@ impl GenBlockTup {
                 let naked_block = self.0.borrow();
                 let children = &naked_block.children;
                 for child in children {
-                    if child.exec(&log, prev_res).unwrap_or_default().is_true() {
+                    if child.exec(log, prev_res).unwrap_or_default().is_true() {
                         return Some(VarVal::from_bool(true))
                     }
                 }
@@ -505,7 +505,7 @@ impl GenBlockTup {
                 let naked_block = self.0.borrow();
                 let children = &naked_block.children;
                 for child in children {
-                    let res = child.exec(&log, prev_res).unwrap_or_default().is_true();
+                    let res = child.exec(log, prev_res).unwrap_or_default().is_true();
                     if !res {
                         return Some(VarVal::from_bool(false))
                    }
@@ -518,7 +518,7 @@ impl GenBlockTup {
                 if children.len() > 1 {
                     log.error(&format!("Unexpected block(s) {} at {}", children.len(), &naked_block.script_line))
                 }
-                Some(VarVal::from_bool(! children[0].exec(&log, prev_res).unwrap_or_default().is_true()))
+                Some(VarVal::from_bool(! children[0].exec(log, prev_res).unwrap_or_default().is_true()))
             },
             BlockType::Eq => {
                 let naked_block = self.0.borrow();
@@ -527,7 +527,7 @@ impl GenBlockTup {
                 if len < 1 {
                     log.error(&format!("At least one argument has to be specified in eq at {}", &naked_block.script_line))
                 }
-                let mut before_res = children[0].exec(&log, prev_res);
+                let mut before_res = children[0].exec(log, prev_res);
                 for idx in 1..len {
                     let res = children[idx].exec(&log, prev_res);
                     match res {
@@ -558,10 +558,10 @@ impl GenBlockTup {
                 if len < 1 {
                     log.error(&format!("At least one argument has to be specified in neq at {}", &naked_block.script_line))
                 }
-                let first = children[0].exec(&log, prev_res);
+                let first = children[0].exec(log, prev_res);
                 if len > 1 {
-                    for idx in 1..len {
-                        let current = children[idx].exec(&log, prev_res);
+                    for child in children.iter().take(len).skip(1)  {
+                        let current = child.exec(log, prev_res);
                         match (&current, &first) {
                             (Some(current), Some(first)) => if current.value == first.value {continue},
                             (None, None) => continue,
@@ -638,7 +638,7 @@ impl GenBlockTup {
                             let trimmed = pattern.trim();
                             if var == trimmed {
                                 chosen = true;
-                                res = child.exec(&log, &res);
+                                res = child.exec(log, &res);
                                 break
                             }
                         }
@@ -680,30 +680,26 @@ impl GenBlockTup {
                 return res_prev.clone()
             },
             "now" => {
-                if no_parameters(fun_block) {return Some(VarVal::from_string(&format_system_time(SystemTime::now())))}
+                if no_parameters(fun_block) {return Some(VarVal::from_string(format_system_time(SystemTime::now())))}
                 let fmt_str = *self.parameter(log, 0, fun_block, res_prev);
                 return Some(VarVal::from_string(format_time(&fmt_str, SystemTime::now())))
             },
             "write" => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) {
-                    if let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
-                        fname = cwd.value + MAIN_SEPARATOR_STR + &fname
-                    }
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 let file = File::create(&fname);
-                if file.is_ok() {
-                    write_lambda(&mut file.unwrap(), &fname)
+                if let Ok(mut file) = file {
+                    write_lambda(&mut file, &fname)
                 } else {
                     log.error(&format!{"File {} can't be opened for writing at {}", fname, &fun_block.script_line})
                 } 
             }
             "writex" if cfg!(not(unix)) => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) {
-                    if let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
-                        fname = cwd.value + MAIN_SEPARATOR_STR + &fname
-                    }
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 let file = File::create(&fname);
                 if let Ok(mut file) = file {
@@ -732,10 +728,8 @@ impl GenBlockTup {
             #[cfg(unix)]
             "writex" if cfg!(unix) => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) {
-                    if let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
-                        fname = cwd.value + MAIN_SEPARATOR_STR + &fname
-                    }
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 match OpenOptions::new()
                     .create(true)
@@ -1069,17 +1063,13 @@ impl GenBlockTup {
                     } else {
                         (None,None)
                     };
-                let Some(mut dir1) = dir1 else {
-                    return None
-                };
+                let mut dir1 = dir1?;
                 if let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
                     if !has_root(&dir1) {
-                            dir1 = cwd.value.clone() + MAIN_SEPARATOR_STR + &dir1
+                        dir1 = cwd.value.clone() + MAIN_SEPARATOR_STR + &dir1
                     }
-                    if let Some(ref dir2v) = dir2 {
-            			if !has_root(dir2v) {
-                            dir2 = Some(cwd.value + MAIN_SEPARATOR_STR + &dir2v)
-            			}
+                    if let Some(ref dir2v) = dir2 && !has_root(dir2v) {
+                        dir2 = Some(cwd.value + MAIN_SEPARATOR_STR + &dir2v)
                     }
                 }
                 log.debug(&format!{"newerthen: {:?}/{:?} then {:?}/{:?}", &dir1, &ext1, &dir2, &ext2});
@@ -1110,10 +1100,8 @@ impl GenBlockTup {
                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
                     log.debug(&format!("Comparing {} to {} at greater", &p1, &p2));
                     // TODO baybe check val_type == Number ?
-                    if let Ok(val) = p1.parse::<f64>() {
-                        if let Ok(val2) = p2.parse::<f64>() {
-                            return Some(VarVal::from_bool(val > val2))
-                        }
+                    if let Ok(val) = p1.parse::<f64>() && let Ok(val2) = p2.parse::<f64>() {
+                        return Some(VarVal::from_bool(val > val2))
                     }
                     return Some(VarVal::from_bool(p1 > p2))
                 }
@@ -1126,10 +1114,8 @@ impl GenBlockTup {
                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
                     log.debug(&format!("Comparing {} to {} at littler", &p1, &p2));
                     // TODO baybe check val_type == Number ?
-                    if let Ok(val) = p1.parse::<f64>() {
-                        if let Ok(val2) = p2.parse::<f64>() {
-                            return Some(VarVal::from_bool(val < val2))
-                        }
+                    if let Ok(val) = p1.parse::<f64>() && let Ok(val2) = p2.parse::<f64>() {
+                        return Some(VarVal::from_bool(val < val2))
                     }
                     return Some(VarVal::from_bool(p1 < p2))
                 }
@@ -1467,14 +1453,8 @@ impl GenBlockTup {
                         if !has_root(&file) {
                             file = cwd.clone() + MAIN_SEPARATOR_STR + &file
                         }
-                        if name == "rmdira" {
-                            if remove_dir_all(&file).is_ok() {
-                                res.push(file)
-                            }
-                        } else {
-                            if remove_dir(&file).is_ok() {
-                                res.push(file)
-                            }
+                        if name == "rmdira" && remove_dir_all(&file).is_ok() || remove_dir(&file).is_ok(){
+                            res.push(file)
                         }
                     }
                 }
@@ -1557,9 +1537,7 @@ impl GenBlockTup {
                         let mut files = *self.expand_parameter(log, &flatten_params[current_op], fun_block, res_prev);
                         // consider also processing arrays
                         //println!{"files ext {files}"}
-                        if !has_root(&files) {
-                            if let Some(ref cwd) = cwd { files = cwd.value.clone() + MAIN_SEPARATOR_STR + &files }
-                        }
+                        if !has_root(&files) && let Some(ref cwd) = cwd { files = cwd.value.clone() + MAIN_SEPARATOR_STR + &files }
                         let files = Path::new(&files);
                         assert!(&files.has_root());
                         let parent_files = files.parent().unwrap_or(Path::new("."));
@@ -1579,7 +1557,7 @@ impl GenBlockTup {
                             if files.is_dir() {
                                 zip_dir(log, &mut zip, files, path, None, None)
                             } else if files.is_file() {
-                                if !zip.add(simzip::ZipEntry::from_file(&files.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                if !zip.add(simzip::ZipEntry::from_file(files.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                                     log.warning(&format!{"Zip entry {1:?}/{0} already exists", &files.as_os_str().to_str().unwrap(), &path})
                                 }
                             } else {
@@ -1619,7 +1597,7 @@ impl GenBlockTup {
                         // found value or an array of 1 element of the parameter value
                         for mut entry in values {
                             // interpolation first
-                            entry = *process_template_value(log, &entry, &fun_block, res_prev);
+                            entry = *process_template_value(log, &entry, fun_block, res_prev);
                             
                             if !has_root(&entry) {
                                 match cwd {
@@ -1650,7 +1628,7 @@ impl GenBlockTup {
                                                     start.is_none() && !end.is_none() && name.ends_with(end.unwrap()) ||
                                                     !start.is_none() && name.starts_with(start.unwrap()) && end.is_none() ||
                                                     start.is_none() && end.is_none() {
-                                                        if !zip.add(simzip::ZipEntry::from_file(&entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                                        if !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                                                             log.warning(&format!{"Zip entry {1:?}/{0} already exists", &name, &path} )
                                                         }
                                                     }
@@ -1662,17 +1640,16 @@ impl GenBlockTup {
                                 }
                             } else {
                                 if entry_path.is_file() {
-                                    if !zip.add(simzip::ZipEntry::from_file(&entry_path.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                    if !zip.add(simzip::ZipEntry::from_file(entry_path.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                                         log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str().unwrap(), &path} )
                                     }
                                 } else if entry_path.is_dir() {
                                     match entry_path.read_dir() {
                                         Ok(dir) => {
                                             for entry in dir {
-                                                if let Ok(entry) = entry && entry.file_type().unwrap().is_file() {
-                                                    if !zip.add(simzip::ZipEntry::from_file(&entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
-                                                        log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path} )
-                                                    }
+                                                if let Ok(entry) = entry && entry.file_type().unwrap().is_file()
+                                                 && !zip.add(simzip::ZipEntry::from_file(&entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path} )
                                                 }
                                             }
                                         }
