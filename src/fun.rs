@@ -344,10 +344,9 @@ impl GenBlockTup {
         let naked_block = top_block.borrow();
         for ch in &naked_block.children {
             let ch_block = ch.borrow();
-            if ch_block.block_type == BlockType::Target {
-                if let Some(blk_name) = &ch_block.name && blk_name == name {
-                    return  Some(ch.clone())
-                }
+            if ch_block.block_type == BlockType::Target 
+                && let Some(blk_name) = &ch_block.name && blk_name == name {
+                return  Some(ch.clone())
             }
         }
         None
@@ -358,7 +357,7 @@ impl GenBlockTup {
         log.debug(&format!("processing block of {:?}", block_type));
         match  block_type {
             BlockType::Scope | BlockType::Then | BlockType::Else | BlockType::Choice => {
-                let mut res = prev_res.as_ref().map(|var| var.clone());
+                let mut res = prev_res.clone();
                 let children = &self.0.borrow().children.clone();
                 for child in children {
                     res = child.exec(log, &res)
@@ -409,7 +408,7 @@ impl GenBlockTup {
                 self.exec_fun(log, &naked_block, prev_res)
             },
             BlockType::For => {
-                let mut res = prev_res.as_ref().map(|var| var.clone());
+                let mut res = prev_res.clone();
                 let mut range = Vec::new();
                 let naked_block = self.borrow();
                 let Some(name) = &naked_block.name.clone() else {
@@ -1066,14 +1065,13 @@ impl GenBlockTup {
                 log.debug(&format!("evaluating anynewer: {}", fun_block.params.len()));
                 let mut p1 = *self.parameter(log, 0, fun_block, res_prev);
                 let mut p2 = *self.parameter(log, 1, fun_block, res_prev);
-                if !has_root(&p1) || !has_root(&p2) {
-                    if let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
-                        if !has_root(&p1) {
-                            p1 = cwd.value.clone() + MAIN_SEPARATOR_STR + &p1
-                        }
-                        if !has_root(&p2) {
-                            p2 = cwd.value + MAIN_SEPARATOR_STR + &p2
-                        }
+                if (!has_root(&p1) || !has_root(&p2)) &&
+                    let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                    if !has_root(&p1) {
+                        p1 = cwd.value.clone() + MAIN_SEPARATOR_STR + &p1
+                    }
+                    if !has_root(&p2) {
+                        p2 = cwd.value + MAIN_SEPARATOR_STR + &p2
                     }
                 }
                 log.debug(&format!("anynewer parameters: {}, {}", p1, p2));
@@ -1507,7 +1505,7 @@ impl GenBlockTup {
                         current_op += 1;
                         // think of to work with array parameters
                         let cont = *self.expand_parameter(log, &flatten_params[current_op], fun_block, res_prev);
-                        let mut entry = simzip::ZipEntry::new(name.to_string(), cont.as_bytes().to_vec());
+                        let mut entry = simzip::ZipEntry::new(name, cont.as_bytes().to_vec());
                         if op.starts_with("-E") {
                             entry.attributes.insert(simzip::Attribute::Exec);
                         }
@@ -1567,9 +1565,7 @@ impl GenBlockTup {
                                 zipped_path.values
                             } else {
                                 //println!{"not array, {}", zipped_path.value}
-                                let mut values = vec!();
-                                values.push(zipped_path.value);
-                                values
+                                vec![zipped_path.value]
                             }
                         } else {
                             let mut values = vec![];
@@ -1633,7 +1629,7 @@ impl GenBlockTup {
                                         Ok(dir) => {
                                             for entry in dir {
                                                 if let Ok(entry) = entry && entry.file_type().unwrap().is_file()
-                                                 && !zip.add(simzip::ZipEntry::from_file(&entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                                 && !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                                                     log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path} )
                                                 }
                                             }
