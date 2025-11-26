@@ -567,10 +567,7 @@ impl GenBlockTup {
                 Some(VarVal::from_bool(first.is_some()))
             },
             BlockType::While => {
-                let mut res = match prev_res {
-                    None => None,
-                    Some(var) => Some(var.clone())
-                };
+                let mut res = prev_res.clone();
 
                 let naked_block = self.0.borrow();
                 let control = naked_block.name.clone().unwrap();
@@ -825,8 +822,8 @@ impl GenBlockTup {
                                 .envs(crate::get_properties())
                                 .spawn()
                          };
-                         if status.is_ok() {
-                            return Some(VarVal::from_i32(status.unwrap().id() as i32))
+                         if let Ok(status) = status {
+                            return Some(VarVal::from_i32(status.id() as i32))
                          }
                          log.error(&format!("Command {} with {:?} in {} failed to start asynchoronically at {}, reason {}", exec, params, cwd, fun_block.script_line, status.err().unwrap()))
                     } else {
@@ -1235,7 +1232,7 @@ impl GenBlockTup {
                 let mut parent_bare = var_block.0.borrow_mut();
                 let var = parent_bare.vars.get_mut(name)?;
                 if var.val_type == VarType::Array {
-                    if var.values.len() == 0 || index > var.values.len() -1 {
+                    if var.values.is_empty() || index > var.values.len() -1 {
                         log.error(&format!{"Specified index {} doesn't exist in the array {} at {}",  index, &name, fun_block.script_line});
                         return None
                     }
