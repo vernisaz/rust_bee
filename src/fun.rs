@@ -2453,7 +2453,7 @@ fn zip_dir (log: &Log, zip: &mut simzip::ZipInfo, dir: &Path, path:Option<&str>,
                     if file_type.is_file() {
                         if !mask_start.is_none() && name.starts_with(mask_start.unwrap()) &&
                             mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
-                        mask_start.is_none() && !mask_end.is_none() && name.ends_with(mask_end.unwrap()) ||
+                        mask_start.is_none() && mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
                         !mask_start.is_none() && name.starts_with(mask_start.unwrap()) && mask_end.is_none() ||
                         mask_start.is_none() && mask_end.is_none() 
                             && !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
