@@ -2201,9 +2201,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
             }
         }
         let Some(tar_name) = tar_name else {
-            let error = "No targets found in the script".to_string();
-            log.error(&error);
-            return Err(error.into())
+            return Err("No targets found in the script".into())
         };
         targets.push(tar_name)
     }
@@ -2220,9 +2218,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
                 continue 'targets
             }
         }
-        let error = format!("No target {} found", target).to_string();
-        log.error(&error);
-        return Err(error.into())
+        return Err(format!("No target '{target}' found").into())
     }
     
     Ok(())
