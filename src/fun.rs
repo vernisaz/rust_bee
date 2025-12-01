@@ -2441,6 +2441,7 @@ fn matches(name: &str, filter: &str) -> bool {
 }
 
 fn zip_dir (log: &Log, zip: &mut simzip::ZipInfo, dir: &Path, path:Option<&str>, mask_start: Option<&str>, mask_end: Option<&str>) {
+    //println!("zipping {dir:?} in {path:?} {mask_start:?}-{mask_end:?}");
     match dir.read_dir() {
         Ok(dir) => {
             for entry in dir {
@@ -2451,9 +2452,10 @@ fn zip_dir (log: &Log, zip: &mut simzip::ZipInfo, dir: &Path, path:Option<&str>,
                             mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
                         mask_start.is_none() && mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
                         !mask_start.is_none() && name.starts_with(mask_start.unwrap()) && mask_end.is_none() ||
-                        mask_start.is_none() && mask_end.is_none() 
-                            && !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                        mask_start.is_none() && mask_end.is_none() {
+                            if !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                                 log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path})
+                            }
                         }
                     }  else if file_type.is_dir() {
                         let zip_path = match path {
