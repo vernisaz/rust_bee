@@ -1613,9 +1613,10 @@ impl GenBlockTup {
                                     _ => log.error(&format!{"Zip error: can't process directory {parent_files:?}"})
                                 }
                             } else {
-                                if entry_path.is_file()
-                                && !zip.add(simzip::ZipEntry::from_file(entry_path.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
-                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str().unwrap(), &path} )
+                                if entry_path.is_file() {
+                                    if !zip.add(simzip::ZipEntry::from_file(entry_path.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                        log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str().unwrap(), &path} )
+                                    }
                                 } else if entry_path.is_dir() {
                                     match entry_path.read_dir() {
                                         Ok(dir) => {
