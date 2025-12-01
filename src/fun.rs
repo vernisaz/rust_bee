@@ -387,13 +387,11 @@ impl GenBlockTup {
                     if children[1].borrow().block_type == BlockType::Then { 
                       res = children[1].exec(log, prev_res)
                     }
-                } else {
-                    if children.len() == 2 &&  children[1].borrow().block_type == BlockType::Else {
-                         res = children[1].exec(log, prev_res)
-                    } else if children.len() == 3 &&  children[2].borrow().block_type == BlockType::Else {
-                        res = children[2].exec(log, prev_res)
-                    }
-                } 
+                } else if children.len() == 2 &&  children[1].borrow().block_type == BlockType::Else {
+                     res = children[1].exec(log, prev_res)
+                } else if children.len() == 3 &&  children[2].borrow().block_type == BlockType::Else {
+                    res = children[2].exec(log, prev_res)
+                }
                 if children.len() > 3 {
                     log.error(&format!("Unexpected block(s) {} at {}", children.len(), &naked_block.script_line))
                 }
@@ -807,71 +805,67 @@ impl GenBlockTup {
                 if let Some(_dry_run) = dry_run {
                    log.log(&format!("Command: {:?} {:?} in {}", exec, params, cwd));
                    return Some(VarVal::from_i32(0))
-                } else {
-                    if "aexec" == name {
-                        // TODO add a possibility of a user unput for async command
-                        let mut command = Command::new(&exec);
-                        let status = if cwd.is_empty() { command
-                            .args(&params)
-                            .envs(crate::get_properties())
+                } else if "aexec" == name {
+                    // TODO add a possibility of a user unput for async command
+                    let mut command = Command::new(&exec);
+                    let status = if cwd.is_empty() { command
+                        .args(&params)
+                        .envs(crate::get_properties())
+                        .stdin(Stdio::null())
+                         .spawn()
+                     } else {
+                        command.current_dir(&cwd).args(&params)
                             .stdin(Stdio::null())
-                             .spawn()
-                         } else {
-                            command.current_dir(&cwd).args(&params)
-                                .stdin(Stdio::null())
-                                .envs(crate::get_properties())
-                                .spawn()
-                         };
-                         if let Ok(status) = status {
-                            return Some(VarVal::from_i32(status.id() as i32))
-                         }
-                         log.error(&format!("Command {} with {:?} in {} failed to start asynchoronically at {}, reason {}", exec, params, cwd, fun_block.script_line, status.err().unwrap()))
+                            .envs(crate::get_properties())
+                            .spawn()
+                     };
+                     if let Ok(status) = status {
+                        return Some(VarVal::from_i32(status.id() as i32))
+                     }
+                     log.error(&format!("Command {} with {:?} in {} failed to start asynchoronically at {}, reason {}", exec, params, cwd, fun_block.script_line, status.err().unwrap()))
+                } else if fun_block.out .is_some() {
+                    let output = if cwd.is_empty() { Command::new(&exec)
+                        .args(&params)
+                        .envs(crate::get_properties())
+                        .output() 
                     } else {
-                        if fun_block.out .is_some() {
-                            let output = if cwd.is_empty() { Command::new(&exec)
-                                .args(&params)
-                                .envs(crate::get_properties())
-                                .output() 
-                            } else {
-                                    Command::new(&exec).envs(crate::get_properties()).current_dir(&cwd).args(&params)
-                                    .output()
-                            };
-                            // command is always async, simply output is waiting
-                            let Ok(output) = output else {
-                                log.error(&format!("Command {} with {:?} in {} failed to start at {}, reason {:?}", exec, params, cwd, fun_block.script_line, output.err()));
-                                return None
-                            };
-                            // TODO more error handling
-                            if output.status.success() {
-                                let stdout = String::from_utf8_lossy(&output.stdout);
-                                let parent_block = fun_block.parent.clone().unwrap();
-                                let mut parent_block_mut = parent_block.borrow_mut();
-                                parent_block_mut.vars.insert(fun_block.out.clone().unwrap(), VarVal::from_string(stdout.trim()));
-                                
-                                return Some(VarVal::from_i32(output.status.code().unwrap()))
-                            } else {
-                               log.error(&format!("Command {} with {:?} in {} failed to start at {}, reason {}", exec, params, cwd, fun_block.script_line, String::from_utf8_lossy(&output.stderr)))
-                            }
-                        } else {
-                            let status = if cwd.is_empty() { Command::new(&exec)
-                                .args(&params)
-                                .envs(crate::get_properties())
-                                .status() 
-                            } else {
-                                    Command::new(&exec).envs(crate::get_properties()).current_dir(&cwd).args(&params)
-                                    .status()
-                            };
-                            match status {
-                                Ok(status) =>  match status.code() {
-                                    Some(code) => {
-                                        return Some(VarVal::from_i32(code))},
-                                        //self.parent().unwrap().add_var("~~".to_string(), VarVal{val_type: VarType::Number, value: code.to_string(), values: Vec::new()});},
-                                    None   => log.error(&format!("The process terminated by signal at {}", &fun_block.script_line))
-                                }
-                                Err(err) => log.error(&format!("Command {} with {:?} in {} failed to start at {}, reason {}", exec, params, cwd, fun_block.script_line, err))
-                            } 
+                            Command::new(&exec).envs(crate::get_properties()).current_dir(&cwd).args(&params)
+                            .output()
+                    };
+                    // command is always async, simply output is waiting
+                    let Ok(output) = output else {
+                        log.error(&format!("Command {} with {:?} in {} failed to start at {}, reason {:?}", exec, params, cwd, fun_block.script_line, output.err()));
+                        return None
+                    };
+                    // TODO more error handling
+                    if output.status.success() {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        let parent_block = fun_block.parent.clone().unwrap();
+                        let mut parent_block_mut = parent_block.borrow_mut();
+                        parent_block_mut.vars.insert(fun_block.out.clone().unwrap(), VarVal::from_string(stdout.trim()));
+                        
+                        return Some(VarVal::from_i32(output.status.code().unwrap()))
+                    } else {
+                       log.error(&format!("Command {} with {:?} in {} failed to start at {}, reason {}", exec, params, cwd, fun_block.script_line, String::from_utf8_lossy(&output.stderr)))
+                    }
+                } else {
+                    let status = if cwd.is_empty() { Command::new(&exec)
+                        .args(&params)
+                        .envs(crate::get_properties())
+                        .status() 
+                    } else {
+                            Command::new(&exec).envs(crate::get_properties()).current_dir(&cwd).args(&params)
+                            .status()
+                    };
+                    match status {
+                        Ok(status) =>  match status.code() {
+                            Some(code) => {
+                                return Some(VarVal::from_i32(code))},
+                                //self.parent().unwrap().add_var("~~".to_string(), VarVal{val_type: VarType::Number, value: code.to_string(), values: Vec::new()});},
+                            None   => log.error(&format!("The process terminated by signal at {}", &fun_block.script_line))
                         }
-                    }   
+                        Err(err) => log.error(&format!("Command {} with {:?} in {} failed to start at {}, reason {}", exec, params, cwd, fun_block.script_line, err))
+                    } 
                 }
             },
             "or" => return Some(VarVal::from_bool(fun_block.params.iter().any(is_true_lambda))),
@@ -1533,16 +1527,14 @@ impl GenBlockTup {
                                 (Some(&filename[0..pos]), Some(&filename[pos+1..]))
                             };
                             zip_dir(log, &mut zip, parent_files, path, start, end)
-                        } else {
-                            if files.is_dir() {
-                                zip_dir(log, &mut zip, files, path, None, None)
-                            } else if files.is_file() {
-                                if !zip.add(simzip::ZipEntry::from_file(files.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
-                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &files.as_os_str().to_str().unwrap(), &path})
-                                }
-                            } else {
-                                log.error(&format!{"Path {files:?} can't be zipped"})
+                        } else if files.is_dir() {
+                            zip_dir(log, &mut zip, files, path, None, None)
+                        } else if files.is_file() {
+                            if !zip.add(simzip::ZipEntry::from_file(files.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &files.as_os_str().to_str().unwrap(), &path})
                             }
+                        } else {
+                            log.error(&format!{"Path {files:?} can't be zipped"})
                         }
                     } else if op.starts_with("-B") { // probably -C takes all cases
                          let path = if op.len() > 3 {
@@ -1612,26 +1604,24 @@ impl GenBlockTup {
                                     }
                                     _ => log.error(&format!{"Zip error: can't process directory {parent_files:?}"})
                                 }
-                            } else {
-                                if entry_path.is_file() {
-                                    if !zip.add(simzip::ZipEntry::from_file(entry_path.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
-                                        log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str().unwrap(), &path} )
-                                    }
-                                } else if entry_path.is_dir() {
-                                    match entry_path.read_dir() {
-                                        Ok(dir) => {
-                                            for entry in dir {
-                                                if let Ok(entry) = entry && entry.file_type().unwrap().is_file()
-                                                 && !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
-                                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path} )
-                                                }
+                            } else if entry_path.is_file() {
+                                if !zip.add(simzip::ZipEntry::from_file(entry_path.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str().unwrap(), &path} )
+                                }
+                            } else if entry_path.is_dir() {
+                                match entry_path.read_dir() {
+                                    Ok(dir) => {
+                                        for entry in dir {
+                                            if let Ok(entry) = entry && entry.file_type().unwrap().is_file()
+                                             && !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path} )
                                             }
                                         }
-                                        _ => log.error(&format!{"Zip error: can't read directory{entry_path:?}"})
                                     }
-                                } else {
-                                    log.error(&format!{"Zip error: unknown : {entry_path:?}"})
+                                    _ => log.error(&format!{"Zip error: can't read directory{entry_path:?}"})
                                 }
+                            } else {
+                                log.error(&format!{"Zip error: unknown : {entry_path:?}"})
                             }
                         }
                     }
@@ -2440,10 +2430,10 @@ fn zip_dir (log: &Log, zip: &mut simzip::ZipInfo, dir: &Path, path:Option<&str>,
             if let Ok(entry) = entry && let Ok(file_type) = entry.file_type() { 
                 let name = entry.file_name().to_str().unwrap().to_owned();
                 if file_type.is_file() {
-                    if (!mask_start.is_none() && name.starts_with(mask_start.unwrap()) &&
+                    if (mask_start.is_some() && name.starts_with(mask_start.unwrap()) &&
                         mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
                     mask_start.is_none() && mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
-                    !mask_start.is_none() && name.starts_with(mask_start.unwrap()) && mask_end.is_none() ||
+                    mask_start.is_some() && name.starts_with(mask_start.unwrap()) && mask_end.is_none() ||
                     mask_start.is_none() && mask_end.is_none())
                         && !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                         log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path})
