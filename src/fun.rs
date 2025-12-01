@@ -1597,30 +1597,25 @@ impl GenBlockTup {
                                 };
                                 match parent_files.read_dir() {
                                     Ok(dir) => {
-                                        for entry in dir {
-                                            if let Ok(entry) = entry {
-                                                let name = entry.file_name().to_str().unwrap().to_owned();
-                                                if entry.file_type().unwrap().is_file() {
-                                                    if !start.is_none() && name.starts_with(start.unwrap()) &&
-                                                        !end.is_none() && name.ends_with(end.unwrap()) ||
-                                                    start.is_none() && !end.is_none() && name.ends_with(end.unwrap()) ||
-                                                    !start.is_none() && name.starts_with(start.unwrap()) && end.is_none() ||
-                                                    start.is_none() && end.is_none() {
-                                                        if !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
-                                                            log.warning(&format!{"Zip entry {1:?}/{0} already exists", &name, &path} )
-                                                        }
-                                                    }
-                                                }
+                                        for entry in dir.flatten() {
+                                            let name = entry.file_name().to_str().unwrap().to_owned();
+                                            if entry.file_type().unwrap().is_file() &&
+                                            (!start.is_none() && name.starts_with(start.unwrap()) &&
+                                                !end.is_none() && name.ends_with(end.unwrap()) ||
+                                            start.is_none() && !end.is_none() && name.ends_with(end.unwrap()) ||
+                                            !start.is_none() && name.starts_with(start.unwrap()) && end.is_none() ||
+                                            start.is_none() && end.is_none()) &&
+                                            !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &name, &path} )
                                             }
                                         }
                                     }
                                     _ => log.error(&format!{"Zip error: can't process directory {parent_files:?}"})
                                 }
                             } else {
-                                if entry_path.is_file() {
-                                    if !zip.add(simzip::ZipEntry::from_file(entry_path.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
-                                        log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str().unwrap(), &path} )
-                                    }
+                                if entry_path.is_file()
+                                && !zip.add(simzip::ZipEntry::from_file(entry_path.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str().unwrap(), &path} )
                                 } else if entry_path.is_dir() {
                                     match entry_path.read_dir() {
                                         Ok(dir) => {
@@ -2337,23 +2332,21 @@ fn find_newer(dir1: &str, ext1: &str, dir2 : &Option<String>, ext2 : &Option<Str
         if file1.unwrap().file_type().unwrap().is_dir() {
             let file2_str = dir2.as_ref().map(|file2| format!{"{}/{}", file2, file1_name});
             result = [result, find_newer(file1_path, ext1, &file2_str, ext2)].concat();
-        } else {  
-            if file1_name.ends_with(ext1) {
-                match dir2 {
-                    Some(dir2) => {
-                        
-                        let file2 = format!{"{}/{}{}", &dir2, &file1_name[0..file1_name.len()-ext1.len()], &ext2.as_ref().unwrap()};
-                        
-                        let t1 = last_modified(file1_path);
-                        let t2 = last_modified(&file2);
-                        //println!{"comparing: {:?}:{:?}<>{:?}:{:?}", &file1_path, &t1, &file2, &t2};
-                        if t2.is_none() || t1.unwrap() > t2.unwrap() {
-                            //println!{"none or newer: {:?}>{:?}", t1.unwrap() ,t2.unwrap_or(std::time::UNIX_EPOCH) };
-                            result.push(file1_path.to_string())
-                        }
-                    },
-                    None => result.push(file1_path.to_string())
-                }
+        } else if file1_name.ends_with(ext1) {
+            match dir2 {
+                Some(dir2) => {
+                    
+                    let file2 = format!{"{}/{}{}", &dir2, &file1_name[0..file1_name.len()-ext1.len()], &ext2.as_ref().unwrap()};
+                    
+                    let t1 = last_modified(file1_path);
+                    let t2 = last_modified(&file2);
+                    //println!{"comparing: {:?}:{:?}<>{:?}:{:?}", &file1_path, &t1, &file2, &t2};
+                    if t2.is_none() || t1.unwrap() > t2.unwrap() {
+                        //println!{"none or newer: {:?}>{:?}", t1.unwrap() ,t2.unwrap_or(std::time::UNIX_EPOCH) };
+                        result.push(file1_path.to_string())
+                    }
+                },
+                None => result.push(file1_path.to_string())
             }
         }
     }
@@ -2377,21 +2370,20 @@ pub fn newest(mask : &str) -> Option<SystemTime> {
             let entry = entry.unwrap();
             let path = entry.path();
             if path.is_file() { 
-                  if let Some(path1) = path.file_name() && let Some(file_path) = path1.to_str() {
-                      if str_name1.len() == 1 || 
-                         (pos == 0 && file_path.ends_with(&str_name1[1..])) ||
-                         (pos == str_name1.len()-1 && file_path.starts_with(&str_name1[0..pos])) ||
-                         (file_path.starts_with(&str_name1[0..pos]) && file_path.ends_with(&str_name1[pos+1..]) && file_path.len() >= str_name1.len()) {
-                            let current_last = last_modified(&path.into_os_string().into_string().unwrap());
-                            match last {
-                                None => last = current_last,
-                                Some(time) => {
-                                    if let Some(time2) = current_last && time2 > time {
-                                        last = current_last;
-                                    }
+                  if let Some(path1) = path.file_name() && let Some(file_path) = path1.to_str() &&
+                      (str_name1.len() == 1 || 
+                     (pos == 0 && file_path.ends_with(&str_name1[1..])) ||
+                     (pos == str_name1.len()-1 && file_path.starts_with(&str_name1[0..pos])) ||
+                     (file_path.starts_with(&str_name1[0..pos]) && file_path.ends_with(&str_name1[pos+1..]) && file_path.len() >= str_name1.len())) {
+                        let current_last = last_modified(&path.into_os_string().into_string().unwrap());
+                        match last {
+                            None => last = current_last,
+                            Some(time) => {
+                                if let Some(time2) = current_last && time2 > time {
+                                    last = current_last;
                                 }
                             }
-                        }    
+                        }
                   }
              } else {
                 let dir_entry_path = entry.path().into_os_string().into_string().unwrap();
@@ -2442,60 +2434,53 @@ fn matches(name: &str, filter: &str) -> bool {
 
 fn zip_dir (log: &Log, zip: &mut simzip::ZipInfo, dir: &Path, path:Option<&str>, mask_start: Option<&str>, mask_end: Option<&str>) {
     //println!("zipping {dir:?} in {path:?} {mask_start:?}-{mask_end:?}");
-    match dir.read_dir() {
-        Ok(dir) => {
-            for entry in dir {
-                if let Ok(entry) = entry && let Ok(file_type) = entry.file_type() { 
-                    let name = entry.file_name().to_str().unwrap().to_owned();
-                    if file_type.is_file() {
-                        if !mask_start.is_none() && name.starts_with(mask_start.unwrap()) &&
-                            mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
-                        mask_start.is_none() && mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
-                        !mask_start.is_none() && name.starts_with(mask_start.unwrap()) && mask_end.is_none() ||
-                        mask_start.is_none() && mask_end.is_none() {
-                            if !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
-                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path})
-                            }
-                        }
-                    }  else if file_type.is_dir() {
-                        let zip_path = match path {
-                            None => name,
-                            Some(path) => path.to_owned() + "/" + &name
-                        };
-                        zip_dir(log, zip, &entry.path(), Some(&zip_path), mask_start, mask_end)
-                    }   
-                }               
-            }
+    if let Ok(dir) = dir.read_dir()  {
+        for entry in dir {
+            if let Ok(entry) = entry && let Ok(file_type) = entry.file_type() { 
+                let name = entry.file_name().to_str().unwrap().to_owned();
+                if file_type.is_file() {
+                    if (!mask_start.is_none() && name.starts_with(mask_start.unwrap()) &&
+                        mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
+                    mask_start.is_none() && mask_end.is_some() && name.ends_with(mask_end.unwrap()) ||
+                    !mask_start.is_none() && name.starts_with(mask_start.unwrap()) && mask_end.is_none() ||
+                    mask_start.is_none() && mask_end.is_none())
+                        && !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
+                        log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path})
+                    }
+                } else if file_type.is_dir() {
+                    let zip_path = match path {
+                        None => name,
+                        Some(path) => path.to_owned() + "/" + &name
+                    };
+                    zip_dir(log, zip, &entry.path(), Some(&zip_path), mask_start, mask_end)
+                }   
+            }               
         }
-        _ => ()
     }
 }
 
 fn fill_dir( res: &mut Vec<String>, dir: &Path, start: &Option<&str>, end: &Option<&str>, subdir: bool, dir_name: bool) {
-    match dir.read_dir() {
-        Ok(dir) => {
-            for entry in dir.flatten() {
-                 if let Ok(entry_type) = entry.file_type() {
-                     let name = entry.file_name().to_str().unwrap().to_owned();
-                     let accept = !start.is_none() && name.starts_with(start.unwrap()) &&
-                         !end.is_none() && name.ends_with(end.unwrap()) ||
-                     start.is_none() && !end.is_none() && name.ends_with(end.unwrap()) ||
-                     !start.is_none() && name.starts_with(start.unwrap()) && end.is_none() ||
-                     start.is_none() && end.is_none(); 
-                     if entry_type.is_file() {
-                         if accept {res.push(entry.path().into_os_string().into_string().unwrap())}
-                     } else if entry_type.is_dir() {
-                         if subdir {
-                             fill_dir(res, &entry.path(), start, end, subdir, dir_name)
-                         }
-                         if dir_name && accept {
-                             res.push(entry.path().into_os_string().into_string().unwrap())
-                         }
+    if let Ok(dir) = dir.read_dir() {
+        for entry in dir.flatten() {
+             if let Ok(entry_type) = entry.file_type() {
+                 let name = entry.file_name().to_str().unwrap().to_owned();
+                 let accept = !start.is_none() && name.starts_with(start.unwrap()) &&
+                     !end.is_none() && name.ends_with(end.unwrap()) ||
+                 start.is_none() && !end.is_none() && name.ends_with(end.unwrap()) ||
+                 !start.is_none() && name.starts_with(start.unwrap()) && end.is_none() ||
+                 start.is_none() && end.is_none(); 
+                 if entry_type.is_file() {
+                     if accept {res.push(entry.path().into_os_string().into_string().unwrap())}
+                 } else if entry_type.is_dir() {
+                     if subdir {
+                         fill_dir(res, &entry.path(), start, end, subdir, dir_name)
+                     }
+                     if dir_name && accept {
+                         res.push(entry.path().into_os_string().into_string().unwrap())
                      }
                  }
-            }
+             }
         }
-        _ => ()
     }
 }
 
