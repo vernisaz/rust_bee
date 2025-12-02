@@ -1264,12 +1264,7 @@ impl GenBlockTup {
                 let cwd = fun_block.search_up(&CWD.to_string());
                 for i in 0.. fun_block.params.len() {
                     let mut file = *self.parameter(log, i, fun_block, res_prev);
-                    if !has_root(&file) {
-                        match cwd {
-                            Some(ref path) => file = path.value.clone() + MAIN_SEPARATOR_STR + &file,
-                            _ => ()
-                        }
-                    }
+                    if !has_root(&file) && let Some(ref path) = cwd { file = path.value.clone() + MAIN_SEPARATOR_STR + &file }
                     let sep = MAIN_SEPARATOR;
                     let mut file_indices = file.char_indices();//.nth_back(4).unwrap().0
                     // str ends / then search will be in the current dir and all subdirs
@@ -1569,12 +1564,7 @@ impl GenBlockTup {
                             // interpolation first
                             entry = *process_template_value(log, &entry, fun_block, res_prev);
                             
-                            if !has_root(&entry) {
-                                match cwd {
-                                    Some(ref cwd) => entry = cwd.value.clone() + MAIN_SEPARATOR_STR + &entry,
-                                    _ => ()
-                                }
-                            }
+                            if !has_root(&entry) && let Some(ref cwd) = cwd { entry = cwd.value.clone() + MAIN_SEPARATOR_STR + &entry }
                             let entry_path = Path::new(&entry);
                             let parent_files = entry_path.parent().unwrap_or(Path::new("."));
                             let filename = entry_path.file_name().unwrap().to_str().unwrap().to_string();
@@ -2263,7 +2253,8 @@ pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
 } 
 
 fn no_parameters(fun: &GenBlock) -> bool {
-    fun.block_type == BlockType::Function && fun.params.len() < 2 && (fun.params.len() == 0 || fun.params[0].is_empty())
+    fun.block_type == BlockType::Function && fun.params.len() < 2 && (fun.params.is_empty() || 
+        fun.params.len() == 1 && fun.params[0].is_empty())
 }
 
 pub fn timestamp(p: &str) -> Option<String> {
