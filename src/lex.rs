@@ -190,11 +190,7 @@ impl Reader {
         self.pos += 1;
         if self.pos >= self.end {
             self.end = self.reader.read(&mut self.buf).unwrap();
-            
-            match self.end {
-               0 =>  return None,
-               _ => ()
-            }
+            if self.end == 0 { return None }
             self.pos = 0;
         }
         self.line_offset += 1;
@@ -1777,17 +1773,17 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
                                match var.val_type {
                                     VarType::Environment  => {
                                       //  println!("looking for {} in env", var.value);
-                                        let _env = match env::var(&var.value) {
-                                            Ok(val) => {
-                                                for vc in val.chars() {
-                                                    buf.push(vc);
-                                                }
-                                            },
-                                            Err(_e) => {
-                                                for vc in var.value.chars() {
-                                                    buf.push(vc);
-                                                } 
-                                            },
+                                        match env::var(&var.value) {
+                                             Ok(val) => {
+                                                 for vc in val.chars() {
+                                                     buf.push(vc);
+                                                 }
+                                             },
+                                             Err(_e) => {
+                                                 for vc in var.value.chars() {
+                                                     buf.push(vc);
+                                                 } 
+                                             },
                                         };
                                     },
                                     VarType::Array => {
@@ -1926,10 +1922,8 @@ fn process_array_value(_log: &Log, value : &str) -> Result<Vec<String>, String> 
                 }
             },
             '\\' => {
-                match state {
-                    LexState::StartParam => { state = LexState::InParam },
-                    _ => ()
-                }
+                if state == LexState::StartParam { state = LexState::InParam }
+
                 match state {
                     LexState::InParam  => {
                         buf[pos] = c;

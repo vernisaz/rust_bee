@@ -1013,11 +1013,7 @@ impl GenBlockTup {
                 }
                 #[cfg(any(unix, target_os = "redox"))]
                 if name == "canonicalize" {
-                    match fs::canonicalize(&path) {
-                        Ok(can_path) => path =  can_path.into_os_string().into_string().unwrap(),
-                        _ => ()
-                    }
-                    
+                    if let Ok(can_path) = fs::canonicalize(&path) { path =  can_path.into_os_string().into_string().unwrap() }
                 }
                 return Some(VarVal::from_string(path))
             }
@@ -1582,10 +1578,10 @@ impl GenBlockTup {
                                         for entry in dir.flatten() {
                                             let name = entry.file_name().to_str().unwrap().to_owned();
                                             if entry.file_type().unwrap().is_file() &&
-                                            (!start.is_none() && name.starts_with(start.unwrap()) &&
-                                                !end.is_none() && name.ends_with(end.unwrap()) ||
-                                            start.is_none() && !end.is_none() && name.ends_with(end.unwrap()) ||
-                                            !start.is_none() && name.starts_with(start.unwrap()) && end.is_none() ||
+                                            (start.is_some() && name.starts_with(start.unwrap()) &&
+                                                end.is_some() && name.ends_with(end.unwrap()) ||
+                                            start.is_none() && end.is_some() && name.ends_with(end.unwrap()) ||
+                                            start.is_some() && name.starts_with(start.unwrap()) && end.is_none() ||
                                             start.is_none() && end.is_none()) &&
                                             !zip.add(simzip::ZipEntry::from_file(entry.path().as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
                                                 log.warning(&format!{"Zip entry {1:?}/{0} already exists", &name, &path} )
