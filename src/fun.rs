@@ -424,8 +424,7 @@ impl GenBlockTup {
                 }
                 let range_as_var = self.prev_or_search_up(range_as_opt, prev_res);
                 
-                if range_as_var.is_some() {
-                    let range_as_val = range_as_var.unwrap();
+                if let Some(range_as_val) = range_as_var {
                     if range_as_val.val_type == VarType::Array {
                         for var_el in range_as_val.values {
                             range.push(var_el.clone())
@@ -1009,9 +1008,7 @@ impl GenBlockTup {
                     path = cwd.value + MAIN_SEPARATOR_STR + &path
                 }
                 #[cfg(any(unix, target_os = "redox"))]
-                if name == "canonicalize" {
-                    if let Ok(can_path) = fs::canonicalize(&path) { path =  can_path.into_os_string().into_string().unwrap() }
-                }
+                if name == "canonicalize" && let Ok(can_path) = fs::canonicalize(&path) { path =  can_path.into_os_string().into_string().unwrap() }
                 return Some(VarVal::from_string(path))
             }
             "newerthan" => {
