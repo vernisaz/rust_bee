@@ -740,10 +740,7 @@ impl GenBlockTup {
             "exec" | "aexec" => {
                 let mut exec : String  = fun_block.flex.as_ref().unwrap().to_string();
                 // look for var first
-                match fun_block.search_up(&exec) { // no exec name from prev oper
-                    Some(exec1) => { exec = *process_template_value(log, &exec1.value, fun_block, res_prev);},
-                    None => ()
-                }
+                if let Some(exec1) = fun_block.search_up(&exec) { exec = *process_template_value(log, &exec1.value, fun_block, res_prev);}
                 let mut params: Vec<_> = Vec::new();
                 for i in 0..fun_block.params.len() {
                     let param = &fun_block.params[i];
@@ -1169,9 +1166,9 @@ impl GenBlockTup {
             },
             "file_filter" | "filter" => { // remove from an array parameter all matching parameters 1..n
                 let param = self.prev_or_search_up(&fun_block.params[0], res_prev);
-                if param.is_some() && param.as_ref().unwrap().val_type == VarType::Array {
+                if let Some(param) = param && param.val_type == VarType::Array {
                     let filter_vals = fun_block.params[1..].iter().map(|filter| process_template_value(log, filter, fun_block, res_prev)).collect::<Vec<_>>();
-                    let files = param.unwrap().values;
+                    let files = param.values;
                     let cwd =
                         match fun_block.search_up(&CWD.to_string()) {
                         Some(cwd) => cwd.value,
@@ -1268,11 +1265,8 @@ impl GenBlockTup {
                         else {false};
                     let path= PathBuf::from(&file);
                     let filename = path.file_name().unwrap().to_str().unwrap().to_string();
-                    let star_pos = filename.find("*"); // TODO introduce esc * in future
-                    if star_pos.is_none() {
-                        res.push(file)
-                    } else {
-                        let star_pos = star_pos.unwrap();
+                    // TODO introduce esc * in future
+                    if let Some(star_pos) = filename.find("*") {
                         let dir = path.parent().unwrap_or(Path::new(MAIN_SEPARATOR_STR));
                         let mut chars = filename.chars();
                         let (start, end) = if chars.nth(0).unwrap() == '*' {
@@ -1283,6 +1277,8 @@ impl GenBlockTup {
                             (Some(&filename[0..star_pos]), Some(&filename[star_pos+1..]))
                         };
                         fill_dir(&mut res, dir, &start, &end, recursive, false)
+                    } else {
+                        res.push(file)
                     }
                 }
                 return Some(VarVal::from_vec(&res))
@@ -1296,18 +1292,11 @@ impl GenBlockTup {
                     let end = if fun_block.params.len() > 2 
                     {(*self.parameter(log, 2, fun_block, res_prev)).parse().ok()?} else {str.len()};
                     return Some(VarVal::from_string(&str[start..end]))
-                } else {
-                    match fun_block.search_up(&fun_block.params[0]) {
-                        Some(var) => {
-                            if var.val_type == VarType::Array {
-                                let end = if fun_block.params.len() > 2 
-                                   {(*self.parameter(log, 2, fun_block, res_prev)).parse().ok()?} else {var.values.len()};
-                                return Some(VarVal::from_vec(&var.values[start..end].to_vec()))
-                            } 
-                        } 
-                        _ => ()
-                    }
-                }
+                } else if let Some(var) = fun_block.search_up(&fun_block.params[0]) && var.val_type == VarType::Array {
+                    let end = if fun_block.params.len() > 2 
+                        {(*self.parameter(log, 2, fun_block, res_prev)).parse().ok()?} else {var.values.len()};
+                    return Some(VarVal::from_vec(&var.values[start..end].to_vec()))
+                } 
             }
             "cp" => {
                 let mut res : Vec<_> = Vec::new();

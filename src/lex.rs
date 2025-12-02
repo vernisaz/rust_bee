@@ -2145,12 +2145,9 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                                             }
                                                         }
                                                     }
-                                                    match process(log, &include_path, block.clone()) {
-                                                        Err(e) => {
-                                                            log.error(&format!("Can't process an include script {include_path:?} at {0}, problem: {e}", all_chars.line));
-                                                            return Err(e)
-                                                        },
-                                                        _ => ()
+                                                    if let Err(e) = process(log, &include_path, block.clone()) {
+                                                        log.error(&format!("Can't process an include script {include_path:?} at {0}, problem: {e}", all_chars.line));
+                                                        return Err(e)
                                                     }
                                                 }
                                             },
