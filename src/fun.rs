@@ -134,7 +134,7 @@ impl GenBlock {
         }
     }
 
-    pub fn search_up(&self, name: &String) -> Option<VarVal> {
+    pub fn search_up(&self, name: &str) -> Option<VarVal> {
         let var = self.vars.get(name);
         match var {
             None => {
@@ -184,7 +184,7 @@ impl GenBlockTup {
         self.0.borrow_mut().vars.remove(name)
     }
 
-    pub fn search_up(&self, name: &String) -> Option<VarVal> {
+    pub fn search_up(&self, name: &str) -> Option<VarVal> {
         let  current_bl = self.0.borrow();
        // let mut current_vars = current_bl.vars;
         let var = current_bl.vars.get(name);
@@ -232,7 +232,7 @@ impl GenBlockTup {
         let len = dep.children.len();
         //println!{"depb {dep:?}"}
         if len == 0 {
-            return dep.out == None || "true" == dep.out.as_ref().unwrap()
+            return dep.out.is_none() || "true" == dep.out.as_ref().unwrap()
         } else if len == 1 {
             let dep_task = &dep.children[0];
             let dep_block = dep_task.0.borrow();
@@ -256,7 +256,7 @@ impl GenBlockTup {
                             let p2 = process_template_value(log, &dep_block.params[1], &dep, prev_res);
                             log.debug(&format!("anynewer dep parameters: {}, {}", p1, p2));
                             // TODO get cwd here 
-                            if let Some(_cwd) = self.search_up(&CWD.to_string()) {} else {
+                            if self.search_up(CWD) .is_none() {
                                 log.warning("No CWD set")
                             }
                             return exec_anynewer(self, &p1, &p2)
@@ -521,10 +521,7 @@ impl GenBlockTup {
                     let res = child.exec(log, prev_res);
                     match res {
                         None => {
-                            match before_res {
-                                Some(_before_some) => return Some(VarVal::from_bool(false)),
-                                _ => ()
-                            }
+                            if let Some(_before_some) = before_res { return Some(VarVal::from_bool(false)) }
                         },
                         Some(ref res_some) => {
                             match before_res {
@@ -672,7 +669,7 @@ impl GenBlockTup {
             },
             "write" => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(CWD) {
                     fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 let file = File::create(&fname);
@@ -684,7 +681,7 @@ impl GenBlockTup {
             }
             "writex" if cfg!(not(unix)) => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(CWD) {
                     fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 let file = File::create(&fname);
@@ -696,7 +693,7 @@ impl GenBlockTup {
             }
             "writea" => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(CWD) {
                     fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 if let Ok(mut file) =  OpenOptions::new()
@@ -712,7 +709,7 @@ impl GenBlockTup {
             #[cfg(unix)]
             "writex" if cfg!(unix) => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(CWD) {
                     fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 match OpenOptions::new()
@@ -747,7 +744,7 @@ impl GenBlockTup {
                     // TODO add resolving using last result ~~
                     log.debug(&format!("exec params: {:?} for {:?}", fun_block.params, val));
                     if let Some(param) = val {
-                        if param.values.len() > 0 { // array
+                        if !param.values.is_empty() { // array
                             for param in param.values {
                                 params.push(*process_template_value(log, &param, fun_block, res_prev))
                             }
@@ -758,7 +755,7 @@ impl GenBlockTup {
                         params.push(*self.parameter(log, i, fun_block, res_prev))
                     } 
                 }
-                let dry_run = self.search_up(&"~dry-run~".to_string());
+                let dry_run = self.search_up("~dry-run~");
                 let mut cwd = String::new();
 
                 let mut calc_cwd = |work_dir_val: &String| {
@@ -770,7 +767,7 @@ impl GenBlockTup {
                         };
                         //println!{"calc work dir {work_dir}"}
                         if !has_root(&work_dir) {
-                            let cwd = fun_block.search_up(&CWD.to_string());
+                            let cwd = fun_block.search_up(CWD);
                             //println!{"found cwd {cwd:?}"}
                             if let Some(cwd) = cwd {
                                 work_dir = cwd.value + std::path::MAIN_SEPARATOR_STR + &work_dir
@@ -792,7 +789,7 @@ impl GenBlockTup {
                     calc_cwd(&work_dir_val)
                 } else {
                     // take it from the target cwd
-                    let work_dir = fun_block.search_up(&CWD.to_string());
+                    let work_dir = fun_block.search_up(CWD);
                     if let Some(work_dir) = work_dir {
                         cwd = work_dir.value
                     }
@@ -922,7 +919,7 @@ impl GenBlockTup {
                     log.error(&format!{"No argument for timestamp at {}", &fun_block.script_line});
                 } else {
                     let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                    if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                    if !has_root(&fname) && let Some(cwd) = fun_block.search_up(CWD) {
                         fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                     }
                     let ts = timestamp(&fname);
@@ -935,7 +932,7 @@ impl GenBlockTup {
             "cropname" => { // the approach targets a file path, so for arbitrary name add a CWD to mask
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
                 
-                let Some(cwd) = fun_block.search_up(&CWD.to_string()) else {
+                let Some(cwd) = fun_block.search_up(CWD) else {
                     log.error(&format!{"File can't be cropped because CWD isn't set at {}", &fun_block.script_line});
                     return  Some(VarVal::from_string(fname))
                 };
@@ -990,7 +987,7 @@ impl GenBlockTup {
             }
             "read" => {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                if !has_root(&fname) && let Some(cwd) = fun_block.search_up(CWD) {
                     fname = cwd.value + MAIN_SEPARATOR_STR + &fname
                 }
                 let file_content = &fs::read_to_string(&fname).ok();
@@ -1004,7 +1001,7 @@ impl GenBlockTup {
             },
             "absolute" | "canonicalize" => {
                 let mut path = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&path) && let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                if !has_root(&path) && let Some(cwd) = fun_block.search_up(CWD) {
                     path = cwd.value + MAIN_SEPARATOR_STR + &path
                 }
                 #[cfg(any(unix, target_os = "redox"))]
@@ -1031,7 +1028,7 @@ impl GenBlockTup {
                         (None,None)
                     };
                 let mut dir1 = dir1?;
-                if let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                if let Some(cwd) = fun_block.search_up(CWD) {
                     if !has_root(&dir1) {
                         dir1 = cwd.value.clone() + MAIN_SEPARATOR_STR + &dir1
                     }
@@ -1047,7 +1044,7 @@ impl GenBlockTup {
                 let mut p1 = *self.parameter(log, 0, fun_block, res_prev);
                 let mut p2 = *self.parameter(log, 1, fun_block, res_prev);
                 if (!has_root(&p1) || !has_root(&p2)) &&
-                    let Some(cwd) = fun_block.search_up(&CWD.to_string()) {
+                    let Some(cwd) = fun_block.search_up(CWD) {
                     if !has_root(&p1) {
                         p1 = cwd.value.clone() + MAIN_SEPARATOR_STR + &p1
                     }
@@ -1167,7 +1164,7 @@ impl GenBlockTup {
                     let filter_vals = fun_block.params[1..].iter().map(|filter| process_template_value(log, filter, fun_block, res_prev)).collect::<Vec<_>>();
                     let files = param.values;
                     let cwd =
-                        match fun_block.search_up(&CWD.to_string()) {
+                        match fun_block.search_up(CWD) {
                         Some(cwd) => cwd.value,
                         None => "".to_string()
                     };
@@ -1192,7 +1189,7 @@ impl GenBlockTup {
                 }
             },
             "panic" => {
-                panic!("{} at {}", self.parameter(log, 0, fun_block, res_prev), fun_block.script_line)
+                panic!("{} in {:?} at {}", self.parameter(log, 0, fun_block, res_prev), fun_block.search_up("~script~"), fun_block.script_line)
             },
             "element" => { // the function allows to extract or set an element of an array
                 if fun_block.params.len() < 2 {
@@ -1251,7 +1248,7 @@ impl GenBlockTup {
             },
             "files" => {
                 let mut res : Vec<_> = Vec::new();
-                let cwd = fun_block.search_up(&CWD.to_string());
+                let cwd = fun_block.search_up(CWD);
                 for i in 0.. fun_block.params.len() {
                     let mut file = *self.parameter(log, i, fun_block, res_prev);
                     if !has_root(&file) && let Some(ref path) = cwd { file = path.value.clone() + MAIN_SEPARATOR_STR + &file }
@@ -1299,7 +1296,7 @@ impl GenBlockTup {
                 let mut res : Vec<_> = Vec::new();
                 let len = fun_block.params.len();
                 let cwd =
-                    match fun_block.search_up(&CWD.to_string()) {
+                    match fun_block.search_up(CWD) {
                     Some(cwd) => cwd.value,
                     None => "".to_string()
                     };
@@ -1327,7 +1324,7 @@ impl GenBlockTup {
             "mv" => {
                 let mut res : Vec<_> = Vec::new();
                 let cwd =
-                    match fun_block.search_up(&CWD.to_string()) {
+                    match fun_block.search_up(CWD) {
                     Some(cwd) => cwd.value,
                     None => "".to_string()
                     };
@@ -1356,7 +1353,7 @@ impl GenBlockTup {
             "mkd" => {
                 let mut res : Vec<_> = Vec::new();
                  let cwd =
-                    match fun_block.search_up(&CWD.to_string()) {
+                    match fun_block.search_up(CWD) {
                     Some(cwd) => cwd.value,
                     None => "".to_string()
                     };
@@ -1376,7 +1373,7 @@ impl GenBlockTup {
             "rm" => {
                 let mut res : Vec<_> = Vec::new();
                 let cwd =
-                    match fun_block.search_up(&CWD.to_string()) {
+                    match fun_block.search_up(CWD) {
                     Some(cwd) => cwd.value,
                     None => "".to_string()
                     };
@@ -1396,7 +1393,7 @@ impl GenBlockTup {
             "rmdir" | "rmdira" => {
                 let mut res : Vec<_> = Vec::new();
                  let cwd =
-                    match fun_block.search_up(&CWD.to_string()) {
+                    match fun_block.search_up(CWD) {
                     Some(cwd) => cwd.value,
                     None => "".to_string()
                     };
@@ -1453,7 +1450,7 @@ impl GenBlockTup {
                 // sub directories
                 // -B : file or wildcard files to add without sub directories, and it can be var name of an array
                 let mut zip_path = *self.parameter(log, 0, fun_block, res_prev);
-                let cwd = fun_block.search_up(&CWD.to_string());
+                let cwd = fun_block.search_up(CWD);
                 if !has_root(&zip_path) && let Some(ref cwd) = cwd { zip_path = cwd.value.clone() + MAIN_SEPARATOR_STR + &zip_path }
                 if zip_path.find('.').is_none() {
                     zip_path += ".zip"
@@ -2186,7 +2183,7 @@ pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
     // dependencies
     let mut need_exec = false;
     
-    let gl_cwd = target_bl.search_up(&CWD.to_string());
+    let gl_cwd = target_bl.search_up(CWD);
     let mut target = target_bl.borrow_mut();
     let dir = target.dir.clone();
     log.debug(&format!("processing: {} deps of {:?} in {dir:?}", &target.deps.len(), &target.name));
@@ -2217,7 +2214,7 @@ pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
     for dep in &target.deps {
         need_exec |= dep.eval_dep(log, &None)
     }
-    if !need_exec && target.search_up(&"~force-build-target~".to_string()).is_some() {
+    if !need_exec && target.search_up("~force-build-target~").is_some() {
         need_exec = true
     }
     
@@ -2251,7 +2248,7 @@ pub fn format_system_time(time: SystemTime) -> String {
 }
 
 pub fn exec_anynewer(block:&GenBlockTup, p1: &String, p2: &String) -> bool {
-    let Some(cwd) = block.search_up(&CWD.to_string()) else {
+    let Some(cwd) = block.search_up(CWD) else {
         // unlikely ~cwd~ isn't set
         return newest(p1) > newest(p2)
     };

@@ -2138,7 +2138,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                                         match scoped_block.search_up(&String::from("~script_path~")) {
                                                             Some(var) => include_path = PathBuf::from(var.value).join(include_path),
                                                             _ => {
-                                                                let cwd = scoped_block.search_up(&crate::CWD.to_string());
+                                                                let cwd = scoped_block.search_up(crate::CWD);
                                                                 if let Some(cwd) = cwd {
                                                                     include_path = PathBuf::from(cwd.value).join(include_path)
                                                                 }
@@ -2164,7 +2164,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                                 match scoped_block.search_up(&String::from("~script_path~")) {
                                                     Some(var) => include_path = PathBuf::from(var.value).join(include_path),
                                                     _ => {
-                                                        let cwd = scoped_block.search_up(&crate::CWD.to_string());
+                                                        let cwd = scoped_block.search_up(crate::CWD);
                                                         if let Some(cwd) = cwd {
                                                             include_path = PathBuf::from(cwd.value).join(include_path)
                                                         }
@@ -2300,7 +2300,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
             Lexem::BlockEnd(value) => {
                 //println!(" current {:?}", scoped_block.0.borrow_mut().block_type);
                 let mut rl_block = scoped_block.borrow_mut();
-                if rl_block.out == None {
+                if rl_block.out.is_none() {
                     rl_block.out = value
                 }
                 drop(rl_block);
