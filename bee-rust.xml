@@ -4,6 +4,7 @@
     <!ENTITY project "rb">
     <!ENTITY simzip "../simple_rust_zip">
     <!ENTITY simtime "../simtime">
+    <!ENTITY simcolor "../simcolor">
     <!ENTITY crates "C:\Users\sunil\projects\crates">
     ]>
 <!-- 
@@ -16,6 +17,7 @@
 <!-- URLs to download crates:
 	Crate simtime: https://github.com/vernisaz/simtime.git
     Crate simzip: https://github.com/vernisaz/simple_rust_zip.git
+    Crate simcolor: https://github.com/vernisaz/simcolor
 -->
 
 <bee name="&project;" type="project">
@@ -87,7 +89,7 @@ pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
          <parameter value="--crate-name"/>
         <parameter value="simtime"/>
         <parameter value="--edition"/>
-        <parameter value="2021"/>
+        <parameter value="2024"/>
        <parameter value="--out-dir"/>
        <parameter>&crates;</parameter>
        <parameter value="lib.rs"/>
@@ -117,6 +119,51 @@ pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
     </block>
   </target>
   
+  <target name="color" dir="&simcolor;">
+      <dependency>
+           <function name="anynewer">
+              <parameter value="&simcolor;/src/*.rs" />
+              <parameter value="&crates;/libsimtime.rlib" />
+           </function>
+     </dependency>
+     <dependency target="time"/>
+     <block>
+     <echo>Compiling crate simcolor in &crates; ...</echo>
+      <task exec="RUSTC">
+         <parameter value="--crate-type=lib"/>
+         <parameter value="--crate-name"/>
+        <parameter value="simcolor"/>
+        <parameter value="--edition"/>
+        <parameter value="2024"/>
+       <parameter value="--out-dir"/>
+       <parameter>&crates;</parameter>
+       <parameter value="src/lib.rs"/>
+      <onexit>
+        <if>
+          <expression>
+             <operator name="neq"><value variable="resultcode"/><value>0</value></operator>
+          </expression>
+          <block type="then">
+                 <echo>Error(s) at compilation color</echo>
+                 <function name="stop">
+		        	<parameter value="1"/>
+                 </function>
+          </block>
+       </if>
+      </onexit>
+      <onexception>
+    	<block>
+             <echo>Exception at compilation color</echo>
+             <echo variable="~#error#~"/>
+             <function name="stop">
+    			<parameter value="-1"/>
+             </function>
+    	</block>
+      </onexception>
+    </task>
+    </block>
+  </target>
+  
   <target name="simzip" dir="&simzip;">
       <dependency>
            <function name="anynewer">
@@ -124,7 +171,7 @@ pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
               <parameter value="&crates;/libsimzip.rlib" />
            </function>
      </dependency>
-     <dependency target="time"/>
+     <dependency target="color"/>
 
      <block>
      <echo>Compiling crate simzip ...</echo>
@@ -135,7 +182,7 @@ pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
          <parameter value="--crate-name"/>
         <parameter value="simzip"/>
         <parameter value="--edition"/>
-        <parameter value="2021"/>
+        <parameter value="2024"/>
        <parameter value="--out-dir"/>
        <parameter value="&crates;"/>
        <parameter value="src/lib.rs"/>
@@ -182,9 +229,13 @@ pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
         <parameter value="simtime=&crates;/libsimtime.rlib"/>
         <parameter value="--extern"/>
         <parameter value="simzip=&crates;/libsimzip.rlib"/>
+        <parameter value="--extern"/>
+        <parameter value="simcolor=&crates;/libsimcolor.rlib"/>
+        <parameter value="--edition"/>
+        <parameter value="2024"/>
        <parameter value="-o"/>
        <parameter value="&project;"/>
-       <parameter variable="src"/>
+       <parameter value="src/${src}"/>
       <onexit>
         <if>
           <expression>

@@ -1,4 +1,4 @@
-//use std::io::{self, BufRead, Write};
+use simcolor::{Colorized};
 pub struct Log {
     pub verbose: bool,
     pub debug: bool,
@@ -21,13 +21,13 @@ impl Log {
 
     pub fn error(&self, msg: &str) {
         if !self.quiet {
-             eprintln!("\x1b[0;31mError: {}\x1b[0m", msg);
+             eprintln!("{} {}", "Error:".bold(), msg.red());
         }
     }   
     
     pub fn warning(&self, msg: &str) {
         if self.verbose && !self.quiet {
-             println!("\x1b[0;33mWarning: {}\x1b[0m", msg);
+             println!("{} {}", "Warning:".bold(), msg.yellow());
         }
     }
 

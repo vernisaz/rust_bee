@@ -1,4 +1,5 @@
 extern crate simtime as time;
+extern crate simcolor;
 use std::{fs::{self,File},env,
     path::{Path,PathBuf},
     io::{self, Write, BufRead},
@@ -10,6 +11,7 @@ use std::{fs::{self,File},env,
     collections::HashMap, ops::ControlFlow};
 #[cfg(feature = "release")]
 use std::panic;
+use simcolor::{Colorized};
 
 mod help;
 mod ver;
@@ -223,7 +225,7 @@ fn main() -> Result<(), Box<dyn Error>> {
      }
      if !log.quiet {
         // TODO get year from time::
-          log.message(&format!("RustBee (\x1b[0;36mrb\x1b[0m) v {} © {} D. Rogatkin", ver::version().0, util::year_now()));
+          log.message(&format!("RustBee ({}) v {} © {} D. Rogatkin", "rb".bright().cyan(), ver::version().0, util::year_now()));
           if options.contains(&CmdOption::Version) {
                let (ver, build, date) = ver::version();
                log.message(&format!("RB Version: {}, build: {} on {}", ver, build, date))

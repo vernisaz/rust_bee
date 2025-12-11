@@ -23,11 +23,12 @@ Clone it first at its directory level as `rust_bee`. You can use the **install**
 The following crates will be required to build the **RustBee**
 - [SimTime](https://github.com/vernisaz/simtime)
 - [SimZip](https://github.com/vernisaz/simple_rust_zip)
+- [SimColor](https://github.com/vernisaz/simcolor)
 
 Their repositories need to be checked out before building the **RustBee**.
 
 ## Version
-The current version is **1.15.05**.
+The current version is **1.15.06**.
 
 ## Scripting examples
 
