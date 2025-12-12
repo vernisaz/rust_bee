@@ -10,6 +10,7 @@ use std::{collections::HashMap,
         ops::Deref,
         path::{self, MAIN_SEPARATOR_STR,PathBuf,MAIN_SEPARATOR},
         fmt, error::Error};
+use simcolor::{Colorized};
 #[cfg(unix)]
 use std::os::unix::fs::OpenOptionsExt;
 use crate::lex::{process_template_value, VarVal, VarType};
@@ -839,7 +840,7 @@ impl GenBlockTup {
                         
                         return Some(VarVal::from_i32(output.status.code().unwrap()))
                     } else {
-                       log.error(&format!("Command {} with {:?} in {} failed to start at {}, reason {}", exec, params, cwd, fun_block.script_line, String::from_utf8_lossy(&output.stderr)))
+                       log.error(&format!("Command {} with {:?} in {} failed to start at {:?}:{}, reason {}", exec, params, cwd, fun_block.search_up("~script~"), fun_block.script_line, String::from_utf8_lossy(&output.stderr)))
                     }
                 } else {
                     let status = if cwd.is_empty() { Command::new(&exec)
@@ -855,9 +856,9 @@ impl GenBlockTup {
                             Some(code) => {
                                 return Some(VarVal::from_i32(code))},
                                 //self.parent().unwrap().add_var("~~".to_string(), VarVal{val_type: VarType::Number, value: code.to_string(), values: Vec::new()});},
-                            None   => log.error(&format!("The process terminated by signal at {}", &fun_block.script_line))
+                            None   => log.error(&format!("The process terminated by signal at {:?}:{}", fun_block.search_up("~script~"), &fun_block.script_line))
                         }
-                        Err(err) => log.error(&format!("Command {} with {:?} in {} failed to start at {}, reason {}", exec, params, cwd, fun_block.script_line, err))
+                        Err(err) => log.error(&format!("Command {} with {:?} in {} failed to start at {:?}:{}, reason {}", exec, params, cwd, fun_block.search_up("~script~"), fun_block.script_line, err))
                     } 
                 }
             },
@@ -2156,7 +2157,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
             }
         }
         let Some(tar_name) = tar_name else {
-            return Err("No targets found in the script".into())
+            return Err(Box::new("No targets found in the script".red()))
         };
         targets.push(tar_name)
     }
@@ -2173,7 +2174,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
                 continue 'targets
             }
         }
-        return Err(format!("No target '{target}' found").into())
+        return Err(format!("No target '{target}' found").red().into())
     }
     
     Ok(())
