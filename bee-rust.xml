@@ -23,7 +23,7 @@
 <bee name="&project;" type="project">
     <variable name="RUSTC">rustc</variable>
     <variable name="src">main.rs</variable> 
-
+    
     <target name="version update" dir=".">
         <dependency>
            <function name="allnewer">
@@ -129,6 +129,21 @@ pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
      <dependency target="time"/>
      <block>
      <echo>Compiling crate simcolor in &crates; ...</echo>
+
+    <!-- this vill require to set env in 7bee process
+    import java.io.IOException;
+    import java.util.Map;
+    
+    public class EnvChildProcess {
+        public static void main(String[] args) throws IOException {
+            ProcessBuilder pb = new ProcessBuilder("printenv"); // "env" on Linux/macOS, "cmd /c set" on Windows
+            Map<String, String> env = pb.environment();
+            env.put("VERSION", "bootstrap");
+            pb.inheritIO();
+            pb.start();
+        }
+    }
+     -->
       <task exec="RUSTC">
          <parameter value="--crate-type=lib"/>
          <parameter value="--crate-name"/>
