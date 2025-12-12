@@ -5,7 +5,7 @@
     <!ENTITY simzip "../simple_rust_zip">
     <!ENTITY simtime "../simtime">
     <!ENTITY simcolor "../simcolor">
-    <!ENTITY crates "/home/dmitriy/projects/rust_util/src/rust/crates">
+    <!ENTITY crates "C:\Users\sunil\projects\crates">
     ]>
 <!-- 
    Rust project RB
