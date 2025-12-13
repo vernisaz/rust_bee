@@ -12,7 +12,7 @@ The language is described [here](./doc/RUSTBEE.md).
 
 ## Bulding
 
-It's self building tool, however it needs a bootstraping. [7Bee](https://github.com/drogatkin/7Bee) is used for the
+It's a self building tool, however it needs a bootstrapping. [7Bee](https://github.com/drogatkin/7Bee) is used for the
 [purpose](./bee-rust.xml) (see instructions inside).
 You can use **RustBee** itself for building it after you built the starter version. 
 
