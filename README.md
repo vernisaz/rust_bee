@@ -13,7 +13,7 @@ The language is described [here](./doc/RUSTBEE.md).
 ## Bulding
 
 It's self building tool, however it needs a bootstraping. [7Bee](https://github.com/drogatkin/7Bee) is used for the
-[purpose](./bee-rust.xml).
+[purpose](./bee-rust.xml) (see instructions inside).
 You can use **RustBee** itself for building it after you built the starter version. 
 
 The RustBee [script](./bee.7b) has one dependency [SimScipt](https://github.com/vernisaz/simscript).
