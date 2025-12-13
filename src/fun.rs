@@ -1572,7 +1572,7 @@ impl GenBlockTup {
                                             }
                                         }
                                     }
-                                    _ => log.error(&format!{"Zip error: can't process directory {parent_files:?}"})
+                                    _ => log.warning(&format!{"Zip: can't process directory {parent_files:?}"})
                                 }
                             } else if entry_path.is_file() {
                                 if !zip.add(simzip::ZipEntry::from_file(entry_path.as_os_str().to_str().unwrap(), path.map(str::to_string).as_ref())) {
@@ -1588,10 +1588,10 @@ impl GenBlockTup {
                                             }
                                         }
                                     }
-                                    _ => log.error(&format!{"Zip error: can't read directory{entry_path:?}"})
+                                    _ => log.warning(&format!{"Zip: can't read directory{entry_path:?}"})
                                 }
                             } else {
-                                log.error(&format!{"Zip error: unknown : {entry_path:?}"})
+                                log.warning(&format!{"Zip: unknown : {entry_path:?}"})
                             }
                         }
                     }
@@ -1599,7 +1599,7 @@ impl GenBlockTup {
                 }
                 match zip.store() {
                     Ok(()) => return Some(VarVal::from_string(zip_path)),
-                    Err(msg) => log.error(&format!{"Zip error: {msg}"})
+                    Err(msg) => log.error(&format!{"Zip: {msg}"})
                 }
             },
             "cfg" => {
