@@ -2163,7 +2163,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
     }
     log.log(&format!("targets: {:?}", targets));
     'targets: for target in targets {
-        log.log(&format!("processing for {} in {}", target, block.borrow().children.len()));
+        log.log(&format!("processing for '{}' of {}", target, block.borrow().children.len()));
         let children = block.borrow().children.clone();
         for bl in children {
            // let clone_bl = bl.clone();
