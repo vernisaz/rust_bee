@@ -229,7 +229,7 @@ fn main() -> Result<(), Box<dyn Error>> {
           if options.contains(&CmdOption::Version) {
                let (ver, build, date) = ver::version();
                log.message(&format!("RB Version: {}/SC:{}/SZ:{}/ST:{}, build: {} on {}", ver.bold(),
-                  simcolor::VERSION, simzip::VERSION, time::VERSION, build, date.italic()))
+                  simcolor::VERSION.yellow(), simzip::VERSION, time::VERSION, build, date.italic()))
           }
      }
      for opt in &options {
