@@ -306,7 +306,7 @@ fn main() -> Result<(), Box<dyn Error>> {
           });
      }
      let Some(mut path) = path else {
-          log.error(&format!{"No script file found in {:?}", env::current_dir()});
+          log.error(&format!{"No script file found in {}", env::current_dir().unwrap_or_default().display()});
           return Ok(())
      };
      if !Path::new(&path).exists() {
