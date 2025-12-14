@@ -228,7 +228,8 @@ fn main() -> Result<(), Box<dyn Error>> {
           log.message(&format!("RustBee ({}) v {} © {} D. Rogatkin", "rb".bright().cyan(), ver::version().0, util::year_now()));
           if options.contains(&CmdOption::Version) {
                let (ver, build, date) = ver::version();
-               log.message(&format!("RB Version: {}, build: {} on {}", ver, build, date))
+               log.message(&format!("RB Version: {}/SC:{}/SZ:{}/ST:{}, build: {} on {}", ver.bold(),
+                  simcolor::VERSION, simzip::VERSION, time::VERSION, build, date.italic()))
           }
      }
      for opt in &options {
