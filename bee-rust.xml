@@ -17,7 +17,7 @@
 <!-- URLs to clone crate repositories:
 	Crate simtime: https://github.com/vernisaz/simtime.git
     Crate simzip: https://github.com/vernisaz/simple_rust_zip.git
-    Crate simcolor: https://github.com/vernisaz/simcolor
+    Crate simcolor: https://github.com/vernisaz/simcolor.git
 -->
 
 <bee name="&project;" type="project">
@@ -93,6 +93,7 @@ pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
        <parameter value="--out-dir"/>
        <parameter>&crates;</parameter>
        <parameter value="lib.rs"/>
+       <parameter value="for RB 1.15.0x.bootstrap" name="VERSION" type="environment"/>
       <onexit>
         <if>
           <expression>
@@ -187,6 +188,7 @@ pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
        <parameter value="--out-dir"/>
        <parameter value="&crates;"/>
        <parameter value="src/lib.rs"/>
+       <parameter value="for RB 1.15.0x.bootstrap" name="VERSION" type="environment"/>
       <onexit>
         <if>
           <expression>
