@@ -2178,6 +2178,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
                 continue 'targets
             }
         }
+        let target = target.clone().bold();
         return Err(format!("No target '{target}' found").red().into())
     }
     
