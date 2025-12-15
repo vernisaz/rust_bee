@@ -236,7 +236,7 @@ fn main() -> Result<(), Box<dyn Error>> {
           //println!("{:?}", opt);
           match opt {
                CmdOption::Version => (),
-               CmdOption::Help => { log.message(&help::get_help().to_string()); return Ok(())},
+               CmdOption::Help => { log.message(&help::get_help()); return Ok(())},
                CmdOption::Verbose => log.verbose = true,
                CmdOption::Diagnostics => log.debug = true,
                CmdOption::Quiet => log.quiet = true,
