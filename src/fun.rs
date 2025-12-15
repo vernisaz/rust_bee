@@ -1062,7 +1062,7 @@ impl GenBlockTup {
             }
             "gt" => {
                 if fun_block.params.len() != 2 {
-                    log.error(&format!{"Greater than requires 2 parameters, but specified {} at {}", &fun_block.params.len(), fun_block.script_line}) 
+                    log.error(&format!{"Greater than requires 2 parameters, but specified {} at {}:{}", &fun_block.params.len(), fun_block.script_path(), fun_block.script_line}) 
                 } else {
                     let p1 = *self.parameter(log, 0, fun_block, res_prev);
                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
@@ -1076,7 +1076,7 @@ impl GenBlockTup {
             },
             "lt" => {
                 if fun_block.params.len() != 2 {
-                    log.error(&format!{"Littler than requires 2 parameters, but specified {} at {}", &fun_block.params.len(), fun_block.script_line}) 
+                    log.error(&format!{"Littler than requires 2 parameters, but specified {} at {}:{}", &fun_block.params.len(), fun_block.script_path(), fun_block.script_line}) 
                 } else {
                     let p1 = *self.parameter(log, 0, fun_block, res_prev);
                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
@@ -1091,7 +1091,7 @@ impl GenBlockTup {
             "not" => return Some(VarVal::from_bool(!VarVal::from_string(*self.parameter(log, 0, fun_block, res_prev)).is_true())),
             "contains" | "find" => {
                 if fun_block.params.len() != 2 {
-                    log.error(&format!{"Contains requires 2 parameters, but specified {} at {}", &fun_block.params.len(), fun_block.script_line}) 
+                    log.error(&format!{"Contains requires 2 parameters, but specified {} at {}:{}", &fun_block.params.len(), fun_block.script_path(), fun_block.script_line}) 
                 } else {
                     let p1 = *self.parameter(log, 0, fun_block, res_prev);
                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
@@ -1127,7 +1127,7 @@ impl GenBlockTup {
                             let parts = param.value.split(':');
                             let parts: Vec<_> = parts.collect();
                             if parts.len() !=3 {
-                                log.error(&format!("Expected 3 parts of maven URL but found {}", parts.len()));
+                                log.error(&format!("Expected 3 parts of maven URL but found {} at {}:{}", parts.len(), fun_block.script_path(), &fun_block.script_line));
                                 return None
                             }
                             //let mav_parts: Vec<_> = parts.collect();
@@ -1155,7 +1155,7 @@ impl GenBlockTup {
                             if !param.is_empty() {
                                 res.push(param)
                             } else if fun_block.params.len() > 1 {
-                                log.error(&format!{"An empty parameter {} is ignored at {}", i, &fun_block.script_line})
+                                log.error(&format!{"An empty parameter {} is ignored at {}:{}", i, fun_block.script_path(), &fun_block.script_line})
                             }
                         }
                     }
@@ -1513,7 +1513,7 @@ impl GenBlockTup {
                                 log.warning(&format!{"Zip entry {1:?}/{0} already exists", &files.as_os_str().to_str().unwrap(), &path})
                             }
                         } else {
-                            log.error(&format!{"Path {files:?} can't be zipped"})
+                            log.error(&format!{"Path {files:?} can't be zipped at {}:{}", fun_block.script_path(), &fun_block.script_line})
                         }
                     } else if op.starts_with("-B") { // probably -C takes all cases
                          let path = if op.len() > 3 {
@@ -1603,7 +1603,7 @@ impl GenBlockTup {
                 }
                 match zip.store() {
                     Ok(()) => return Some(VarVal::from_string(zip_path)),
-                    Err(msg) => log.error(&format!{"Zip: {msg}"})
+                    Err(msg) => log.error(&format!{"Zip: {msg} at {}:{}", fun_block.script_path(), &fun_block.script_line})
                 }
             },
             "cfg" => {
@@ -1679,7 +1679,7 @@ impl GenBlockTup {
         if !fun_block.params.is_empty() && i < fun_block.params.len() {
             self.expand_parameter(log, &fun_block.params[i], fun_block, res_prev)
         } else {
-            log.error(&format!("Calling for parameter {i} in non existing parameter of {:?}", fun_block.name));
+            log.error(&format!("Calling for parameter {i} in non existing parameter of {:?} at {}:{}", fun_block.name, fun_block.script_path(), &fun_block.script_line));
             Box::new(String::new())
         }
     }
