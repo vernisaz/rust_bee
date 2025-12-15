@@ -9,7 +9,7 @@ common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 comp opts=[--extern,simzip]
 version=1.15.06
-build=165
+build=166
 
 include(env.7b);
 
@@ -40,7 +40,7 @@ target install::Install RustBee everyone's use  {
        choice y | Y {
 	    if {
 	      eq(windows,~os~) then {    
-	           display(Windows install)
+	           display(Make sure that you have elevated privileges for a successful Windows install)
 	           env(HOMEPATH)
 	           assign(rustbee,${~~}${~/~}.rustbee${~/~}bin)
 		       mkd(rustbee)

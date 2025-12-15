@@ -1194,7 +1194,7 @@ impl GenBlockTup {
                 }
             },
             "panic" => {
-                panic!("{} in {:?} at {}", self.parameter(log, 0, fun_block, res_prev).red(), fun_block.script_path(), fun_block.script_line)
+                panic!("{} at {}:{}", self.parameter(log, 0, fun_block, res_prev), fun_block.script_path(), fun_block.script_line)
             },
             "element" => { // the function allows to extract or set an element of an array
                 if fun_block.params.len() < 2 {
