@@ -124,7 +124,7 @@ pub fn version() -> (&amp;'static str, u32, &amp;'static str) {
       <dependency>
            <function name="anynewer">
               <parameter value="&simcolor;/src/*.rs" />
-              <parameter value="&crates;/libsimtime.rlib" />
+              <parameter value="&crates;/libsimcolor.rlib" />
            </function>
      </dependency>
      <dependency target="time"/>
