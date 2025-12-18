@@ -156,7 +156,7 @@ impl GenBlock {
         }
     }
     
-    fn script_path(&self) -> String {
+    pub fn script_path(&self) -> String {
         self.search_up("~script~").map(|v| v.value).unwrap_or_default()
     }
 }

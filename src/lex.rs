@@ -2146,12 +2146,12 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                                         }
                                                     }
                                                     if let Err(e) = process(log, &include_path, block.clone()) {
-                                                        log.error(&format!("Can't process an include script {include_path:?} at {0}, problem: {e}", all_chars.line));
+                                                        log.error(&format!("Can't process an include script {include_path:?} at {0}:{1}, problem: {e}", scoped_block.0.borrow().script_path(), all_chars.line));
                                                         return Err(e)
                                                     }
                                                 }
                                             },
-                                            _ => log.error(&format!("The include location variable {} isn't type file , the include is ignored at {}", &value, all_chars.line)),
+                                            _ => log.error(&format!("The include location variable {} isn't type file , the include is ignored at {}:{}", &value, scoped_block.0.borrow().script_path(), all_chars.line)),
                                         }
                                     },
                                     None => {
@@ -2173,7 +2173,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                             }
                                             if let Err(e) = 
                                                 process(log, &include_path, block.clone()) {
-                                                    log.error(&format!("Can't process an include script {include_path:?} at {}, problem: {}", all_chars.line, e));
+                                                    log.error(&format!("Can't process an include script {include_path:?} at {}:{}, problem: {}", scoped_block.0.borrow().script_path(), all_chars.line, e));
                                                     return Err(e)
                                                 }
                                         }
@@ -2213,7 +2213,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                             //println!{"name {:?} dir {:?} flex {:?}", inner_block.name, inner_block.dir, inner_block.flex}
                             scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                         } else {
-                            log.error(&format!("Target {} is already exists at {}", &name, all_chars.line));
+                            log.error(&format!("Target {} is already exists at {}:{}", &name, scoped_block.0.borrow().script_path(), all_chars.line));
                         }
                     },
                     "eq" => {
