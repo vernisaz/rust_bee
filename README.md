@@ -27,6 +27,9 @@ The following crates will be required to build the **RustBee**
 
 Their repositories need to be checked out before building the **RustBee**.
 
+### Color
+Since the product supports colorized output, it obeys rules used by SimColor.
+
 ## Version
 The current version is **1.15.06**.
 
