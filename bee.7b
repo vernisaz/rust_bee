@@ -32,7 +32,7 @@ target crate {
 	dependency{target(version update)}
 }
 
-target install::Install RustBee everyone's use  {
+target install::Install RustBee for everyone's use  {
     dependency {true}
     ask(Are you going to install the ${project}? [N/y/l],n)
     assign(install option, ~~)
@@ -109,7 +109,7 @@ target install::Install RustBee everyone's use  {
     }
 }
 
-target package {
+target package::Creates a zip with the tool and supplied files {
 	dependency {
         target(build)
     }
