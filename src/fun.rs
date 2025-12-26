@@ -1712,33 +1712,16 @@ impl GenBlockTup {
             }
         }
     }
-
+    
     fn array_to_string(&self, val: &Option<VarVal>, sep: &str, res_prev: &Option<VarVal>) -> Option<String> {
         let Some(vec_param) = val else { return None};
         if vec_param.val_type == VarType::Array {
-            let first_el = self.prev_or_search_up(&vec_param.values[0], res_prev);
-            let mut collect_str = if let Some(el) = first_el {
-                el.value.to_owned()
-            } else {
-                vec_param.values[0].to_owned()
-            }
-                ;
-            for next_idx in 1..vec_param.values.len() {
-                collect_str.push_str(sep);
-                let next_el = self.prev_or_search_up(&vec_param.values[next_idx], res_prev);
-                //collect_str.push_str(&next_el.unwrap_or(&vec_param.values[next_el]));
-                if let Some(val) = next_el {
-                    collect_str.push_str(&val.value)
-                } else {
-                    collect_str.push_str(&vec_param.values[next_idx])
-                }
-            }
-            Some(collect_str.clone())
+            Some(vec_param.values.clone().into_iter().map(|v| if let Some(v) = self.prev_or_search_up(&v, res_prev) {v.value} else {v}).collect::<Vec<_>>().join(sep))
         } else {
             Some(vec_param.value.clone())
         }
     }
-
+    
     fn calc(&self, str: String) -> CalcResult {
         let chars = str.chars();
         let mut pos = 0usize;
