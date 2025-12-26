@@ -1716,7 +1716,7 @@ impl GenBlockTup {
     fn array_to_string(&self, val: &Option<VarVal>, sep: &str, res_prev: &Option<VarVal>) -> Option<String> {
         let Some(vec_param) = val else { return None};
         if vec_param.val_type == VarType::Array {
-            Some(vec_param.values.clone().into_iter().map(|v| if let Some(v) = self.prev_or_search_up(&v, res_prev) {v.value} else {v}).collect::<Vec<_>>().join(sep))
+            Some(vec_param.values.clone().into_iter().map(|v| if let Some(v) = self.prev_or_search_up(&v, res_prev) {self.array_to_string(&Some(v), sep, res_prev).unwrap_or_default()} else {v}).collect::<Vec<_>>().join(sep))
         } else {
             Some(vec_param.value.clone())
         }
