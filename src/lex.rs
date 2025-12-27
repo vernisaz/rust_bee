@@ -1942,6 +1942,10 @@ fn process_array_value(_log: &Log, value : &str) -> Result<Vec<String>, String> 
                         pos = 0;
                         state = LexState:: StartParam;
                     },
+                    LexState::StartParam  => {
+                        res.push(String::new());
+                        pos = 0;
+                    },
                     LexState::BlankOrEnd => {
                         let param = buf[0..blank_pos].iter().collect();
                         res.push(param);
