@@ -133,6 +133,7 @@ pub struct Reader {
     line: u32,
     line_offset: u16,
     reader: File,
+    file_path: String,
 }
 
 impl VarVal {
@@ -227,15 +228,16 @@ impl Reader {
     }
 }
 
-fn open(file: &PathBuf) -> io::Result<Reader> {
+fn open(file_path: &PathBuf) -> io::Result<Reader> {
 
     Ok(Reader {
-        reader : File::open(file)?,
+        reader : File::open(file_path)?,
         line : 1,
         buf : [0; 256],
         pos : 0,
         end : 0,
         line_offset : 0,
+        file_path: file_path.to_string_lossy().to_string(),
     })
 }
 
@@ -753,7 +755,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     },
                     LexState::InType => {
                         // syntax error
-                        log.error(&format!{"Unexpected symbol ] in type at {}:{}", reader.line, reader.line_offset});
+                        log.error(&format!{"Unexpected symbol ']' in type at {}:{}:{}", reader.file_path, reader.line, reader.line_offset});
                         state = LexState::UnrecoverableErr;
                         return (Lexem::EOF, state, reader.line);
                     },
@@ -1496,7 +1498,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     },
                     LexState::EndFunction  => {
                         state = LexState::Begin; 
-                        log.error(&format!{"Expected ';' or a new line at {}:{}", reader.line, reader.line_offset});
+                        log.error(&format!{"Expected ';' or a new line at  {}:{}:{}", reader.file_path, reader.line, reader.line_offset});
                         return (Lexem::EOF, state, reader.line)
                     },
                     _ => todo!("state: {:?} at {}", state, reader.line)
@@ -1507,7 +1509,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
     }
     match state {
         LexState::InQtLex => {
-            log.error(&format!{"Unexpected ending of the script file in quoted token at {}:{}", reader.line, reader.line_offset});
+            log.error(&format!{"Unexpected ending of the script file in quoted token at  {}:{}:{}", reader.file_path, reader.line, reader.line_offset});
             return (Lexem::EOF, state, reader.line);
         },
         LexState::EndFunction | LexState::InParam => {
@@ -2043,7 +2045,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                     if let Ok(res) = res {
                         VarVal::from_vec(&res)
                     } else {
-                        log.error(&format!{"The array isn't well defined: {} at {}:{}", &value, all_chars.line, all_chars.line_offset});
+                        log.error(&format!{"The array isn't well defined: {} at  {}:{}:{}", &value, file.to_string_lossy(), all_chars.line, all_chars.line_offset});
                         VarVal::from_string(&value)
                     }
                 } else {VarVal::from_string(&value)}
@@ -2051,7 +2053,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                 if current_name.is_empty() {
                     let mut scoped_block = scoped_block.borrow_mut();
                     scoped_block.out = Some(value);
-                    log.warning(&format!{"The value {c_b:?} can't be set to no name at {}:{}", all_chars.line, all_chars.line_offset} )
+                    log.warning(&format!{"The value {c_b:?} can't be set to no name at  {}:{}:{}", file.to_string_lossy(), all_chars.line, all_chars.line_offset} )
                 } else {
                     scoped_block.borrow_mut().vars.insert(current_name.to_owned(), c_b);
                 }
@@ -2101,7 +2103,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                   let c_b = VarVal{val_type:VarType::RepositoryMaven, value:var.value.clone(), values: Vec::new()};
                                   bl.vars.insert(current_name.to_string(), c_b);
                               },
-                            _ => log.error(&format!("Unknown type '{}' ignored at {}:{}", &var_type, all_chars.line, all_chars.line_offset))
+                            _ => log.error(&format!("Unknown type '{}' ignored at  {}:{}:{}", &var_type, bl.script_path(), all_chars.line, all_chars.line_offset))
                         }
                         
                     },
@@ -2142,12 +2144,12 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                                         }
                                                     }
                                                     if let Err(e) = process(log, &include_path, block.clone()) {
-                                                        log.error(&format!("Can't process an include script {include_path:?} at {0}:{1}, problem: {e}", scoped_block.0.borrow().script_path(), all_chars.line));
+                                                        log.error(&format!("Can't process an include script {include_path:?} at {0}:{1}: , problem: {e}", scoped_block.0.borrow().script_path(), all_chars.line));
                                                         return Err(e)
                                                     }
                                                 }
                                             },
-                                            _ => log.error(&format!("The include location variable {} isn't type file , the include is ignored at {}:{}", &value, scoped_block.0.borrow().script_path(), all_chars.line)),
+                                            _ => log.error(&format!("The include location variable {} isn't type file , the include is ignored at  {}:{}: ", &value, scoped_block.0.borrow().script_path(), all_chars.line)),
                                         }
                                     },
                                     None => {
@@ -2209,7 +2211,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                             //println!{"name {:?} dir {:?} flex {:?}", inner_block.name, inner_block.dir, inner_block.flex}
                             scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                         } else {
-                            log.error(&format!("Target {} is already exists at {}:{}", &name, scoped_block.0.borrow().script_path(), all_chars.line));
+                            log.error(&format!("Target {} is already exists at  {}:{}: ", &name, scoped_block.0.borrow().script_path(), all_chars.line));
                         }
                     },
                     "eq" => {
@@ -2289,7 +2291,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))))
                     },
-                    _ => log.error(&format!("unknown block {} of {:?} at {}:{}", type_hdr, &parent_type, all_chars.line, all_chars.line_offset))
+                    _ => log.error(&format!("unknown block {} of {:?} at  {}:{}:{}", type_hdr, &parent_type, scoped_block.borrow().script_path(), all_chars.line, all_chars.line_offset))
                 }
                 
             },
@@ -2302,7 +2304,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                 drop(rl_block);
                 let parent = scoped_block.parent();
                 match parent {
-                    None => log.error(&format!("Unmatched block {:?} closing found at {}:{}", scoped_block.borrow().block_type, all_chars.line, all_chars.line_offset)),
+                    None => log.error(&format!("Unmatched block {:?} closing found at  {}:{}:{}", scoped_block.borrow().block_type, scoped_block.borrow().script_path(), all_chars.line, all_chars.line_offset)),
                     Some(parent) => scoped_block = parent.clone()
                 }
             },
