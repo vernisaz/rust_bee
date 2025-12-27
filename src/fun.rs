@@ -1628,7 +1628,7 @@ impl GenBlockTup {
                 }
                 return Some(VarVal::from_string(cfg_path))
             }
-            _ => todo!("unimplemented func: {:?} at {}:{}: ", fun_block.name, fun_block.script_path(), &fun_block.script_line)
+            _ => todo!("no such function: {:?} at {}:{}: ", fun_block.name, fun_block.script_path(), &fun_block.script_line)
         }
         None
     }
