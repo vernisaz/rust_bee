@@ -1275,9 +1275,13 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
             },
             ',' => {
                 match state {
-                    LexState::InParam | LexState::InParamBlank => {                    
+                    LexState::InParam => {                    
                         state = LexState::StartParam; 
                         return (Lexem::Parameter(buffer[0..buf_fill].iter().collect()), state, reader.line);
+                    },
+                    LexState::InParamBlank => {                    
+                        state = LexState::StartParam; 
+                        return (Lexem::Parameter(buffer[0..last_nb].iter().collect()), state, reader.line);
                     },
                     LexState::StartParam => {
                         state = LexState::StartParam; 
