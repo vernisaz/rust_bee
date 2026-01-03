@@ -9,7 +9,6 @@ Options:
   -debug, -d             print a debugging information
   -logfile <file>        use given file for log
   -l       <file>          ''
-  -noinput               do not allow interactive input
   -buildfile <file>      use the given script file
   -file    <file>        ''
   -f       <file>        ''
