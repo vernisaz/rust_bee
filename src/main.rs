@@ -143,7 +143,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
                     break
                }
           } else if arg.starts_with("-")  {
-               log.error(&format!("Not supported option: {}", &arg))
+               log.error(&format!("Unknown option: {}", &arg))
           } else if arg_n > 0 {
                targets.push(arg)
           }
@@ -259,9 +259,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                          unsafe { env::set_var("PWD", cwd) }
                          lex_tree.add_var(String::from(CWD), lex::VarVal::from_string(cwd));
                     } else {
-                         let err = format!("Script {} not found", file.clone().unwrap_or("*".to_string()));
-                         log.error(&err);
-                         return Err(err.into())
+                         return Err(format!("Script {} not found", file.clone().unwrap_or("*".to_string())).into())
                     }
                },
                CmdOption::ForceRebuild => {
@@ -313,7 +311,7 @@ fn main() -> Result<(), Box<dyn Error>> {
      if !Path::new(&path).exists() {
           path += SCRIPT_EXT;
           if !Path::new(&path).is_file() {
-              log.error(&format!{"Script file {path:#} not found"});
+              log.error(&format!{"Script file {} not found", path.bold()});
               return Ok(())
           }
           
@@ -330,7 +328,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let child = child_tree.0.borrow();
                if child .block_type == fun::BlockType::Target 
                     && let Some(name) = &child.name {
-                         log.message(&format!("{name} - {}", &child.flex.clone().unwrap_or("".to_string())))
+                         log.message(&format!("{name} - {}", &child.flex.clone().unwrap_or("".to_string()).bright().blue()))
                }
          }
       } else if lex_res.is_ok() {
