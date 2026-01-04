@@ -820,7 +820,7 @@ impl GenBlockTup {
                      if let Ok(status) = status {
                         return Some(VarVal::from_i32(status.id() as i32))
                      }
-                     log.error(&format!("Command {} with {:?} in {} failed to start asynchoronically at {}:{}: , reason {}", exec, params, cwd, fun_block.script_path(), fun_block.script_line, status.err().unwrap()))
+                     log.error(&format!("Command {} with {:?} in {} failed to start asynchronically at {}:{}: , reason {}", exec, params, cwd, fun_block.script_path(), fun_block.script_line, status.err().unwrap()))
                 } else if fun_block.out .is_some() {
                     let output = if cwd.is_empty() { Command::new(&exec)
                         .args(&params)
