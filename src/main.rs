@@ -42,6 +42,7 @@ static SYSTEM_PROPERTIES: RwLock<Option<HashMap<String, String>>> = RwLock::new(
 
 const SCRIPT_EXT: &str = ".7b";
 pub const CWD : &str = "~cwd~";
+pub const SCRIPT: &str ="~script~";
 
 pub fn set_property(name: &String, value: &String) {
      if SYSTEM_PROPERTIES.read().unwrap().is_none() {
@@ -316,7 +317,7 @@ fn main() -> Result<(), Box<dyn Error>> {
           }
           
      }
-     let _ = &lex_tree.add_var(String::from("~script~"), lex::VarVal::from_string(&path));
+     let _ = &lex_tree.add_var(String::from(SCRIPT), lex::VarVal::from_string(&path));
      
      let sys_time = SystemTime::now();
      

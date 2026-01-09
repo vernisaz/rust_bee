@@ -157,7 +157,7 @@ impl GenBlock {
     }
     
     pub fn script_path(&self) -> String {
-        self.search_up("~script~").map(|v| v.value).unwrap_or_default()
+        self.search_up(crate::SCRIPT).map(|v| v.value).unwrap_or_default()
     }
 }
 
@@ -210,7 +210,7 @@ impl GenBlockTup {
             let current_bare = current_bl.borrow();
             // println!{"checking {:?} for {name}", parent_bare.block_type}
              if current_bare.vars.contains_key(name) {
-                return Some(current_bl.clone())
+                break Some(current_bl.clone())
              } else {
                 let parent = current_bare.parent.clone()?;
                 drop(current_bare);
