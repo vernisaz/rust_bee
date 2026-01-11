@@ -9,7 +9,7 @@ common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 comp opts=[--extern,simzip]
 version=1.15.06
-build=169
+build=170
 
 include(env.7b);
 
@@ -17,7 +17,7 @@ if {
 	eq(Mode,release) then {
 		array(comp opts, -C,opt-level=3,--cfg, feature="release")
 		assign(comp opts, ~~)
-		display(Release build)
+		display(${GREEN}Release build${NO_COLOR})
 	}
 }
 
