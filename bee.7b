@@ -9,7 +9,7 @@ common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 comp opts=[--extern,simzip]
 version=1.15.06
-build=170
+build=171
 
 include(env.7b);
 
@@ -89,13 +89,13 @@ target install::Install RustBee for everyone's use  {
       	  } else {
       	  	  display(Unix local install)
       	  	  env(HOME)
-      	  	  assign(install dir,${~~}/.rb)
+      	  	  assign(install dir,${~~}/.rb) # reconsider to use ~/.local/share/.rb or ~/.local/bin
       	  	  mkd(install dir) # just in case
       	  	  cp(addpath.sh,install dir)
       	  	  cp(rb,install dir)
 	          if {
 	           	 eq(~~, ${install dir}${~/~}${project}) then {
-	           			display(Installed ${~~} in ${install dir}, do not forget to run 'addpath.sh')
+	           			display(Installed ${~~} in ${install dir}, do not forget to run './addpath.sh')
 	           			display(You may also append calling the script in  ~/.profile as `. $HOME/.rb/addpath.sh`)
 	           	 } else {
 	           			display(Installation has failed)
