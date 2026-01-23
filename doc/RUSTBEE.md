@@ -27,7 +27,7 @@ The special characters can be escaped instead of quoting, like:
 
     json lib=org.glassfish\:javax.json\:1.1.4:rep-maven
     
-Note that trailing `blank` has to be escaped in a name or a value.
+Note that trailing `blank` has to be escaped to get preserved in a name or a value.
 
 Although any name is allowed, all names starting with
 *~* and ending with *~* are reserved.
@@ -46,7 +46,7 @@ You can break a line by adding \ at the end.
 
 A function call is defined as:
 
-    function_name [name](parameter1,....)
+    function_name[ name](parameter1,....)
 
 If a function parameter includes one of the following symbols `,, ,)` then it has to be escaped as described above.
 
