@@ -1846,9 +1846,10 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
     let expanded_val:String = buf.into_iter().collect();
     if was_replacement {
         log.debug(&format!{"expanding {}", &expanded_val});
-        return process_template_value(log, &expanded_val, vars, res_prev)
+        process_template_value(log, &expanded_val, vars, res_prev)
+    } else {
+        Box::new(expanded_val)
     }
-    Box::new(expanded_val)
 }
 
 fn process_array_value(_log: &Log, value : &str) -> Result<Vec<String>, String> {
