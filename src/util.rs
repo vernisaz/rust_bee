@@ -1,8 +1,8 @@
 use crate::SystemTime;
 #[cfg(any(unix, target_os = "redox"))]
-use std::path::{MAIN_SEPARATOR_STR};
+use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
 #[cfg(target_os = "windows")]
-use std::path::{MAIN_SEPARATOR};
+use std::path::{MAIN_SEPARATOR, Path, PathBuf};
 
 #[derive(Default, PartialEq)]
 enum EscState {
@@ -312,4 +312,24 @@ pub fn has_root(path:  impl AsRef<str>) -> bool {
 #[inline]
 pub fn has_root(path:  impl AsRef<str>) -> bool {
     path.as_ref().starts_with(MAIN_SEPARATOR_STR)
+}
+
+pub fn normalize_path(path: &Path) -> PathBuf {
+    let mut normalized = PathBuf::new();
+    
+    for component in path.components() {
+        match component {
+            std::path::Component::ParentDir => {
+                normalized.pop(); // Remove the last component
+            }
+            std::path::Component::CurDir => {
+                continue; // Skip current directory
+            }
+            _ => {
+                normalized.push(component); // Add other components
+            }
+        }
+    }
+    
+    normalized
 }

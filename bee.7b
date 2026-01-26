@@ -8,8 +8,8 @@ main=src${~/~}main
 common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 comp opts=[--extern,simzip]
-version=1.15.06
-build=171
+version=1.15.07
+build=172
 
 include(env.7b);
 

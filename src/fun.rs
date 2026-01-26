@@ -8,7 +8,7 @@ use std::{collections::HashMap,
         env,
         process::{Command, Stdio},
         ops::Deref,
-        path::{self, MAIN_SEPARATOR_STR,PathBuf,MAIN_SEPARATOR},
+        path::{MAIN_SEPARATOR_STR,PathBuf,MAIN_SEPARATOR},
         fmt, error::Error};
 use simcolor::{Colorized};
 #[cfg(unix)]
@@ -780,11 +780,7 @@ impl GenBlockTup {
                         }
                         let path =  Path::new(&work_dir);
                         if path.exists() {
-                            if cfg!(windows) {
-                                cwd = path::absolute(path).unwrap().into_os_string().into_string().unwrap()
-                            } else {
-                                cwd = path.canonicalize().unwrap().into_os_string().into_string().unwrap()
-                            }
+                            cwd = crate::util::normalize_path(path).display().to_string();
                         }
                     }
                 };
@@ -1011,6 +1007,8 @@ impl GenBlockTup {
                 }
                 #[cfg(any(unix, target_os = "redox"))]
                 if name == "canonicalize" && let Ok(can_path) = fs::canonicalize(&path) { path =  can_path.into_os_string().into_string().unwrap() }
+                #[cfg(target_os = "windows")]
+                {path = crate::util::normalize_path(path).display().to_string();}
                 return Some(VarVal::from_string(path))
             }
             "newerthan" => {
@@ -2191,8 +2189,8 @@ pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
             }
             let path =  Path::new(&dir);
             if path.exists() {
-                let cwd = std::path::absolute(path).unwrap().to_str().unwrap().to_string();
-                target.vars.insert(String::from(CWD),  VarVal::from_string(&cwd));
+                let cwd = crate::util::normalize_path(path).display().to_string() ;
+                target.vars.insert(String::from(CWD),  VarVal::from_string(cwd));
             } else {
                 log.error(&format!{"The target directory {path:?} doesn't exist"})
             }
