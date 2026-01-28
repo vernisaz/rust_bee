@@ -1008,7 +1008,7 @@ impl GenBlockTup {
                 #[cfg(any(unix, target_os = "redox"))]
                 if name == "canonicalize" && let Ok(can_path) = fs::canonicalize(&path) { path =  can_path.into_os_string().into_string().unwrap() }
                 #[cfg(target_os = "windows")]
-                {path = crate::util::normalize_path(path).display().to_string();}
+                {path = crate::util::normalize_path( Path::new(&path)).display().to_string();}
                 return Some(VarVal::from_string(path))
             }
             "newerthan" => {
