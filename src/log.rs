@@ -27,7 +27,7 @@ impl Log {
     
     pub fn warning(&self, msg: &str) {
         if self.verbose && !self.quiet {
-             println!("{} {}", "Warning:".bold(), msg.yellow());
+             println!("{} {}", "Warning:".italic(), msg.yellow());
         }
     }
 
