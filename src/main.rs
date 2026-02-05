@@ -162,24 +162,37 @@ fn is_bee_scrpt(file_path: &str) -> bool {
      file_path.starts_with("bee") && (file_path.ends_with(".rb") || file_path.ends_with(SCRIPT_EXT))
 }
 
+/// find script file from
+/// dir
+/// and name (extension is optional)
 fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
      let binding = fs::canonicalize(dir).ok()?; 
      let mut curr_dir = binding.as_path();
      while curr_dir.is_dir() {
+     //println!("searching {name:?} in {curr_dir:?}");
           match  name  {
                None =>  for entry in fs::read_dir(curr_dir).unwrap() {
                          let path = entry.ok()?.path();
                          if path.is_file() && is_bee_scrpt(path.file_name()?.to_str()?) {
-                              return Some(path.to_str().unwrap().to_string())
+                              return Some(path.to_str()?.to_string())
                          }
                     }
                Some(name) => {
                     let mut path_buf = curr_dir.to_path_buf();
                     path_buf.push(name);
-                    let script_path = path_buf.as_path();
-                    //println!{"-> {:?}", script_path};
-                    if script_path.exists() {
-                         return Some(script_path.to_str().unwrap().to_string())
+                    //let script_path = path_buf.as_path();
+                    //println!{"-> {:?}", path_buf};
+                    if path_buf.exists() {
+                         return Some(path_buf.display().to_string())
+                    } else {
+                        path_buf.set_extension("7b");
+                        if path_buf.exists() {
+                             return Some(path_buf.display().to_string())
+                        }
+                        path_buf.set_extension("rb");
+                        if path_buf.exists() {
+                             return Some(path_buf.display().to_string())
+                        }
                     }
                }
           }
@@ -217,7 +230,7 @@ fn main() -> Result<(), Box<dyn Error>> {
      let _ = &lex_tree.add_var(String::from("~path_separator~"), if std::env::consts::OS == "windows" {
           lex::VarVal::from_string(";") } else {lex::VarVal::from_string(":")});
      
-     let cwd = env::current_dir()?.into_os_string().into_string().unwrap();
+     let cwd = env::current_dir()?.display().to_string();
      lex_tree.add_var(String::from(CWD),  lex::VarVal::from_string(&cwd));
      //println!("additional ars {:?}", lex_tree.search_up(&String::from("~args~")));
      let mut target_help = false;
@@ -252,12 +265,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                },
                CmdOption::SearchUp(file) => {
                     log.log(&format!("Search: {:?}", file));
+                    //println!("Search: {:?}", file);
                     path = find_script(Path::new("."), file);
-                    if path.is_some() {
-                         let path1 = &path.clone().unwrap();
-                         let path1 = Path::new(path1);
-                         let cwd = path1.parent().unwrap().to_str().unwrap();
-                         unsafe { env::set_var("PWD", cwd) }
+                    if let Some(ref found_path) = path {
+                         let cwd = Path::new(&found_path).parent().ok_or("no parent directory")?.display().to_string();
+                         unsafe { env::set_var("PWD", &cwd) }
                          lex_tree.add_var(String::from(CWD), lex::VarVal::from_string(cwd));
                     } else {
                          return Err(format!("Script {} not found", file.clone().unwrap_or("*".to_string())).into())
