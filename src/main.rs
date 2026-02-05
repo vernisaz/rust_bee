@@ -333,7 +333,7 @@ fn main() -> Result<(), Box<dyn Error>> {
      
      let sys_time = SystemTime::now();
      
-     let lex_res = lex::process(&log, &PathBuf::from(path), lex_tree.clone());
+     let lex_res = lex::process(&log, &path, lex_tree.clone());
       if target_help {
           let tree = lex_tree.0.borrow();
           log.message("Targets");
