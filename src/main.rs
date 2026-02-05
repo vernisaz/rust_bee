@@ -41,6 +41,9 @@ enum CmdOption {
 static SYSTEM_PROPERTIES: RwLock<Option<HashMap<String, String>>> = RwLock::new(None);
 
 const SCRIPT_EXT: &str = ".7b";
+const SCRIPT_EXT2: &str = ".rb";
+const SCRIPT_EXT_PURE: &str = "7b";
+const SCRIPT_EXT2_PURE: &str = "rb";
 pub const CWD : &str = "~cwd~";
 pub const SCRIPT: &str ="~script~";
 
@@ -159,7 +162,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
 }
 
 fn is_bee_scrpt(file_path: &str) -> bool {
-     file_path.starts_with("bee") && (file_path.ends_with(".rb") || file_path.ends_with(SCRIPT_EXT))
+     file_path.starts_with("bee") && (file_path.ends_with(SCRIPT_EXT) || file_path.ends_with(SCRIPT_EXT2))
 }
 
 /// find script file from
@@ -185,11 +188,11 @@ fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
                     if path_buf.exists() {
                          return Some(path_buf.display().to_string())
                     } else {
-                        path_buf.set_extension("7b");
+                        path_buf.set_extension(SCRIPT_EXT_PURE);
                         if path_buf.exists() {
                              return Some(path_buf.display().to_string())
                         }
-                        path_buf.set_extension("rb");
+                        path_buf.set_extension(SCRIPT_EXT2_PURE);
                         if path_buf.exists() {
                              return Some(path_buf.display().to_string())
                         }
@@ -322,12 +325,12 @@ fn main() -> Result<(), Box<dyn Error>> {
      };
      let mut path = PathBuf::from(&path);
      if !path.exists() {
-          path.set_extension("7b");
+          path.set_extension(SCRIPT_EXT_PURE);
           if !path.is_file() {
               return Err(format!{"Script file {} not found", path.display()}.into())
           }
-     } else if path.is_dir() {
-         return Err(format!{"Script file {} is a directory", path.display()}.into())
+     } else if !path.is_file() {
+         return Err(format!{"Script file {} isn't a regular file", path.display()}.into())
      }
      let _ = &lex_tree.add_var(String::from(SCRIPT), lex::VarVal::from_path(&path));
      
