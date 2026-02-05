@@ -2,7 +2,7 @@
 use std::{fs::File,
           io::{self, Read},
           collections::HashMap,
-          env, path::{PathBuf},
+          env, path::{PathBuf,Path},
           cell::RefCell,
           rc::Rc,
           error::Error,
@@ -139,6 +139,10 @@ pub struct Reader {
 impl VarVal {
     pub fn from_string(str: impl Into<String>) -> VarVal {
         VarVal{val_type: VarType::Generic, value: str.into(), values: Vec::new()}  
+    }
+    
+    pub fn from_path(path: &Path) -> VarVal {
+        VarVal{val_type: VarType::Generic, value: path.display().to_string(), values: Vec::new()}  
     }
 
     pub fn from_bool(boole: bool) -> VarVal {

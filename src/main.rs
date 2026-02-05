@@ -292,7 +292,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             set_property(&name.to_string(), &val.to_string());
                                 //unsafe { env::set_var(name, val) }
                         } else {
-                             log.error(&format!("Invalid property definition: {}", &prop_def))
+                             log.error(&format!("Invalid property definition: {}", &prop_def.italic()))
                         }    
                     }
                }
@@ -317,19 +317,19 @@ fn main() -> Result<(), Box<dyn Error>> {
                ControlFlow::Continue(())
           });
      }
-     let Some(mut path) = path else {
-          log.error(&format!{"No script file found in {}", env::current_dir().unwrap_or_default().display()});
-          return Ok(())
+     let Some(path) = path else {
+          return Err(format!{"No script file found in {}", env::current_dir().unwrap_or_default().display()}.into())
      };
-     if !Path::new(&path).exists() {
-          path += SCRIPT_EXT;
-          if !Path::new(&path).is_file() {
-              log.error(&format!{"Script file {} not found", path.bold()});
-              return Ok(())
+     let mut path = PathBuf::from(&path);
+     if !path.exists() {
+          path.set_extension("7b");
+          if !path.is_file() {
+              return Err(format!{"Script file {} not found", path.display()}.into())
           }
-          
+     } else if path.is_dir() {
+         return Err(format!{"Script file {} is a directory", path.display()}.into())
      }
-     let _ = &lex_tree.add_var(String::from(SCRIPT), lex::VarVal::from_string(&path));
+     let _ = &lex_tree.add_var(String::from(SCRIPT), lex::VarVal::from_path(&path));
      
      let sys_time = SystemTime::now();
      
