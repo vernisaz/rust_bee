@@ -169,7 +169,13 @@ fn is_bee_scrpt(file_path: &str) -> bool {
 /// dir
 /// and name (extension is optional)
 fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
-     let binding = fs::canonicalize(dir).ok()?; 
+    #[cfg(any(unix, target_os = "redox"))]
+     let binding = fs::canonicalize(dir).ok()?;
+    #[cfg(target_os = "windows")]
+    let mut binding = crate::util::normalize_path(dir);
+    if !binding.has_root() {
+       binding = binding.join(env::current_dir().ok()?) 
+    }
      let mut curr_dir = binding.as_path();
      while curr_dir.is_dir() {
      //println!("searching {name:?} in {curr_dir:?}");
