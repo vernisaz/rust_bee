@@ -170,7 +170,7 @@ fn is_bee_scrpt(file_path: &str) -> bool {
 /// and name (extension is optional)
 fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
     #[cfg(any(unix, target_os = "redox"))]
-     let binding = fs::canonicalize(dir).ok()?;
+     let mut binding = fs::canonicalize(dir).ok()?;
     #[cfg(target_os = "windows")]
     let mut binding = crate::util::normalize_path(dir);
     if !binding.has_root() {
