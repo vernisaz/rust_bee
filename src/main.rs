@@ -262,9 +262,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     log.log(&format!("Script: {}", file));
                     
                     path = Some(file.to_string())
-                    // TODO decide if cwd has to be set in the file.parent()
-                    // probably not, because it can be some common place for a global script
-                    // to do a build in different directories
+                    // when file specified in -f then cwd isn't changed
+                    // if file specified in -s then cwd has to be set in the file.parent()
                },
                CmdOption::SearchUp(file) => {
                     log.log(&format!("Search: {:?}", file));
@@ -275,7 +274,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                          unsafe { env::set_var("PWD", &cwd) }
                          lex_tree.add_var(String::from(CWD), lex::VarVal::from_string(cwd));
                     } else {
-                         return Err(format!("Script {} not found", file.clone().unwrap_or("*".to_string())).into())
+                         return Err(Box::new(format!("Script {} not found", file.clone().unwrap_or("*".to_string()).bold()).default()))
                     }
                },
                CmdOption::ForceRebuild => {
@@ -321,16 +320,16 @@ fn main() -> Result<(), Box<dyn Error>> {
           });
      }
      let Some(path) = path else {
-          return Err(format!{"No script file found in {}", env::current_dir().unwrap_or_default().display()}.into())
+          return Err(Box::new(format!{"No script file found in {}", env::current_dir().unwrap_or_default().display().to_string().bold()}.default()))
      };
      let mut path = PathBuf::from(&path);
      if !path.exists() {
           path.set_extension(SCRIPT_EXT_PURE);
           if !path.is_file() {
-              return Err(format!{"Script file {} not found", path.display()}.into())
+              return Err(Box::new(format!{"Script file {} not found", path.display().to_string().bold()}.default()))
           }
      } else if !path.is_file() {
-         return Err(format!{"Script file {} isn't a regular file", path.display()}.into())
+         return Err(Box::new(format!{"Script file {} isn't a regular file", path.display().to_string().bold()}.default()))
      }
      let _ = &lex_tree.add_var(String::from(SCRIPT), lex::VarVal::from_path(&path));
      
