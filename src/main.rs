@@ -71,7 +71,7 @@ pub fn get_properties() -> impl IntoIterator <Item = (String, String)> {
         Ok(props) if props.is_some() => {
             props.clone().unwrap()
         }
-        _ => {let ret: HashMap<String, String> = HashMap::new(); ret}
+        _ => HashMap::new(),
     }
 }
 
@@ -147,7 +147,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
                     break
                }
           } else if arg.starts_with("-")  {
-               log.error(&format!("Unknown option: {}", &arg))
+               log.error(&format!("Unknown option: {}", arg))
           } else if arg_n > 0 {
                targets.push(arg)
           }
