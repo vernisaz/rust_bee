@@ -159,7 +159,7 @@ otherwise returns false
 - **rmdir**, **rmdira** removes an empty directory (rmdir), or a directory with all content (rmdira) specified in parameters
 - **scalar** | **join** , if a parameter is an array, then concatenates all elements using a separator specified by second parameter
 - **set_env**, set the environment key specified by first parameter to the value specified by the second one
-- **timestamp**, returns a timestamp of a file specified by a parameter
+- **timestamp**, returns a timestamp of a file specified by fisrt parameter, or first sets timestamp of the file specified by second parameter
 - **write**, writes to the file specified by first parameter, content of the rest parameters
 - **writea**, writes to the file specified by first parameter, content of the rest parameters. It doesn't create a new file if it already exists,
 just append content
