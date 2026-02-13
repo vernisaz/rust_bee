@@ -3,7 +3,7 @@ use std::{collections::HashMap,
         rc::{Rc, Weak},
         io::{self, Write},
         path::Path,
-        time::SystemTime,
+        time::{SystemTime,UNIX_EPOCH,Duration},
         fs::{self, OpenOptions, File, remove_file, create_dir_all, remove_dir, remove_dir_all, copy, rename},
         env,
         process::{Command, Stdio},
@@ -922,6 +922,27 @@ impl GenBlockTup {
                     let mut fname = *self.parameter(log, 0, fun_block, res_prev);
                     if !has_root(&fname) && let Some(cwd) = fun_block.search_up(CWD) {
                         fname = cwd.value + MAIN_SEPARATOR_STR + &fname
+                    }
+                    if fun_block.params.len() == 2 {
+                        let time_str = *self.parameter(log, 1, fun_block, res_prev);
+                        let time = if time_str == "now" {
+                            SystemTime::now()
+                        } else {
+                            if time_str .len() == 16 {
+                                let y = time_str[0..4].parse::<u32>().unwrap_or_default();
+                                let m = time_str[4..6].parse::<u32>().unwrap_or_default();
+                                let d = time_str[6..8].parse::<u32>().unwrap_or_default();
+                                let h = time_str[9..11].parse::<u32>().unwrap_or_default();
+                                let mn = time_str[11..13].parse::<u32>().unwrap_or_default();
+                                let s = time_str[13..15].parse::<u32>().unwrap_or_default();
+                                UNIX_EPOCH + Duration::from_secs(time::seconds_from_epoch(1970, y, m, d, h, mn, s).unwrap_or_default())
+                            } else {
+                                SystemTime::now()
+                            }
+                        };
+                        if let Ok(file) = File::open(&fname) {
+                            file.set_modified(time).ok();
+                        }
                     }
                     let ts = timestamp(&fname);
                     match ts {
