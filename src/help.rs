@@ -21,10 +21,17 @@ Options:
                          properties taking precedence
   -find [<file>]         (s)earch for a script file towards the root of 
   -s    [<file>]         the filesystem and then use it 
-  -targethelp            print all target names in the script file with descriptions/comments
+  -targethelp            print all target names in the script file with
+                         descriptions/comments
   -th                    ''
-  --                     a separator of argumets passed to the script target executable
-Examples: rb jar -d
+  --                     a separator of argumets passed to the script target
+                         executable
+
+Specifying an extension of script file name isn't required, unless it isn't the
+standard one.
+If a file name isn't specified, then any file which name starts from 'bee' is 
+considered as a script.
+Examples: rb jar -d -f project1
           rb compile -s
           rb clean compile -r
           rb run -- arg1
