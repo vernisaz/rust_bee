@@ -196,4 +196,4 @@ A string interpolation is applied at the end of any variant.
 ## Examples
 
 An example of a script for building a Java project, can be found [there](https://github.com/drogatkin/JustDSD/blob/master/bee-java.rb)
-Another example is [common Rust scriptd](https://github.com/vernisaz/simscript).
+Another example is [common Rust script](https://github.com/vernisaz/simscript).
