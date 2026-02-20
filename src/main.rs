@@ -89,7 +89,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
                if arg_n < len {
                     options.push(CmdOption::ScriptFile(args[arg_n].to_string()))
                } else {
-                    log.error("No file path specified in -file option")
+                    log.error("No file path specified after -file option")
                }
           } else if arg.starts_with("-s") || arg.starts_with("-find") {
                arg_n += 1;
@@ -112,7 +112,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
                options.push(CmdOption::DryRun)
           } else if arg.starts_with("-d") || arg.starts_with("-diagnostic") {
                options.push(CmdOption::Diagnostics);
-               unsafe {env::set_var("RUST_BACKTRACE", "1") } // because there is no control as 'rb' was launched
+               unsafe {env::set_var("RUST_BACKTRACE", "1") } // it's for rb itself, because there is no control as 'rb' was launched
                set_property(&"RUST_BACKTRACE".to_string(), &"1".to_string())
           } else if arg.starts_with("-r")  {
                options.push(CmdOption::ForceRebuild);
@@ -180,7 +180,7 @@ fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
      while curr_dir.is_dir() {
      //println!("searching {name:?} in {curr_dir:?}");
           match  name  {
-               None =>  for entry in fs::read_dir(curr_dir).unwrap() {
+               None =>  for entry in fs::read_dir(curr_dir).ok()? {
                          let path = entry.ok()?.path();
                          if path.is_file() && is_bee_scrpt(path.file_name()?.to_str()?) {
                               return Some(path.to_str()?.to_string())
@@ -213,13 +213,13 @@ fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
 fn main() -> Result<(), Box<dyn Error>> {
     #[cfg(feature = "release")]
     panic::set_hook(Box::new(|panic_info| {
-          if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
-               eprintln!("Abnormal RustBee termination: {s:?}")
-          } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
-               eprintln!("Abnormal RustBee termination: {s:?}")
-          } else {
-               eprintln!("Abnormal RustBee termination")
-          }
+        if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            eprintln!("Abnormal RustBee termination: {s:?}")
+        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+            eprintln!("Abnormal RustBee termination: {s:?}")
+        } else {
+            eprintln!("Abnormal RustBee termination")
+        }
      }));
      let mut log = Log {debug : false, verbose : false, quiet : false};
      *SYSTEM_PROPERTIES.write().unwrap() = Some(HashMap::new());
