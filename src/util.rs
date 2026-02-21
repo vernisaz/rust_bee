@@ -269,6 +269,7 @@ pub fn format_time(fmt_str: impl AsRef<str>, time: SystemTime) -> String {
     res
 }
 
+#[inline]
 pub fn vec_to_str(arr: &[String]) -> String {
     arr.join("\t")
 }
