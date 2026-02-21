@@ -785,9 +785,8 @@ impl GenBlockTup {
                     }
                 };
                 //println!{"parent dir {:?} of {:?} -> {:?}", fun_block.dir, fun_block.name, fun_block.flex}
-                if fun_block.dir.is_some() {
-                    let work_dir_val = fun_block.dir.as_ref().unwrap().to_string();
-                    calc_cwd(&work_dir_val)
+                if let Some(work_dir_val) = &fun_block.dir {
+                    calc_cwd(work_dir_val)
                 } else {
                     // take it from the target cwd
                     let work_dir = fun_block.search_up(CWD);
@@ -927,8 +926,7 @@ impl GenBlockTup {
                         let time_str = *self.parameter(log, 1, fun_block, res_prev);
                         let time = if time_str == "now" {
                             SystemTime::now()
-                        } else {
-                            if time_str .len() == 16 {
+                        } else if time_str .len() == 16 {
                                 let y = time_str[0..4].parse::<u32>().unwrap_or_default();
                                 let m = time_str[4..6].parse::<u32>().unwrap_or_default();
                                 let d = time_str[6..8].parse::<u32>().unwrap_or_default();
@@ -936,9 +934,8 @@ impl GenBlockTup {
                                 let mn = time_str[11..13].parse::<u32>().unwrap_or_default();
                                 let s = time_str[13..15].parse::<u32>().unwrap_or_default();
                                 UNIX_EPOCH + Duration::from_secs(time::seconds_from_epoch(1970, y, m, d, h, mn, s).unwrap_or_default())
-                            } else {
-                                SystemTime::now()
-                            }
+                        } else {
+                            SystemTime::now()
                         };
                         if let Ok(file) = File::open(&fname) {
                             file.set_modified(time).ok();

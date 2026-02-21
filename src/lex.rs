@@ -50,6 +50,7 @@ pub enum Lexem {
     Parameter(String), // potential Option<Vec<Lexem>> can be attached as the parameter comments
     BlockHdr(String),
     BlockEnd(Option<String>),
+    #[allow(clippy::upper_case_acronyms)]
     EOF
 }
 
@@ -2087,6 +2088,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
             Lexem::Type(var_type) => {
                 let mut bl = scoped_block.borrow_mut();
                 //log.debug(&format!("type {} in block {:?}", &current_name, bl.block_type));
+                #[allow(clippy::single_match)]
                 match bl.vars.get(&current_name.to_string()) {
                     Some(var) => { 
                         match var_type.as_str() {
@@ -2133,6 +2135,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                 if state2 == LexState::EndFunction {
                     log.debug(&format!("end func for {:?}", name));
                     if let Some(name) = name {
+                        #[allow(clippy::single_match)]
                         match name.as_str() {
                             "include" => {
                                 //println!{"search {:?}", &value};
