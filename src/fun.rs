@@ -2156,7 +2156,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
         for ch in &block.borrow().children.clone() {
             let ch_block = ch.0.borrow();
             if ch_block.block_type == BlockType::Target {
-                tar_name = Some(ch_block.name.as_ref().unwrap().to_string())
+                tar_name = Some(ch_block.name.as_ref().ok_or("no 'target' block name")?.to_string())
             }
         }
         let Some(tar_name) = tar_name else {
@@ -2171,7 +2171,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
         for bl in children {
            // let clone_bl = bl.clone();
             let ch_block = bl.0.borrow();
-            if ch_block.block_type == BlockType::Target && ch_block.name.as_ref().unwrap() == target { 
+            if ch_block.block_type == BlockType::Target && ch_block.name.as_ref().ok_or("no 'target' block name")? == target { 
                 drop(ch_block);
                 log.log(&format!("target: {}", exec_target(log, & bl)));
                 continue 'targets
@@ -2269,54 +2269,57 @@ pub fn exec_anynewer(block:&GenBlockTup, p1: &String, p2: &String) -> bool {
 }
 
 fn dir_ext_param(parameter: &str) -> (Option<String>,Option<String>) {
-    let path_end = parameter.rfind('/');
-    if path_end.is_none() {
-        return (None,None)
+    if let Some((path,ext)) = parameter.split_once('/') {
+        if ext.is_empty() {
+            (Some(path.to_string()),None)
+        } else {
+            (Some(path.to_string()),Some(ext.to_string()))
+        }
+    } else {
+        (None,None)
     }
-    let pos = path_end.unwrap();
-    let path = &parameter[0..pos];
-    if pos == parameter.len() {
-        return (Some(path.to_string()),None)
-    }   
-    let ext = &parameter[pos+1..];
-    (Some(path.to_string()),Some(ext.to_string()))
 }
 
 // TODO implement as pushing in passing through vector
-fn find_newer(dir1: &str, ext1: &str, dir2 : &Option<String>, ext2 : &Option<String>) -> Vec<String> {
+fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<String>) -> Vec<String> {
     let mut result = Vec::new();
-        
-    let paths = fs::read_dir(dir1);
-    if paths.is_err() {
-        return result
-    }
-    //println!{"find newerthen: {:?}/{:?} then {:?}/{:?}", &dir1, &ext1, &dir2, &ext2};
-    let dir = paths.unwrap();
-    for file1 in dir {
-        let file1_path = &file1.as_ref().unwrap().path().into_os_string().into_string().unwrap();
-        let file1_name = &file1.as_ref().unwrap().file_name().into_string().unwrap();
-        if file1.unwrap().file_type().unwrap().is_dir() {
-            let file2_str = dir2.as_ref().map(|file2| format!{"{}/{}", file2, file1_name});
-            result = [result, find_newer(file1_path, ext1, &file2_str, ext2)].concat();
-        } else if file1_name.ends_with(ext1) {
-            match dir2 {
-                Some(dir2) => {
-                    
-                    let file2 = format!{"{}/{}{}", &dir2, &file1_name[0..file1_name.len()-ext1.len()], &ext2.as_ref().unwrap()};
-                    
-                    let t1 = last_modified(file1_path);
-                    let t2 = last_modified(&file2);
-                    //println!{"comparing: {:?}:{:?}<>{:?}:{:?}", &file1_path, &t1, &file2, &t2};
-                    if t2.is_none() || t1.unwrap() > t2.unwrap() {
-                        //println!{"none or newer: {:?}>{:?}", t1.unwrap() ,t2.unwrap_or(std::time::UNIX_EPOCH) };
-                        result.push(file1_path.to_string())
+    let Ok(dir) = fs::read_dir(dir1) else {
+        return result;
+    };
+    for file1 in dir.flatten() {
+        let file1_path = file1.path();
+        if let Ok(r#type) = file1.file_type() {
+            if r#type.is_dir() {
+                let file2_str = dir2
+                    .as_ref()
+                    .map(|file2| format! {"{}/{}", file2, file1.file_name().display().to_string()});
+                result = [
+                    result,
+                    find_newer(&file1_path.display().to_string(), ext1, &file2_str, ext2),
+                ]
+                .concat();
+            } else if r#type.is_file()
+                && let Some(ext) = file1_path.extension()
+                && ext == ext1
+            {
+                match dir2 {
+                    Some(dir2) => {
+                        let file2 = format! {"{}/{}{}", &dir2, &file1_path.file_stem().unwrap().to_str().unwrap(), &ext2.as_ref().unwrap()};
+
+                        let t1 = last_modified(&file1_path.display().to_string());
+                        let t2 = last_modified(&file2);
+                        //println!{"comparing: {:?}:{:?}<>{:?}:{:?}", &file1_path, &t1, &file2, &t2};
+                        if t2.is_none() || t1.unwrap() > t2.unwrap() {
+                            //println!{"none or newer: {:?}>{:?}", t1.unwrap() ,t2.unwrap_or(std::time::UNIX_EPOCH) };
+                            result.push(file1_path.display().to_string())
+                        }
                     }
-                },
-                None => result.push(file1_path.to_string())
+                    None => result.push(file1_path.display().to_string()),
+                }
             }
         }
     }
-   // println!{"newer: {:?}", result};
+    // println!{"newer: {:?}", result};
     result
 }
 
@@ -2333,7 +2336,7 @@ pub fn newest(mask : &str) -> Option<SystemTime> {
         let mut last: Option<SystemTime> = None;
         let dir = fs::read_dir(parent1).ok()?;
         for entry in dir {
-            let entry = entry.unwrap();
+            let entry = entry.ok()?;
             let path = entry.path();
             if path.is_file() { 
                   if let Some(path1) = path.file_name() && let Some(file_path) = path1.to_str() &&
