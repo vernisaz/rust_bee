@@ -57,13 +57,11 @@ pub fn set_property(name: &String, value: &String) {
 }
 
 pub fn get_property(name: &String) -> Option<String> {
-     if SYSTEM_PROPERTIES.read().unwrap().is_none() {
-          return None
+     if let Some(properties) = SYSTEM_PROPERTIES.read().unwrap().as_ref() {
+          properties.get(name).map(String::to_string)
+     } else {
+         None
      }
-     let props = SYSTEM_PROPERTIES.read().unwrap();
-     let map = props.as_ref().unwrap();
-     let ret = map.get(name);
-     ret.map(|val| val.to_string())
 }
 
 pub fn get_properties() -> impl IntoIterator <Item = (String, String)> {
