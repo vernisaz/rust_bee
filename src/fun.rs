@@ -1332,8 +1332,8 @@ impl GenBlockTup {
                         file_to = cwd.clone() + MAIN_SEPARATOR_STR + &file_to
                     }
                      if !file_from.is_empty() && !file_to.is_empty() {
-                        if PathBuf::from(file_to.clone()).is_dir() {
-                            file_to += &(MAIN_SEPARATOR_STR.to_owned() + PathBuf::from(file_from.clone()).file_name().unwrap().to_str().unwrap())
+                        if PathBuf::from(&file_to).is_dir() {
+                            file_to += &(MAIN_SEPARATOR_STR.to_owned() + PathBuf::from(&file_from).file_name().unwrap().to_str().unwrap())
                         }
                         if copy(&file_from, &file_to).is_ok() {
                             res.push(file_to) // possibly size copied
@@ -1361,8 +1361,8 @@ impl GenBlockTup {
                     }
 
                      if !file_from.is_empty() && !file_to.is_empty() {
-                        if PathBuf::from(file_to.clone()).is_dir() {
-                            file_to += &(MAIN_SEPARATOR_STR.to_owned() + PathBuf::from(file_from.clone()).file_name().unwrap().to_str().unwrap())
+                        if PathBuf::from(&file_to).is_dir() {
+                            file_to += &(MAIN_SEPARATOR_STR.to_owned() + PathBuf::from(&file_from).file_name().unwrap().to_str().unwrap())
                         }
                         if rename(&file_from, &file_to).is_ok() {
                             res.push(file_to) 
@@ -1476,7 +1476,7 @@ impl GenBlockTup {
                 if zip_path.find('.').is_none() {
                     zip_path += ".zip"
                 }
-                let mut zip = simzip::ZipInfo::new_with_comment(zip_path.clone(),
+                let mut zip = simzip::ZipInfo::new_with_comment(&zip_path,
                     &format!{"Zipped by RustBee {}", ver::version().0});
                 zip.prohibit_duplicates();
                 let flatten_params = &fun_block.params;//&fun_block.flatten_params(&res_prev);
