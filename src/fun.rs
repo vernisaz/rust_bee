@@ -660,7 +660,7 @@ impl GenBlockTup {
             _ =>    "true" == *self.expand_parameter(log, current, fun_block, res_prev)};
         match name {
             "display" => {
-                println!("{}", util::insert_ctrl_char(&self.parameter(log, 0, fun_block, res_prev)));
+                println!("{}", util::insert_ctrl_char(*self.parameter(log, 0, fun_block, res_prev)));
                 io::stdout().flush().unwrap();
                 if fun_block.params.len() > 1 {
                     log.error(&format!{"Display parameters are ignored after first one at {}:{}: ", fun_block.script_path(), &fun_block.script_line})
@@ -899,7 +899,7 @@ impl GenBlockTup {
                 let len = fun_block.params.len();
                 // consider using trait write - write!{writer, "..."}
                 // TODO use - write!{stdout()}
-                print!("{} ", util::insert_ctrl_char(&self.parameter(log, 0, fun_block, res_prev)));
+                print!("{} ", util::insert_ctrl_char(*self.parameter(log, 0, fun_block, res_prev)));
                 io::stdout().flush().unwrap();
                 let mut user_input = String::new();
                 let stdin = io::stdin();
@@ -2292,7 +2292,7 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
             if r#type.is_dir() {
                 let file2_str = dir2
                     .as_ref()
-                    .map(|file2| format! {"{}/{}", file2, file1.file_name().display().to_string()});
+                    .map(|file2| format! {"{}/{}", file2, file1.file_name().display()});
                 result = [
                     result,
                     find_newer(&file1_path.display().to_string(), ext1, &file2_str, ext2),
@@ -2323,57 +2323,51 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
     result
 }
 
-pub fn newest(mask : &str) -> Option<SystemTime> {
+pub fn newest(mask: &str) -> Option<SystemTime> {
     //println!{"find newest in {mask}"}
-    let path1 = Path::new(mask);
-    let parent1 = path1.parent().unwrap(); // can be empty, check
+    let path = Path::new(mask);
+    let parent = path.parent()?;
     // check if the parent is '*' (wildcard) and if so,
-    // set traverse flag and and to get a parent again
-    let name1 = path1.file_name().unwrap();
-    let str_name1 = name1.to_str().unwrap();
-    let pos1 = str_name1.find('*'); // TODO add checking for more *
-    if let Some(pos) = pos1 {
+    // set traverse flag  and to get a parent again
+    let str_name = path.file_name()?.display().to_string();
+    if let Some((start, end)) = str_name.split_once('*') { // only first * meaningful
         let mut last: Option<SystemTime> = None;
-        let dir = fs::read_dir(parent1).ok()?;
+        let dir = parent.read_dir().ok()?;
+        let mask_len = start.len() + end.len();
         for entry in dir {
             let entry = entry.ok()?;
-            let path = entry.path();
-            if path.is_file() { 
-                  if let Some(path1) = path.file_name() && let Some(file_path) = path1.to_str() &&
-                      (str_name1.len() == 1 || 
-                     (pos == 0 && file_path.ends_with(&str_name1[1..])) ||
-                     (pos == str_name1.len()-1 && file_path.starts_with(&str_name1[0..pos])) ||
-                     (file_path.starts_with(&str_name1[0..pos]) && file_path.ends_with(&str_name1[pos+1..]) && file_path.len() >= str_name1.len())) {
-                        let current_last = last_modified(&path.into_os_string().into_string().unwrap());
-                        match last {
-                            None => last = current_last,
-                            Some(time) => {
-                                if let Some(time2) = current_last && time2 > time {
-                                    last = current_last;
-                                }
-                            }
-                        }
-                  }
-             } else {
-                let dir_entry_path = entry.path().into_os_string().into_string().unwrap();
-                // maybe entry.join("str_name1")
-                let last_dir = newest(&format!{"{}{}{str_name1}", dir_entry_path, std::path::MAIN_SEPARATOR}) ;
-                //let last_dir = newest(&entry.join(str_name1))
+            let file_type = entry.file_type().ok()?;
+            let name = entry.file_name().display().to_string();
+            if file_type.is_file()
+                && name.len() > mask_len
+                && name.starts_with(start)
+                && name.ends_with(end)
+                || file_type.is_dir()
+            {
+                let dir_entry_path = entry.path().display().to_string();
+                let current_last = if file_type.is_dir() {
+                    newest(&format! {"{dir_entry_path}{MAIN_SEPARATOR}{str_name}"})
+                } else {
+                    last_modified(&dir_entry_path)
+                };
                 match last {
-                    None => last = last_dir,
+                    None => last = current_last,
                     Some(time) => {
-                        if let Some(time2) = last_dir && time2 > time {
-                             last = last_dir
+                        if let Some(time2) = current_last
+                            && time2 > time
+                        {
+                            last = current_last;
                         }
                     }
                 }
             }
-        } 
+        }
         last
     } else {
-        last_modified(path1.to_str().unwrap())
+        last_modified(&path.display().to_string())
     }
 }
+
 
 pub fn last_modified(file: &str) -> Option<SystemTime> {
     fs::metadata(file).ok()?.modified().ok()

@@ -1,8 +1,8 @@
 use crate::SystemTime;
 #[cfg(target_os = "windows")]
-use std::path::{Path, PathBuf, MAIN_SEPARATOR};
+use std::path::{MAIN_SEPARATOR, Path, PathBuf};
 #[cfg(any(unix, target_os = "redox"))]
-use std::path::{Path, PathBuf, MAIN_SEPARATOR_STR};
+use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
 
 #[derive(Default, PartialEq)]
 enum EscState {
@@ -13,13 +13,11 @@ enum EscState {
     Oct2,
 }
 
-pub fn insert_ctrl_char(in_str: &String) -> String {
-    let esc = in_str.find('\\');
-    if esc.is_none() {
-        return in_str.to_string(); // maybe return &String to avoid any data manipulation
+pub fn insert_ctrl_char(in_str: String) -> String {
+    if in_str.find('\\').is_none() {
+        return in_str;
     }
-    let mut chars = vec![' '; in_str.chars().count()];
-    let mut next = 0usize;
+    let mut chars = String::with_capacity(in_str.chars().count() + 26);
     let mut state = EscState::No;
     let mut esc = 0u8;
     for c in in_str.chars() {
@@ -28,21 +26,17 @@ pub fn insert_ctrl_char(in_str: &String) -> String {
                 EscState::No => state = EscState::Suspect,
                 EscState::Suspect => {
                     state = EscState::No;
-                    chars[next] = '\\';
-                    next += 1;
-                    chars[next] = c;
-                    next += 1
+                    chars.push('\\');
+                    chars.push(c);
                 }
                 _ => {
                     state = EscState::No;
-                    chars[next] = c;
-                    next += 1
+                    chars.push(c);
                 }
             },
             '0'..='7' => match state {
                 EscState::No => {
-                    chars[next] = c;
-                    next += 1
+                    chars.push(c);
                 }
                 EscState::Suspect => match c {
                     '0'..'4' => {
@@ -51,10 +45,8 @@ pub fn insert_ctrl_char(in_str: &String) -> String {
                     }
                     _ => {
                         state = EscState::No;
-                        chars[next] = '\\';
-                        next += 1;
-                        chars[next] = c;
-                        next += 1
+                        chars.push('\\');
+                        chars.push(c);
                     }
                 },
                 EscState::Esc => {
@@ -64,39 +56,34 @@ pub fn insert_ctrl_char(in_str: &String) -> String {
                 EscState::Oct2 => {
                     state = EscState::No;
                     esc += c.to_digit(10).unwrap() as u8 - '0'.to_digit(10).unwrap() as u8;
-                    chars[next] = char::from_u32(esc as u32).unwrap();
-                    next += 1
+                    chars.push(char::from_u32(esc as u32).unwrap());
                 }
             },
             _ => {
                 match state {
                     EscState::Suspect => {
-                        chars[next] = '\\';
-                        next += 1
+                        chars.push('\\');
                     }
                     EscState::Esc => {
-                        chars[next] = '\\';
-                        next += 1;
-                        chars[next] = (esc / 64 + b'0') as _;
-                        next += 1
+                        chars.push('\\');
+                        chars.push((esc / 64 + b'0') as _);
                     }
                     EscState::No | EscState::Oct2 => (),
                 }
 
                 state = EscState::No;
-                chars[next] = c;
-                next += 1
+                chars.push(c);
             }
         }
     }
     match state {
         EscState::Suspect => {
-            chars[next] = '\\';
+            chars.push('\\');
         }
         EscState::No | EscState::Oct2 | EscState::Esc => (),
     }
 
-    chars[0..next].iter().collect()
+    chars
 }
 
 #[allow(non_camel_case_types)]
