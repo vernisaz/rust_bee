@@ -1273,24 +1273,15 @@ impl GenBlockTup {
                 for i in 0.. fun_block.params.len() {
                     let mut file = *self.parameter(log, i, fun_block, res_prev);
                     if !has_root(&file) && let Some(ref path) = cwd { file = path.value.clone() + MAIN_SEPARATOR_STR + &file }
-                    let sep = MAIN_SEPARATOR;
-                    let mut file_indices = file.char_indices();//.nth_back(4).unwrap().0
                     // str ends / then search will be in the current dir and all subdirs
-                    let recursive = if file_indices.nth_back(0).unwrap().1 == sep { file = file[0..=file_indices.nth_back(0).unwrap().0].to_string(); true }
-                        else {false};
+                    let recursive = file.ends_with(MAIN_SEPARATOR);
                     let path= PathBuf::from(&file);
-                    let filename = path.file_name().unwrap().to_str().unwrap().to_string();
+                    let filename = path.file_name()?.display().to_string();
                     // TODO introduce esc * in future
-                    if let Some(star_pos) = filename.find("*") {
+                    if let Some((start,end)) = filename.split_once('*') {
+                        let start = if start.is_empty() {None} else {Some(start)};
+                        let end = if end.is_empty() {None} else {Some(end)};
                         let dir = path.parent().unwrap_or(Path::new(MAIN_SEPARATOR_STR));
-                        let mut chars = filename.chars();
-                        let (start, end) = if chars.nth(0).unwrap() == '*' {
-                            (None, Some(&filename[1..]))
-                        } else if chars.last().unwrap() == '*' {
-                            (Some(&filename[0..star_pos]), None)
-                        } else {
-                            (Some(&filename[0..star_pos]), Some(&filename[star_pos+1..]))
-                        };
                         fill_dir(&mut res, dir, &start, &end, recursive, false)
                     } else {
                         res.push(file)
@@ -1510,7 +1501,7 @@ impl GenBlockTup {
                         let files = Path::new(&files);
                         assert!(&files.has_root());
                         let parent_files = files.parent().unwrap_or(Path::new("."));
-                        let filename = files.file_name().unwrap().to_str().unwrap().to_string();
+                        let filename = files.file_name()?.display().to_string();
                         
                         if let Some(pos) = filename.find("*") {
                             let mut chars = filename.chars();
