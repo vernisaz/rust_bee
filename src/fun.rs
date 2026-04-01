@@ -743,22 +743,24 @@ impl GenBlockTup {
                 // look for var first
                 if let Some(exec1) = fun_block.search_up(&exec) { exec = *process_template_value(log, &exec1.value, fun_block, res_prev);}
                 let mut params: Vec<_> = Vec::new();
-                for i in 0..fun_block.params.len() {
-                    let param = &fun_block.params[i];
-                    let val = self.prev_or_search_up(param, res_prev);
-                    // TODO add resolving using last result ~~
-                    log.debug(&format!("exec params: {:?} for {:?}", fun_block.params, val));
-                    if let Some(param) = val {
-                        if !param.values.is_empty() { // array
-                            for param in param.values {
-                                params.push(*process_template_value(log, &param, fun_block, res_prev))
+                if fun_block.params.len() == 1 && !fun_block.params[0].is_empty() || fun_block.params.len() > 1 {
+                    for i in 0..fun_block.params.len() {
+                        let param = &fun_block.params[i];
+                        let val = self.prev_or_search_up(param, res_prev);
+                        // TODO add resolving using last result ~~
+                        log.debug(&format!("exec params: {:?} for {:?}", fun_block.params, val));
+                        if let Some(param) = val {
+                            if !param.values.is_empty() { // array
+                                for param in param.values {
+                                    params.push(*process_template_value(log, &param, fun_block, res_prev))
+                                }
+                            } else if param.val_type != VarType::Array {
+                                params.push(*process_template_value(log, &param.value, fun_block, res_prev))
                             }
-                        } else if param.val_type != VarType::Array {
-                            params.push(*process_template_value(log, &param.value, fun_block, res_prev))
-                        }
-                    } else {
-                        params.push(*self.parameter(log, i, fun_block, res_prev))
-                    } 
+                        } else {
+                            params.push(*self.parameter(log, i, fun_block, res_prev))
+                        } 
+                    }
                 }
                 let dry_run = self.search_up("~dry-run~");
                 let mut cwd = String::new();
