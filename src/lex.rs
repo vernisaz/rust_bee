@@ -2128,7 +2128,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
             Lexem::Parameter(value) => { // collect all parameters and then process function call
                 let name = {
                    let mut rl_block = scoped_block.borrow_mut();
-                   if rl_block.params.len() > 0 || !value.is_empty () { // this check makes redundant other checks for no parameters
+                   if !rl_block.params.is_empty() || !value.is_empty () { // this check makes redundant other checks for no parameters
                        rl_block.params.push(value.to_owned());
                    }
                    rl_block.name.to_owned()
