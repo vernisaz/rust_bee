@@ -7,6 +7,7 @@ project  =rb
 main=src${~/~}main
 common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
+doc_dir=..${~/~}docs
 comp opts=[--extern,simzip]
 version=1.15.07
 build=180
