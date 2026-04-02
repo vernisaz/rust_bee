@@ -743,24 +743,22 @@ impl GenBlockTup {
                 // look for var first
                 if let Some(exec1) = fun_block.search_up(&exec) { exec = *process_template_value(log, &exec1.value, fun_block, res_prev);}
                 let mut params: Vec<_> = Vec::new();
-                if fun_block.params.len() == 1 && !fun_block.params[0].is_empty() || fun_block.params.len() > 1 {
-                    for i in 0..fun_block.params.len() {
-                        let param = &fun_block.params[i];
-                        let val = self.prev_or_search_up(param, res_prev);
-                        // TODO add resolving using last result ~~
-                        log.debug(&format!("exec params: {:?} for {:?}", fun_block.params, val));
-                        if let Some(param) = val {
-                            if !param.values.is_empty() { // array
-                                for param in param.values {
-                                    params.push(*process_template_value(log, &param, fun_block, res_prev))
-                                }
-                            } else if param.val_type != VarType::Array {
-                                params.push(*process_template_value(log, &param.value, fun_block, res_prev))
+                for i in 0..fun_block.params.len() {
+                    let param = &fun_block.params[i];
+                    let val = self.prev_or_search_up(param, res_prev);
+                    // TODO add resolving using last result ~~
+                    log.debug(&format!("exec params: {:?} for {:?}", fun_block.params, val));
+                    if let Some(param) = val {
+                        if !param.values.is_empty() { // array
+                            for param in param.values {
+                                params.push(*process_template_value(log, &param, fun_block, res_prev))
                             }
-                        } else {
-                            params.push(*self.parameter(log, i, fun_block, res_prev))
-                        } 
-                    }
+                        } else if param.val_type != VarType::Array {
+                            params.push(*process_template_value(log, &param.value, fun_block, res_prev))
+                        }
+                    } else {
+                        params.push(*self.parameter(log, i, fun_block, res_prev))
+                    } 
                 }
                 let dry_run = self.search_up("~dry-run~");
                 let mut cwd = String::new();
@@ -1172,13 +1170,13 @@ impl GenBlockTup {
                         None => { let param = *self.parameter(log, i, fun_block, res_prev);
                             if !param.is_empty() {
                                 res.push(param)
-                            } else if fun_block.params.len() > 1 {
+                            } else {
                                 log.error(&format!{"An empty parameter {} is ignored at {}:{}: ", i, fun_block.script_path(), &fun_block.script_line})
                             }
                         }
                     }
                 }
-                //println!{"vec -> {:?}", &res};
+                //eprintln!{"vec -> {:?}", &res};
                 return Some(VarVal::from_vec(&res))
             },
             "file_filter" | "filter" => { // remove from an array parameter all matching parameters 1..n
@@ -2229,9 +2227,8 @@ pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
     need_exec
 } 
 
-fn no_parameters(fun: &GenBlock) -> bool {
-    fun.block_type == BlockType::Function && fun.params.len() < 2 && (fun.params.is_empty() || 
-        fun.params.len() == 1 && fun.params[0].is_empty())
+fn no_parameters(fun: &GenBlock) -> bool { // it is solved in lex analyzer
+    fun.block_type == BlockType::Function && fun.params.is_empty()
 }
 
 pub fn timestamp(p: &str) -> Option<String> {
