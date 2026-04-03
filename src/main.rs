@@ -257,7 +257,7 @@ fn main() -> Result<(), Box<dyn Error>> {
      for opt in &options {
           //println!("{:?}", opt);
           match opt {
-               CmdOption::Version => (),
+               CmdOption::Version => if real_targets.is_empty() {return Ok(())},
                CmdOption::Help => { log.message(&help::get_help()); return Ok(())},
                CmdOption::Verbose => log.verbose = true,
                CmdOption::Diagnostics => log.debug = true,
