@@ -43,6 +43,8 @@ static SYSTEM_PROPERTIES: RwLock<Option<HashMap<String, String>>> = RwLock::new(
 const SCRIPT_EXT: &str = ".7b";
 const SCRIPT_EXT2: &str = ".rb";
 
+static SCRIPT_EXT_PURE: &str = SCRIPT_EXT.split_at(1).1;
+
 pub const CWD : &str = "~cwd~";
 pub const SCRIPT: &str ="~script~";
 
@@ -191,7 +193,7 @@ fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
                     if path_buf.exists() {
                          return Some(path_buf.display().to_string())
                     } else {
-                        path_buf.set_extension(&SCRIPT_EXT[1..]);
+                        path_buf.set_extension(SCRIPT_EXT_PURE);
                         if path_buf.exists() {
                              return Some(path_buf.display().to_string())
                         }
