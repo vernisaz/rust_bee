@@ -382,7 +382,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         return (Lexem::Type(buffer[0..buf_fill].iter().collect()), state, reader.line); // TODO add offset
                     },
                     LexState::EndFunction => state = LexState::Begin,
-                    LexState::StartValue | LexState::BlockEnd | LexState::IgnoredBlankToEnd => {
+                    LexState::StartValue | LexState::BlockEnd | LexState::IgnoredBlankToEnd | LexState::StartParam => {
 
                     },
                     LexState::InValue => {
@@ -390,9 +390,6 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         last_nb = buf_fill;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
-                    LexState::StartParam => {
-
                     },
                     LexState::EscapeParam => {
                         buffer[buf_fill] = c;
@@ -764,6 +761,11 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         state = LexState::UnrecoverableErr;
                         return (Lexem::EOF, state, reader.line);
                     },
+                    LexState::InParamBlank | LexState::StartParam => {
+                        state = LexState::InParam;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                    },
                     _ => todo!("state: {:?} at {}", state, reader.line)
                 }
             },
@@ -857,7 +859,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
-                    LexState::InParamBlank => {
+                    LexState::StartParam | LexState::InParamBlank => {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
@@ -919,7 +921,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     }
-                    LexState::InParamBlank | LexState::EscapeParam=> {
+                    LexState::StartParam | LexState::InParamBlank | LexState::EscapeParam => {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
@@ -971,7 +973,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
-                    LexState::InParamBlank => {
+                    LexState::StartParam | LexState::InParamBlank => {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
@@ -1031,7 +1033,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InLex
                     }
-                    LexState::InParamBlank => {
+                    LexState::InParamBlank | LexState::StartParam => {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
