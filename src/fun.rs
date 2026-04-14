@@ -250,7 +250,7 @@ impl GenBlockTup {
                             match target {
                                 Some(target) => {
                                     //let target_bor = target.0.borrow_mut();
-                                    return exec_target(log, & target)
+                                    return exec_target(log, & target, false)
                                 },
                                 _ => log.warning(&format!("Target {} not found and ignored", dep_block.params[0])),
                             }
@@ -2164,7 +2164,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
             let ch_block = bl.0.borrow();
             if ch_block.block_type == BlockType::Target && ch_block.name.as_ref().ok_or("no 'target' block name")? == target { 
                 drop(ch_block);
-                log.log(&format!("target: {}", exec_target(log, & bl)));
+                log.log(&format!("target: {}", exec_target(log, & bl, bl.search_up("~build-given-target~").is_some())));
                 continue 'targets
             }
         }
@@ -2175,7 +2175,7 @@ pub fn run(log: &Log, block: GenBlockTup, targets: &mut Vec<String>) -> Result<(
     Ok(())
 }
 
-pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
+pub fn exec_target(log: &Log, target_bl: & GenBlockTup, force_exec: bool) -> bool {
     // dependencies
     let mut need_exec = false;
     
@@ -2210,10 +2210,7 @@ pub fn exec_target(log: &Log, target_bl: & GenBlockTup) -> bool {
     for dep in &target.deps {
         need_exec |= dep.eval_dep(log, &None)
     }
-    if !need_exec && target.search_up("~force-build-target~").is_some() {
-        need_exec = true
-    }
-    
+    need_exec = need_exec || target.search_up("~force-build-target~").is_some() || force_exec;
     if need_exec {
         let mut res = None;
         let children = target.children.clone();

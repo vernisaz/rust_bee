@@ -32,6 +32,7 @@ enum CmdOption {
      PropertyFile(String),
      Diagnostics,
      ForceRebuild,
+     SpecifiedTargetBuild,
      DryRun,
      Quiet,
      TargetHelp
@@ -137,6 +138,8 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
                }
           } else if arg.starts_with("-q") {
                options.push(CmdOption::Quiet)
+            } else if arg.starts_with("-c") {
+               options.push(CmdOption::SpecifiedTargetBuild)
           } else if arg.starts_with("-th") || arg.starts_with("-targethelp") {
                options.push(CmdOption::TargetHelp)
           } else if arg == "--" { 
@@ -290,6 +293,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let dr = lex::VarVal{val_type:lex::VarType::Bool, value: String::from("true"), values: Vec::new()};
                     let _ = &lex_tree.add_var(String::from("~dry-run~"), dr);
                }
+               CmdOption::SpecifiedTargetBuild => {
+                    let _ = &lex_tree.add_var(String::from("~build-given-target~"), lex::VarVal::from_bool(true));
+               },
                CmdOption::PropertyFile(filename) => {
                     let file = File::open(filename)?;
                     let lines = io::BufReader::new(file).lines();

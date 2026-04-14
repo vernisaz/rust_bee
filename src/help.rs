@@ -16,6 +16,7 @@ Options:
                          on failed target(s)
   -dry-run               do not launch any executable, but show their arguments
   -r                     execute all targets accordingly dependencies anyway
+  -c                     execute the last target or specified regardless dependencies 
   -D<property>=<value>   use a value for a given property name
   -propertyfile <name>   load all properties from file with -D
                          properties taking precedence
