@@ -31,7 +31,7 @@ Their repositories need to be checked out before building the **RustBee**.
 Since the product supports colorized output, it obeys rules used by SimColor.
 
 ## Version
-The current version is **1.15.07**.
+The current version is **1.16.01**.
 
 ## Scripting examples
 
