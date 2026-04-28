@@ -70,6 +70,9 @@ A dependency can be:
 - **or** block, one of the arguments has to be true
 - **target**, for dependency on a target
 - **true**, for unconditional execution of the target
+- 
+Although no other types of dependencies can be used, any RustBee function can be used to evaluate a dependecy as a part of such
+blocks as `eq` and `or`.
 
 A body of a target contains a sequence of operators and functions. 
 Currently `if`, `while`, `case`, and `for`  operators are supported. More details on syntax of them:
@@ -144,8 +147,9 @@ in the function result
 - **lt** , first argument is littler than second one
 - **mkd**, creates directories from the list of parameters. It returns an array of successfully created directories. Directories get created from current work directory unless a fully qualified name is specified
 - **mv**, similar to cp, but does a move
-- **newerthan**, compares a timestamp of files specified with the pattern path/.ext with a timestamp of files specified using the path/.ext and
-returns an array of files which have the later date
+- **newerthan**, compares a timestamp of files specified with the pattern `path/.ext` with a timestamp of files specified using the `path/.ext` and
+returns an array of files which have the later date. Note, that for such languages as Java, changing some constant file, can require
+to recompile all files using the constants. The function can't discover such dependencies, and better to do a clean build 
 - **neq**,  compares two parameters and returns true if they are not equal, only one parameter compares with *None*
 - **not** , invert boolean value of the expression of the parameter 
 - **now**, shows the current time and date in ISO 8601, or in a format specified by a parameter, the following letters are allowed in the format: W, MMM-DD-YY hh:mm:ss Z
