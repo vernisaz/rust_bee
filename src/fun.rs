@@ -266,7 +266,7 @@ impl GenBlockTup {
                             }
                             return exec_anynewer(self, &p1, &p2)
                         },
-                        _ => todo!("function: {:?}", dep_block.name)
+                        _ => todo!("function: {:?} at {}:{}: ", dep_block.name, dep.script_path(), &dep.script_line)
                     } 
                 },
                 BlockType::Eq => {
@@ -2256,7 +2256,7 @@ pub fn exec_anynewer(block:&GenBlockTup, p1: &String, p2: &String) -> bool {
 }
 
 fn dir_ext_param(parameter: &str) -> (Option<String>,Option<String>) {
-    if let Some((path,ext)) = parameter.split_once('/') {
+    if let Some((path,ext)) = parameter.rsplit_once('/') {
         if ext.is_empty() {
             (Some(path.to_string()),None)
         } else {
@@ -2275,8 +2275,8 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
     };
     for file1 in dir.flatten() {
         let file1_path = file1.path();
-        if let Ok(r#type) = file1.file_type() {
-            if r#type.is_dir() {
+        if let Ok(file_type) = file1.file_type() {
+            if file_type.is_dir() {
                 let file2_str = dir2
                     .as_ref()
                     .map(|file2| format! {"{}/{}", file2, file1.file_name().display()});
@@ -2285,9 +2285,9 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
                     find_newer(&file1_path.display().to_string(), ext1, &file2_str, ext2),
                 ]
                 .concat();
-            } else if r#type.is_file()
+            } else if file_type.is_file()
                 && let Some(ext) = file1_path.extension()
-                && ext == ext1
+                && ext == &ext1[1..] // skip .
             {
                 match dir2 {
                     Some(dir2) => {
