@@ -1097,10 +1097,10 @@ impl GenBlockTup {
                         None => return Some(VarVal::from_string(&param)),
                     },
                     Some(slash_pos) => match dot_pos {
-                        Some(dot_pos) => {
+                        Some(dot_pos) if dot_pos > slash_pos => {
                             return Some(VarVal::from_string(&param[slash_pos + 1..dot_pos]));
                         }
-                        None => return Some(VarVal::from_string(&param[slash_pos + 1..])),
+                        _ => return Some(VarVal::from_string(&param[slash_pos + 1..])),
                     },
                 }
             }
