@@ -14,7 +14,8 @@ Options:
                          on failed target(s)
   -dry-run               do not launch any executable, but show their arguments
   -r                     execute all targets accordingly dependencies anyway
-  -c                     execute the last target or specified regardless dependencies 
+  -c                     execute the last or the specified target regardless
+                         dependencies 
   -D<property>=<value>   use a value for a given property name
   -propertyfile <name>   load all properties from file with -D
                          properties taking precedence
@@ -28,8 +29,8 @@ Options:
 
 Specifying an extension of script file name isn't required, unless it isn't the
 standard one.
-If a file name isn't specified, then any file which name starts from 'bee' is 
-considered as a script.
+If a file name isn't specified, then any file which name starts with 'bee' is 
+considered as the script.
 Examples: rb jar -d -f project1
           rb compile -s
           rb clean compile -r

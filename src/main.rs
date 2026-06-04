@@ -82,7 +82,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
          let arg = &args[arg_n] ;
          let len = args.len();
          //println!("analizing {}", arg);
-          if arg.starts_with("-h") {
+          if arg.starts_with("-h") || cfg!(windows) && arg.starts_with("/h") {
               options.push(CmdOption::Help)
           } else if arg == "-f" || arg.starts_with("-file") || arg.starts_with("-build") {
                arg_n += 1;
