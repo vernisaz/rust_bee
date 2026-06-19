@@ -2,3 +2,5 @@ rb
 src/ver.rs
 *.zip
 *.exe
+clippy-*
+test*
