@@ -159,7 +159,7 @@ impl VarVal {
     }
 
     pub fn from_vec(vec: &Vec<String>) -> VarVal {
-        VarVal{val_type: VarType::Array, value: "".to_string(), values: vec.clone()}  
+        VarVal{val_type: VarType::Array, value: String::new(), values: vec.clone()}  
     }
 
     pub fn is_true(& self) -> bool {
@@ -178,7 +178,7 @@ impl VarVal {
                 }
             },
             VarType::Array => self.values.iter().any(|current| !current.is_empty()),
-            VarType::Number => !self.value.is_empty() && self.value.parse::<i32>().unwrap_or_default() != 0,
+            VarType::Number => !self.value.is_empty() && self.value.parse::<i64>().unwrap_or_default() != 0,
             _ => self.value == "true" // consider adding interpolation
         }
     }
