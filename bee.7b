@@ -117,6 +117,12 @@ target package::Creates a zip with the tool and supplied files {
     dependency {
     	anynewer(bee.7b,.${~/~}rustbee-${version}.zip)
     }
+    dependency {
+    	anynewer(rb${ext},.${~/~}rustbee-${version}.zip)
+    }
+    dependency {
+    	anynewer(env.7b,.${~/~}rustbee-${version}.zip)
+    }
     zip(.${~/~}rustbee-${version}.zip,
 	-B ${project},
 	.${~/~}bee.7b,
