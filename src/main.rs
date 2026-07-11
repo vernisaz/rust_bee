@@ -82,16 +82,16 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
          let arg = &args[arg_n] ;
          let len = args.len();
          //println!("analizing {}", arg);
-          if arg.starts_with("-h") || cfg!(windows) && arg.starts_with("/h") {
+          if arg.starts_with("-h") || arg.starts_with("--h") || cfg!(windows) && arg.starts_with("/h") {
               options.push(CmdOption::Help)
-          } else if arg == "-f" || arg.starts_with("-file") || arg.starts_with("-build") {
+          } else if arg == "-f" || arg.starts_with("--file") || arg.starts_with("--build") {
                arg_n += 1;
                if arg_n < len {
                     options.push(CmdOption::ScriptFile(args[arg_n].to_string()))
                } else {
-                    log.error("No file path specified after -file option")
+                    log.error("No file path specified after --file option")
                }
-          } else if arg.starts_with("-s") || arg.starts_with("-find") {
+          } else if arg.starts_with("-s") || arg.starts_with("--find") {
                arg_n += 1;
                if arg_n < len {
                     if args[arg_n].starts_with("-") {
@@ -104,13 +104,13 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
                     options.push(CmdOption::SearchUp(None));
                     break
                }
-          } else if arg.starts_with("-version") || arg == "-V" {
+          } else if arg.starts_with("--version") || arg == "-V" {
                options.push(CmdOption::Version)
-          } else if arg.starts_with("-v") || arg.starts_with("-verbose") {
+          } else if arg.starts_with("-v") || arg.starts_with("--verbose") {
                options.push(CmdOption::Verbose)
-          } else if arg.starts_with("-dry")  {
+          } else if arg.starts_with("--dry") || arg.starts_with("-y") {
                options.push(CmdOption::DryRun)
-          } else if arg.starts_with("-d") || arg.starts_with("-diagnostic") {
+          } else if arg.starts_with("-d") || arg.starts_with("--diagnostic") {
                options.push(CmdOption::Diagnostics);
                unsafe {env::set_var("RUST_BACKTRACE", "1") } // it's for rb itself, because there is no control as 'rb' was launched
                set_property(&"RUST_BACKTRACE".to_string(), &"1".to_string())
@@ -140,7 +140,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
                options.push(CmdOption::Quiet)
             } else if arg.starts_with("-c") {
                options.push(CmdOption::SpecifiedTargetBuild)
-          } else if arg.starts_with("-th") || arg.starts_with("-targethelp") {
+          } else if arg.starts_with("-t") || arg.starts_with("--targethelp") {
                options.push(CmdOption::TargetHelp)
           } else if arg == "--" { 
                arg_n += 1;
