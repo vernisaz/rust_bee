@@ -139,12 +139,12 @@ and replace it with 3rd parameter when it's specified
 parameters are parameters of the process, a current directory, and a variable to keep the process stdout can be
 specified after a process name separated by ':', otherwise stdout will appear on screen. A process result is stored
 in the function result
-- **filename**, returns a filename of a parameter, no extension
+- **filename**, returns a filename of a parameter, no extension. The name is taken after last slash and before the last dot after the slash. 
 - **files**, return an array of file paths matching patterns specified by parameters
 - **file_filter** | **filter** , shrink an array specified my first parameters by filter values specified by extra parameters
 - **gt** , first argument is greater than second one
 - **include**, includes a file content pointed by a parameter as a part of the script 
-- **lt** , first argument is littler than second one
+- **lt** , first argument is less than second one
 - **mkd**, creates directories from the list of parameters. It returns an array of successfully created directories. Directories get created from current work directory unless a fully qualified name is specified
 - **mv**, similar to cp, but does a move
 - **newerthan**, compares a timestamp of files specified with the pattern `path/.ext` with a timestamp of files specified using the `path/.ext` and

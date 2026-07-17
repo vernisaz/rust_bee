@@ -408,6 +408,13 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InQtValue;
                     },
+                    LexState::EscapeQtParam => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InParam;
+                    },
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -1413,6 +1420,13 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InLex
+                    }
+                    LexState::EscapeParam => {
+                        buffer[buf_fill] = '\\';
+                        buf_fill += 1;
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InParam
                     }
                     LexState::EscapeEndArray => {
                         buffer[buf_fill] = '\\';

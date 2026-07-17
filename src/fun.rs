@@ -1091,13 +1091,13 @@ impl GenBlockTup {
                 let slash_pos = param.rfind(MAIN_SEPARATOR);
                 match slash_pos {
                     None => match dot_pos {
-                        Some(dot_pos) => {
+                        Some(dot_pos) if dot_pos > 0 => {
                             return Some(VarVal::from_string(&param[0..dot_pos]));
                         }
-                        None => return Some(VarVal::from_string(&param)),
+                        _ => return Some(VarVal::from_string(&param)),
                     },
                     Some(slash_pos) => match dot_pos {
-                        Some(dot_pos) if dot_pos > slash_pos => {
+                        Some(dot_pos) if dot_pos > slash_pos + 1 => {
                             return Some(VarVal::from_string(&param[slash_pos + 1..dot_pos]));
                         }
                         _ => return Some(VarVal::from_string(&param[slash_pos + 1..])),
