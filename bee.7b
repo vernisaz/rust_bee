@@ -10,7 +10,7 @@ crate_dir=..${~/~}crates
 doc_dir=..${~/~}docs
 comp opts=[--extern,simzip]
 version=1.16.03
-build=189
+build=190
 
 include(env.7b);
 

@@ -1608,28 +1608,35 @@ impl GenBlockTup {
             "range" | "slice" => {
                 let start = *self.parameter(log, 1, fun_block, res_prev);
                 let start: usize = start.parse().ok()?;
-
-                let str = *self.parameter(log, 0, fun_block, res_prev);
-                if !str.is_empty() {
-                    let end = if fun_block.params.len() > 2 {
-                        (*self.parameter(log, 2, fun_block, res_prev))
-                            .parse()
-                            .ok()?
-                    } else {
-                        str.len()
-                    };
-                    return Some(VarVal::from_string(&str[start..end]));
-                } else if let Some(var) = fun_block.search_up(&fun_block.params[0])
-                    && var.val_type == VarType::Array
-                {
-                    let end = if fun_block.params.len() > 2 {
-                        (*self.parameter(log, 2, fun_block, res_prev))
-                            .parse()
-                            .ok()?
-                    } else {
-                        var.values.len()
-                    };
-                    return Some(VarVal::from_vec(&var.values[start..end].to_vec()));
+                let str_val;
+                if let Some(var) = fun_block.prev_or_search_up(&fun_block.params[0], res_prev) {
+                    if var.val_type == VarType::Array {
+                        let end = if fun_block.params.len() > 2 {
+                            (*self.parameter(log, 2, fun_block, res_prev))
+                                .parse()
+                                .ok()?
+                        } else {
+                            var.values.len()
+                        };
+                        if start < end {
+                            return Some(VarVal::from_vec(&var.values[start..end].to_vec()));
+                        } else {
+                            return None
+                        }
+                    }
+                    str_val = var.value
+                } else {
+                    str_val = fun_block.params[0].clone()
+                }
+                let end = if fun_block.params.len() > 2 {
+                    (*self.parameter(log, 2, fun_block, res_prev))
+                        .parse()
+                        .ok()?
+                } else {
+                    str_val.len()
+                };
+                if start < end {
+                     return Some(VarVal::from_string(&str_val[start..end]));
                 }
             }
             "cp" => {
