@@ -14,10 +14,10 @@ The language is described [here](./doc/RUSTBEE.md).
 
 It's a self building tool, however it needs a bootstrapping. [7Bee](https://github.com/drogatkin/7Bee) is used for the
 [purpose](./bee-rust.xml) (see instructions inside).
-You can use **RustBee** itself for building it after you built a starter version. 
+You can use **RustBee** itself for building it after you built the starter version. 
 
 The RustBee [script](./bee.7b) has one dependency [SimScript](https://github.com/vernisaz/simscript).
-Clone it first at its directory level as `rust_bee`. You can use the **install** target of the script for installing the tool.
+Clone it first at at the same directory level as `rust_bee`. You can use the **install** target of the script for installing the tool.
 
 ### Dependencies
 The following crates will be required to build the **RustBee**
@@ -31,7 +31,7 @@ Their repositories need to be checked out before building the **RustBee**.
 Since the product supports colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
 
 ## Version
-The current version is **1.16.02**.
+The current version is **1.16.03**.
 
 ## Scripting examples
 
