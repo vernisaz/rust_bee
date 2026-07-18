@@ -148,7 +148,7 @@ in the function result
 - **mkd**, creates directories from the list of parameters. It returns an array of successfully created directories. Directories get created from current work directory unless a fully qualified name is specified
 - **mv**, similar to cp, but does a move
 - **newerthan**, compares a timestamp of files specified with the pattern `path/.ext` with a timestamp of files specified using the `path/.ext` and
-returns an array of files which have the later date. Note, that for such languages as Java, changing some constant file, can require
+returns an array of files which have a later date. Note, that for such languages as Java, changing some constant file, can require
 to recompile all files using the constants. The function can't discover such dependencies, and better to do a clean build 
 - **neq**,  compares two parameters and returns true if they are not equal, only one parameter compares with *None*
 - **not** , invert boolean value of the expression of the parameter 
@@ -161,8 +161,9 @@ otherwise returns false
 - **read**, reads a file content specified by a parameter
 - **rm**, removes files defined in parameters
 - **rmdir**, **rmdira** removes an empty directory (rmdir), or a directory with all content (rmdira) specified in parameters
-- **scalar** | **join** , if a parameter is an array, then concatenates all elements using a separator specified by second parameter
+- **scalar** | **join** , if a parameter is an array, then concatenates all elements using a separator specified by second parameter or TAB when no second parameter
 - **set_env**, set the environment key specified by first parameter to the value specified by the second one
+- **split**, split the first parameter value by a specified separator by the second parameter or tab, a result of the function is an array
 - **timestamp**, returns a timestamp of a file specified by first parameter, 
 and optionally sets timestamp of the file to the value specified by second parameter in ISO 8601
 - **write**, writes to the file specified by first parameter, content of the rest parameters

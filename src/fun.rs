@@ -1465,6 +1465,15 @@ impl GenBlockTup {
                 //eprintln!{"vec -> {:?}", &res};
                 return Some(VarVal::from_vec(&res));
             }
+            "split" => {
+                let val = *self.parameter(log, 0, fun_block, res_prev);
+                let sep = if  fun_block.params.len() == 2 {
+                    &*self.parameter(log, 1, fun_block, res_prev)
+                } else {
+                    "\t"
+                };
+                return Some(VarVal::from_iter(val.split(sep)));
+            } 
             "file_filter" | "filter" => {
                 // remove from an array parameter all matching parameters 1..n
                 let param = self.prev_or_search_up(&fun_block.params[0], res_prev);

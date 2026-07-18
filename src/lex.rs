@@ -161,6 +161,14 @@ impl VarVal {
     pub fn from_vec(vec: &Vec<String>) -> VarVal {
         VarVal{val_type: VarType::Array, value: String::new(), values: vec.clone()}  
     }
+    
+    pub fn from_iter<'a>(iter: impl Iterator<Item = &'a str>) -> VarVal {
+        let mut vec = vec![];
+        for el in iter {
+            vec.push(el.to_string())
+        }
+        VarVal{val_type: VarType::Array, value: String::new(), values: vec}  
+    }
 
     pub fn is_true(& self) -> bool {
         match self.val_type {
