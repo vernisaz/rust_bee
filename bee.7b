@@ -42,26 +42,16 @@ target install::Install RustBee for everyone's use  {
 	    if {
 	      eq(windows,~os~) then {    
 	           display(Make sure that you have elevated privileges for a successful Windows install)
-	           env(HOMEPATH)
-	           assign(rustbee,${~~}${~/~}.rustbee${~/~}bin)
-		       mkd(rustbee)
-	           cp(rb.exe,rustbee)
+	           env(COMMONPROGRAMFILES)
+	           assign(INSTALL DIR,~~)
+	           # copy rb.exe to C:\Program Files for all users
+	           cp(rb.exe,${INSTALL DIR}${~/~}rb.exe)
 	           if {
-	           		eq(~~, ${rustbee}${~/~}${project}.exe) then {
-	           			display(Installed ${~~} in ${rustbee})
+	           		eq(~~, ${INSTALL DIR}${~/~}${project}.exe) then {
+	           			display(Installed ${~~} in ${INSTALL DIR})
 	           		} else {
 	           			display(Installation has failed)
 	           		}
-	           }
-	           # add to PATH if needed
-	           env(PATH)
-	           assign(path,~~) 
-	           if {
-	               contains (path, .rustbee${~/~}bin)
-	               else {
-	                  display(Add in env %PATH%;${rustbee})
-	                  #exec setx (PATH, %path%;${rustbee} )
-	               }
 	           }
 	      } else {
 	        if {
@@ -86,7 +76,29 @@ target install::Install RustBee for everyone's use  {
       choice l | L {
     	if {
 	      eq(windows,~os~) then {
-      	      display(Local installation on Windows is coming soon)
+      	       env(USERNAME)
+	           display(The installation will be for ${~~})
+	           env(HOMEPATH)
+	           assign(rustbee,${~~}${~/~}.rustbee${~/~}bin)
+		       mkd(rustbee)
+	           cp(rb.exe,rustbee)
+	           if {
+	           		eq(~~, ${rustbee}${~/~}${project}.exe) then {
+	           			display(Installed ${~~} in ${rustbee})
+	           		} else {
+	           			display(Installation has failed)
+	           		}
+	           }
+	           # add to PATH if needed
+	           env(PATH)
+	           assign(path,~~) 
+	           if {
+	               contains (path, .rustbee${~/~}bin)
+	               else {
+	                  display(Add in env %PATH%;${rustbee})
+	                  #exec setx (PATH, %path%;${rustbee} )
+	               }
+	           }
       	  } else {
       	  	  display(Unix local install)
       	  	  env(HOME)
