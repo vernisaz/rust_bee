@@ -99,7 +99,8 @@ target install::Install RustBee for everyone's use  {
 	               }
 	           }
       	  } else {
-      	  	  display(Unix local install)
+      	      env(USER)
+      	  	  display(Unix local install for ${~~})
       	  	  env(HOME)
       	  	  assign(install dir,${~~}/.local/share/.rb) # or ~/.local/bin
       	  	  mkd(install dir) # just in case
