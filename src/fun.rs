@@ -1088,7 +1088,22 @@ impl GenBlockTup {
             "filename" => {
                 let param = *self.parameter(log, 0, fun_block, res_prev);
                 let dot_pos = param.rfind('.');
+                #[cfg(not(target_os = "windows"))]
                 let slash_pos = param.rfind(MAIN_SEPARATOR);
+                #[cfg(target_os = "windows")]
+                let mut slash_pos = param.rfind(MAIN_SEPARATOR);
+                #[cfg(target_os = "windows")]
+                {
+                    let slash_pos_fwd = param.rfind('/');
+                    if slash_pos.is_none() {
+                        slash_pos = slash_pos_fwd;
+                    } else if let Some(slash_pos_fwd_val) = slash_pos_fwd
+                        && let Some(slash_pos_val) = slash_pos
+                        && slash_pos_fwd_val > slash_pos_val
+                    {
+                        slash_pos = slash_pos_fwd;
+                    }
+                }
                 match slash_pos {
                     None => match dot_pos {
                         Some(dot_pos) if dot_pos > 0 => {
@@ -1467,13 +1482,13 @@ impl GenBlockTup {
             }
             "split" => {
                 let val = *self.parameter(log, 0, fun_block, res_prev);
-                let sep = if  fun_block.params.len() == 2 {
+                let sep = if fun_block.params.len() == 2 {
                     &*self.parameter(log, 1, fun_block, res_prev)
                 } else {
                     "\t"
                 };
                 return Some(VarVal::from_iter(val.split(sep)));
-            } 
+            }
             "file_filter" | "filter" => {
                 // remove from an array parameter all matching parameters 1..n
                 let param = self.prev_or_search_up(&fun_block.params[0], res_prev);
@@ -1485,7 +1500,10 @@ impl GenBlockTup {
                         .map(|filter| process_template_value(log, filter, fun_block, res_prev))
                         .collect::<Vec<_>>();
                     let files = param.values;
-                    let cwd = fun_block.search_up(CWD) .map(|cwd| cwd.value) .unwrap_or_default();
+                    let cwd = fun_block
+                        .search_up(CWD)
+                        .map(|cwd| cwd.value)
+                        .unwrap_or_default();
                     let vec = files
                         .into_iter()
                         .filter(|file| {
@@ -1621,7 +1639,7 @@ impl GenBlockTup {
                         if start < end {
                             return Some(VarVal::from_vec(&var.values[start..end].to_vec()));
                         } else {
-                            return None
+                            return None;
                         }
                     }
                     str_val = var.value
@@ -1636,13 +1654,16 @@ impl GenBlockTup {
                     str_val.len()
                 };
                 if start < end {
-                     return Some(VarVal::from_string(&str_val[start..end]));
+                    return Some(VarVal::from_string(&str_val[start..end]));
                 }
             }
             "cp" => {
                 let mut res: Vec<_> = Vec::new();
                 let len = fun_block.params.len();
-                let cwd = fun_block.search_up(CWD) .map(|cwd| cwd.value) .unwrap_or_default();
+                let cwd = fun_block
+                    .search_up(CWD)
+                    .map(|cwd| cwd.value)
+                    .unwrap_or_default();
                 for mut i in (0..len).step_by(2) {
                     let mut file_from = *self.parameter(log, i, fun_block, res_prev);
                     if !has_root(&file_from) {
@@ -1671,7 +1692,10 @@ impl GenBlockTup {
             }
             "mv" => {
                 let mut res: Vec<_> = Vec::new();
-                let cwd = fun_block.search_up(CWD).map(|cwd| cwd.value) .unwrap_or_default();
+                let cwd = fun_block
+                    .search_up(CWD)
+                    .map(|cwd| cwd.value)
+                    .unwrap_or_default();
                 for mut i in (0..fun_block.params.len()).step_by(2) {
                     let mut file_from = *self.parameter(log, i, fun_block, res_prev);
                     if !has_root(&file_from) {
@@ -1701,7 +1725,10 @@ impl GenBlockTup {
             }
             "mkd" => {
                 let mut res: Vec<_> = Vec::new();
-                let cwd = fun_block.search_up(CWD) .map(|cwd| cwd.value) .unwrap_or_default();
+                let cwd = fun_block
+                    .search_up(CWD)
+                    .map(|cwd| cwd.value)
+                    .unwrap_or_default();
                 for i in 0..fun_block.params.len() {
                     let mut file = *self.parameter(log, i, fun_block, res_prev);
                     if !file.is_empty() {
@@ -1717,7 +1744,10 @@ impl GenBlockTup {
             }
             "rm" => {
                 let mut res: Vec<_> = Vec::new();
-                let cwd = fun_block.search_up(CWD) .map(|cwd| cwd.value) .unwrap_or_default();
+                let cwd = fun_block
+                    .search_up(CWD)
+                    .map(|cwd| cwd.value)
+                    .unwrap_or_default();
                 for i in 0..fun_block.params.len() {
                     let mut file = *self.parameter(log, i, fun_block, res_prev);
                     if !file.is_empty() {
@@ -1733,7 +1763,10 @@ impl GenBlockTup {
             }
             "rmdir" | "rmdira" => {
                 let mut res: Vec<_> = Vec::new();
-                let cwd = fun_block.search_up(CWD) .map(|cwd| cwd.value) .unwrap_or_default();
+                let cwd = fun_block
+                    .search_up(CWD)
+                    .map(|cwd| cwd.value)
+                    .unwrap_or_default();
                 for i in 0..fun_block.params.len() {
                     let mut file = *self.parameter(log, i, fun_block, res_prev);
                     if !file.is_empty() {
