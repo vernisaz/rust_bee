@@ -1128,7 +1128,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InValue
                     }
-                    LexState::InBreak => {
+                    LexState::InBreak | LexState::BlankInValue => {
                         buffer[buf_fill] = c;
                         buf_fill += 1; 
                         state = LexState::InValue;
@@ -1199,7 +1199,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InLex
                     }
-                    LexState::InBreak => {
+                    LexState::InBreak | LexState::BlankInValue => {
                         buffer[buf_fill] = c;
                         buf_fill += 1; 
                         state = LexState::InValue
@@ -1311,7 +1311,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     },
                     LexState::InValue | LexState::InQtParam | LexState::Comment |
                     LexState::InQtValue | LexState::InQtLex | LexState::InArrayVal |
-                     LexState::BlankInValue | LexState::InLex => {
+                    LexState::InLex => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     },
@@ -1358,7 +1358,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InLex
                     }
-                    LexState::InBreak | LexState::StartValue => {
+                    LexState::InBreak | LexState::StartValue | LexState::BlankInValue => {
                         buffer[buf_fill] = c;
                         buf_fill += 1; 
                         state = LexState::InValue;
@@ -1386,7 +1386,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InLex;
                     },
-                    LexState::StartValue | LexState::InBreak => {
+                    LexState::StartValue | LexState::InBreak | LexState::BlankInValue => {
                         state = LexState::InValue;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
