@@ -1277,7 +1277,7 @@ impl GenBlockTup {
                 if name == "canonicalize"
                     && let Ok(can_path) = fs::canonicalize(&path)
                 {
-                    path = can_path.into_os_string().into_string()?
+                    path = can_path.into_os_string().into_string().unwrap()
                 }
                 #[cfg(target_os = "windows")]
                 {
