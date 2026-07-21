@@ -2849,7 +2849,7 @@ pub fn newest(mask: &str) -> Option<SystemTime> {
             let file_type = entry.file_type().ok()?;
             let name = entry.file_name().display().to_string();
             if file_type.is_file()
-                && name.len() > mask_len
+                && name.len() >= mask_len
                 && name.starts_with(start)
                 && name.ends_with(end)
                 || file_type.is_dir()
