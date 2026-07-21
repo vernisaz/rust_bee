@@ -1874,7 +1874,7 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
     // temporay hack (no loop detection )
     let expanded_val:String = buf.into_iter().collect();
     if was_replacement {
-        log.debug(&format!{"expanding {}", &expanded_val});
+        log.debug(&format!{"expanding {}", expanded_val});
         process_template_value(log, &expanded_val, vars, res_prev)
     } else {
         Box::new(expanded_val)
@@ -2083,7 +2083,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                     if let Ok(res) = res {
                         VarVal::from_vec(&res)
                     } else {
-                        log.error(&format!{"The array isn't well defined: {} at  {}:{}:{}", &value, file.to_string_lossy(), all_chars.line, all_chars.line_offset});
+                        log.error(&format!{"The array isn't well defined: {} at  {}:{}:{}", value, file.to_string_lossy(), all_chars.line, all_chars.line_offset});
                         VarVal::from_string(&value)
                     }
                 } else {VarVal::from_string(&value)}
@@ -2142,7 +2142,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                   let c_b = VarVal{val_type:VarType::RepositoryMaven, value:var.value.clone(), values: Vec::new()};
                                   bl.vars.insert(current_name.to_string(), c_b);
                               },
-                            _ => log.error(&format!("Unknown type '{}' ignored at  {}:{}:{}", &var_type, bl.script_path(), all_chars.line, all_chars.line_offset))
+                            _ => log.error(&format!("Unknown type '{}' ignored at  {}:{}:{}", var_type, bl.script_path(), all_chars.line, all_chars.line_offset))
                         }
                         
                     },
@@ -2191,7 +2191,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                                     }
                                                 }
                                             },
-                                            _ => log.error(&format!("The include location variable {} isn't type file , the include is ignored at  {}:{}: ", &value, scoped_block.0.borrow().script_path(), all_chars.line)),
+                                            _ => log.error(&format!("The include location variable {} isn't type file , the include is ignored at  {}:{}: ", value, scoped_block.0.borrow().script_path(), all_chars.line)),
                                         }
                                     },
                                     None => {
@@ -2253,7 +2253,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                             //println!{"name {:?} dir {:?} flex {:?}", inner_block.name, inner_block.dir, inner_block.flex}
                             scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                         } else {
-                            log.error(&format!("Target {} is already exists at  {}:{}: ", &name, scoped_block.0.borrow().script_path(), all_chars.line));
+                            log.error(&format!("Target {} is already exists at  {}:{}: ", name, scoped_block.0.borrow().script_path(), all_chars.line));
                         }
                     },
                     "eq" => {
@@ -2333,7 +2333,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))))
                     },
-                    _ => log.error(&format!("unknown block {} of {:?} at  {}:{}:{}", type_hdr, &parent_type, scoped_block.borrow().script_path(), all_chars.line, all_chars.line_offset))
+                    _ => log.error(&format!("unknown block {} of {:?} at  {}:{}:{}", type_hdr, parent_type, scoped_block.borrow().script_path(), all_chars.line, all_chars.line_offset))
                 }
                 
             },

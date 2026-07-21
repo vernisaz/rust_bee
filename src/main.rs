@@ -121,7 +121,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
                     set_property(&name.to_string(), &val.to_string());
                     //unsafe { env::set_var(name, val) }
                } else {
-                    log.error(&format!("Invalid property definition: {}", &arg))
+                    log.error(&format!("Invalid property definition: {}", arg))
                }
           } else if arg.starts_with("-xprop") || arg.starts_with("-prop") {
                arg_n += 1;
@@ -305,7 +305,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             set_property(&name.to_string(), &val.to_string());
                                 //unsafe { env::set_var(name, val) }
                         } else {
-                             log.error(&format!("Invalid property definition: {}", &prop_def.italic()))
+                             log.error(&format!("Invalid property definition: {}", prop_def.italic()))
                         }    
                     }
                }
@@ -354,7 +354,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let child = child_tree.0.borrow();
                if child .block_type == fun::BlockType::Target 
                     && let Some(name) = &child.name {
-                         log.message(&format!("{name} - {}", &child.flex.clone().unwrap_or("".to_string()).bright().blue()))
+                         log.message(&format!("{name} - {}", child.flex.clone().unwrap_or("".to_string()).bright().blue()))
                }
          }
       } else if lex_res.is_ok() {

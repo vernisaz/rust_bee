@@ -327,7 +327,7 @@ impl GenBlockTup {
                 }
                 BlockType::Or => {
                     //let len = dep_block.children.len();
-                    log.debug(&format!("orig {} children", &dep_block.children.len()));
+                    log.debug(&format!("orig {} children", dep_block.children.len()));
                     for child in &dep_block.children {
                         if child
                             .exec(log, prev_res)
@@ -351,7 +351,7 @@ impl GenBlockTup {
                 "{} children not supported in a dependency at {}:{}: ",
                 len,
                 dep.script_path(),
-                &dep.script_line
+                dep.script_line
             ))
         }
         false
@@ -433,7 +433,7 @@ impl GenBlockTup {
                         "Unexpected block(s) {} at {}:{}: ",
                         children.len(),
                         naked_block.script_path(),
-                        &naked_block.script_line
+                        naked_block.script_line
                     ))
                 }
                 res
@@ -581,7 +581,7 @@ impl GenBlockTup {
                         "Unexpected block(s) {} at {}:{}: ",
                         children.len(),
                         naked_block.script_path(),
-                        &naked_block.script_line
+                        naked_block.script_line
                     ))
                 }
                 Some(VarVal::from_bool(
@@ -599,7 +599,7 @@ impl GenBlockTup {
                     log.error(&format!(
                         "At least one argument has to be specified in eq at {}:{}: ",
                         naked_block.script_path(),
-                        &naked_block.script_line
+                        naked_block.script_line
                     ))
                 }
 
@@ -634,7 +634,7 @@ impl GenBlockTup {
                     log.error(&format!(
                         "At least one argument has to be specified in neq at {}:{}: ",
                         naked_block.script_path(),
-                        &naked_block.script_line
+                        naked_block.script_line
                     ))
                 }
                 let first = children[0].exec(log, prev_res);
@@ -666,7 +666,7 @@ impl GenBlockTup {
                 if control_var.is_none() {
                     log.error(&format!(
                         "No 'while' control variable {} at {}",
-                        &control, &naked_block.script_line
+                        control, naked_block.script_line
                     ));
                     return None;
                 }
@@ -728,9 +728,9 @@ impl GenBlockTup {
                 } else {
                     log.error(&format!(
                         "No 'case' variable {} at {}:{}: ",
-                        &control,
+                        control,
                         naked_block.script_path(),
-                        &naked_block.script_line
+                        naked_block.script_line
                     ))
                 }
                 res
@@ -759,7 +759,7 @@ impl GenBlockTup {
             let len = fun_block.params.len();
             for i in 1..len {
                 if write!(file, "{}", self.parameter(log, i, fun_block, res_prev)).is_err() {
-                    log.error(&format!{"Writing in {} failed at {}:{}: ", fname, fun_block.script_path(), &fun_block.script_line});
+                    log.error(&format!{"Writing in {} failed at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line});
                     break;
                 }
             }
@@ -777,7 +777,7 @@ impl GenBlockTup {
                 );
                 io::stdout().flush().unwrap();
                 if fun_block.params.len() > 1 {
-                    log.error(&format!{"Display parameters are ignored after first one at {}:{}: ", fun_block.script_path(), &fun_block.script_line})
+                    log.error(&format!{"Display parameters are ignored after first one at {}:{}: ", fun_block.script_path(), fun_block.script_line})
                 }
                 return res_prev.clone();
             }
@@ -802,7 +802,7 @@ impl GenBlockTup {
                 if let Ok(mut file) = file {
                     write_lambda(&mut file, &fname)
                 } else {
-                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), &fun_block.script_line})
+                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line})
                 }
             }
             "writex" if cfg!(not(unix)) => {
@@ -816,7 +816,7 @@ impl GenBlockTup {
                 if let Ok(mut file) = file {
                     write_lambda(&mut file, &fname)
                 } else {
-                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), &fun_block.script_line})
+                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line})
                 }
             }
             "writea" => {
@@ -834,7 +834,7 @@ impl GenBlockTup {
                 {
                     write_lambda(&mut file, &fname)
                 } else {
-                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), &fun_block.script_line})
+                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line})
                 }
             }
             #[cfg(unix)]
@@ -852,7 +852,7 @@ impl GenBlockTup {
                     .mode(0o700)
                     .open(&fname) {
                     Ok(mut file) => write_lambda(&mut file, &fname),
-                    Err(_) => log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), &fun_block.script_line}),
+                    Err(_) => log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line}),
                 }
             }
             "assign" => return self.exec_assign(log, fun_block, res_prev),
@@ -1044,7 +1044,7 @@ impl GenBlockTup {
                             None => log.error(&format!(
                                 "The process terminated by signal at {:?}:{}",
                                 fun_block.script_path(),
-                                &fun_block.script_line
+                                fun_block.script_line
                             )),
                         },
                         Err(err) => log.error(&format!(
@@ -1132,7 +1132,7 @@ impl GenBlockTup {
                 let stdin = io::stdin();
                 let res = stdin.read_line(&mut user_input);
                 if res.is_err() {
-                    log.error(&format!{"An error in getting a user input, the default input is used at {}:{}: ", fun_block.script_path(), &fun_block.script_line})
+                    log.error(&format!{"An error in getting a user input, the default input is used at {}:{}: ", fun_block.script_path(), fun_block.script_line})
                 }
                 user_input = user_input.trim().to_string();
                 if user_input.is_empty() && len > 1 {
@@ -1143,7 +1143,7 @@ impl GenBlockTup {
             }
             "timestamp" => {
                 if no_parameters(fun_block) {
-                    log.error(&format!{"No argument for timestamp at {}:{}: ", fun_block.script_path(), &fun_block.script_line});
+                    log.error(&format!{"No argument for timestamp at {}:{}: ", fun_block.script_path(), fun_block.script_line});
                 } else {
                     let mut fname = *self.parameter(log, 0, fun_block, res_prev);
                     if !has_root(&fname)
@@ -1174,11 +1174,8 @@ impl GenBlockTup {
                             file.set_modified(time).ok();
                         }
                     }
-                    let ts = timestamp(&fname);
-                    match ts {
-                        Some(timestamp) => return Some(VarVal::from_string(&timestamp)),
-                        None => return None,
-                    }
+                    let timestamp = timestamp(&fname)?;
+                    return Some(VarVal::from_string(&timestamp))
                 }
             }
             "cropname" => {
@@ -1186,11 +1183,11 @@ impl GenBlockTup {
                 let mut fname = *self.parameter(log, 0, fun_block, res_prev);
 
                 let Some(cwd) = fun_block.search_up(CWD) else {
-                    log.error(&format!{"File can't be cropped because CWD isn't set at {}:{}: ", fun_block.script_path(), &fun_block.script_line});
+                    log.error(&format!{"File can't be cropped because CWD isn't set at {}:{}: ", fun_block.script_path(), fun_block.script_line});
                     return Some(VarVal::from_string(fname));
                 };
                 if fun_block.params.len() < 2 {
-                    log.error(&format!{"'cropname' requires at least 2 parameters at {}:{}: ", fun_block.script_path(), &fun_block.script_line});
+                    log.error(&format!{"'cropname' requires at least 2 parameters at {}:{}: ", fun_block.script_path(), fun_block.script_line});
                     return Some(VarVal::from_string(fname));
                 }
                 if !has_root(&fname) {
@@ -1261,7 +1258,7 @@ impl GenBlockTup {
                 return match file_content {
                     Some(content) => Some(VarVal::from_string(content)),
                     None => {
-                        log.error(&format!{"File {} can't be opened for reading or a read error at {}:{}: ", fname, fun_block.script_path(), &fun_block.script_line});
+                        log.error(&format!{"File {} can't be opened for reading or a read error at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line});
                         None
                     }
                 };
@@ -1299,9 +1296,9 @@ impl GenBlockTup {
                 if dir1.is_none() || ext1.is_none() {
                     log.error(&format!(
                         "Parameter {} doesn't have path/ext pattern at {}:{}: ",
-                        &self.parameter(log, 0, fun_block, res_prev),
+                        self.parameter(log, 0, fun_block, res_prev),
                         fun_block.script_path(),
-                        &fun_block.script_line
+                        fun_block.script_line
                     ));
                     return None;
                 }
@@ -1322,7 +1319,7 @@ impl GenBlockTup {
                     }
                 }
                 log.debug(
-                    &format! {"newerthen: {:?}/{:?} then {:?}/{:?}", &dir1, &ext1, &dir2, &ext2},
+                    &format! {"newerthen: {:?}/{:?} then {:?}/{:?}", dir1, ext1, dir2, ext2},
                 );
                 return Some(VarVal::from_vec(&find_newer(&dir1, &ext1?, &dir2, &ext2)));
             }
@@ -1345,11 +1342,11 @@ impl GenBlockTup {
             }
             "gt" => {
                 if fun_block.params.len() != 2 {
-                    log.error(&format!{"Greater than requires 2 parameters, but specified {} at {}:{}: ", &fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
+                    log.error(&format!{"Greater than requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
                 } else {
                     let p1 = *self.parameter(log, 0, fun_block, res_prev);
                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
-                    log.debug(&format!("Comparing {} to {} at greater", &p1, &p2));
+                    log.debug(&format!("Comparing {} to {} at greater", p1, p2));
                     // TODO baybe check val_type == Number ?
                     if let Ok(val) = p1.parse::<f64>()
                         && let Ok(val2) = p2.parse::<f64>()
@@ -1361,11 +1358,11 @@ impl GenBlockTup {
             }
             "lt" => {
                 if fun_block.params.len() != 2 {
-                    log.error(&format!{"Littler than requires 2 parameters, but specified {} at {}:{}: ", &fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
+                    log.error(&format!{"Littler than requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
                 } else {
                     let p1 = *self.parameter(log, 0, fun_block, res_prev);
                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
-                    log.debug(&format!("Comparing {} to {} at littler", &p1, &p2));
+                    log.debug(&format!("Comparing {} to {} at littler", p1, p2));
                     // TODO baybe check val_type == Number ?
                     if let Ok(val) = p1.parse::<f64>()
                         && let Ok(val2) = p2.parse::<f64>()
@@ -1382,7 +1379,7 @@ impl GenBlockTup {
             }
             "contains" | "find" => {
                 if fun_block.params.len() != 2 {
-                    log.error(&format!{"Contains requires 2 parameters, but specified {} at {}:{}: ", &fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
+                    log.error(&format!{"Contains requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
                 } else {
                     let p1 = *self.parameter(log, 0, fun_block, res_prev);
                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
@@ -1409,11 +1406,11 @@ impl GenBlockTup {
                             //https://repo1.maven.org/maven2/com/baomidou/mybatis-plus-boot-starter/3.5.3.1/mybatis-plus-boot-starter-3.5.3.1.jar
                             return Some(VarVal::from_string(format!(
                                 "https://repo1.maven.org/maven2/{}/{}/{}/{}-{}.jar",
-                                &mav_parts[0].replace(".", "/"),
-                                &mav_parts[1],
-                                &mav_parts[2],
-                                &mav_parts[1],
-                                &mav_parts[2]
+                                mav_parts[0].replace(".", "/"),
+                                mav_parts[1],
+                                mav_parts[2],
+                                mav_parts[1],
+                                mav_parts[2]
                             )));
                         }
                         _ => (),
@@ -1433,7 +1430,7 @@ impl GenBlockTup {
                                     "Expected 3 parts of maven URL but found {} at {}:{}: ",
                                     parts.len(),
                                     fun_block.script_path(),
-                                    &fun_block.script_line
+                                    fun_block.script_line
                                 ));
                                 return None;
                             }
@@ -1466,7 +1463,7 @@ impl GenBlockTup {
                             if !param.is_empty() {
                                 res.push(param)
                             } else {
-                                log.error(&format!{"An empty parameter {} is ignored at {}:{}: ", i, fun_block.script_path(), &fun_block.script_line})
+                                log.error(&format!{"An empty parameter {} is ignored at {}:{}: ", i, fun_block.script_path(), fun_block.script_line})
                             }
                         }
                     }
@@ -1520,7 +1517,7 @@ impl GenBlockTup {
                         .collect();
                     return Some(VarVal::from_vec(&vec));
                 } else {
-                    log.error(&format!{"Variable {} not found or not an array at {}:{}: ", fun_block.params[0], fun_block.script_path(), &fun_block.script_line})
+                    log.error(&format!{"Variable {} not found or not an array at {}:{}: ", fun_block.params[0], fun_block.script_path(), fun_block.script_line})
                 }
             }
             "panic" => {
@@ -1534,12 +1531,12 @@ impl GenBlockTup {
             "element" => {
                 // the function allows to extract or set an element of an array
                 if fun_block.params.len() < 2 {
-                    log.error(&format!{"The 'element' requires 2 or 3 parameters, but specified {} at {}:{}: ", &fun_block.params.len(), fun_block.script_path(), fun_block.script_line}) ;
+                    log.error(&format!{"The 'element' requires 2 or 3 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line}) ;
                     return None;
                 }
                 let name = &fun_block.params[0];
                 let Some(var_block) = fun_block.parent.clone()?.search_up_block(name) else {
-                    log.error(&format!{"Specified argument {} wasn't found at {}:{}: ", &name,  fun_block.script_path(), fun_block.script_line});
+                    log.error(&format!{"Specified argument {} wasn't found at {}:{}: ", name,  fun_block.script_path(), fun_block.script_line});
                     return None;
                 };
 
@@ -1557,7 +1554,7 @@ impl GenBlockTup {
                 let var = parent_bare.vars.get_mut(name)?;
                 if var.val_type == VarType::Array {
                     if var.values.is_empty() || index > var.values.len() - 1 {
-                        log.error(&format!{"Specified index {} is out of bounds {} at {}:{}: ",  index, &name, fun_block.script_path(), fun_block.script_line});
+                        log.error(&format!{"Specified index {} is out of bounds {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
                         return None;
                     }
                     let res = Some(VarVal::from_string(&var.values[index]));
@@ -1567,16 +1564,16 @@ impl GenBlockTup {
                     }
                     return res; // get/set
                 } else {
-                    log.error(&format!{"Specified argument {} isn't an array at {}:{}: ",  &name, fun_block.script_path(), fun_block.script_line});
+                    log.error(&format!{"Specified argument {} isn't an array at {}:{}: ",  name, fun_block.script_path(), fun_block.script_line});
                 }
             }
             "set_env" => {
                 if fun_block.params.len() != 2 {
-                    log.error(&format!{"Set environment requires 2 parameters, but specified {} at {}:{}: ", &fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
+                    log.error(&format!{"Set environment requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
                 } else {
                     let key = *self.parameter(log, 0, fun_block, res_prev);
                     let val = *self.parameter(log, 1, fun_block, res_prev);
-                    log.debug(&format!("Set env {} to {}", &key, val));
+                    log.debug(&format!("Set env {} to {}", key, val));
                     //unsafe { env::set_var(key, val) }
                     crate::set_property(&key, &val)
                 }
@@ -1848,7 +1845,7 @@ impl GenBlockTup {
                             entry.attributes.insert(simzip::Attribute::Exec);
                         }
                         if !zip.add(entry) {
-                            log.warning(&format! {"Zip entry {} already exists", &name})
+                            log.warning(&format! {"Zip entry {} already exists", name})
                         }
                     } else if op.starts_with("-C") {
                         let path = if op.len() > 3 { Some(&op[3..]) } else { None };
@@ -1888,10 +1885,10 @@ impl GenBlockTup {
                                 files.as_os_str().to_str()?,
                                 path.map(str::to_string).as_ref(),
                             )) {
-                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &files.as_os_str().to_str()?, &path})
+                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", files.as_os_str().to_str()?, path})
                             }
                         } else {
-                            log.error(&format!{"Path {files:?} can't be zipped at {}:{}: ", fun_block.script_path(), &fun_block.script_line})
+                            log.error(&format!{"Path {files:?} can't be zipped at {}:{}: ", fun_block.script_path(), fun_block.script_line})
                         }
                     } else if op.starts_with("-B") {
                         // probably -C takes all cases
@@ -1969,7 +1966,7 @@ impl GenBlockTup {
                                                     path.map(str::to_string).as_ref(),
                                                 ))
                                             {
-                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &name, &path} )
+                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", name, path} )
                                             }
                                         }
                                     }
@@ -1982,7 +1979,7 @@ impl GenBlockTup {
                                     entry_path.as_os_str().to_str()?,
                                     path.map(str::to_string).as_ref(),
                                 )) {
-                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str()?, &path} )
+                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", entry_path.as_os_str().to_str()?, path} )
                                 }
                             } else if entry_path.is_dir() {
                                 match entry_path.read_dir() {
@@ -1996,7 +1993,7 @@ impl GenBlockTup {
                                                     path.map(str::to_string).as_ref(),
                                                 ))
                                             {
-                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str()?, &path} )
+                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", entry.path().as_os_str().to_str()?, path} )
                                             }
                                         }
                                     }
@@ -2013,7 +2010,7 @@ impl GenBlockTup {
                 }
                 match zip.store() {
                     Ok(()) => return Some(VarVal::from_string(zip_path)),
-                    Err(msg) => log.error(&format!{"Zip: {msg} at {}:{}: ", fun_block.script_path(), &fun_block.script_line})
+                    Err(msg) => log.error(&format!{"Zip: {msg} at {}:{}: ", fun_block.script_path(), fun_block.script_line})
                 }
             }
             "cfg" => {
@@ -2119,7 +2116,7 @@ impl GenBlockTup {
                 "Calling for parameter {i} in non existing parameter of {:?} at {}:{}: ",
                 fun_block.name,
                 fun_block.script_path(),
-                &fun_block.script_line
+                fun_block.script_line
             ));
             Box::new(String::new())
         }
@@ -2135,7 +2132,7 @@ impl GenBlockTup {
         let param = fun_block.prev_or_search_up(param_val, res_prev);
         log.debug(&format!(
             "looking for {:?} of {:?} as {:?}",
-            param_val, &fun_block.block_type, param
+            param_val, fun_block.block_type, param
         ));
         match param {
             None => process_template_value(log, param_val, fun_block, res_prev),
@@ -2690,8 +2687,8 @@ pub fn exec_target(log: &Log, target_bl: &GenBlockTup, force_exec: bool) -> bool
     let dir = target.dir.clone();
     log.debug(&format!(
         "processing: {} deps of {:?} in {dir:?}",
-        &target.deps.len(),
-        &target.name
+        target.deps.len(),
+        target.name
     ));
     if let Some(dir) = dir {
         let dir_val = dir.to_string();
@@ -2733,7 +2730,7 @@ pub fn exec_target(log: &Log, target_bl: &GenBlockTup, force_exec: bool) -> bool
             res = child.exec(log, &res)
         }
     } else {
-        log.debug(&format!("no need to run: {:?}", &target_bl.borrow().name))
+        log.debug(&format!("no need to run: {:?}", target_bl.borrow().name))
     }
     need_exec
 }
@@ -2813,7 +2810,7 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
             {
                 match dir2 {
                     Some(dir2) => {
-                        let file2 = format! {"{}/{}{}", &dir2, &file1_path.file_stem().unwrap().to_str().unwrap(), &ext2.as_ref().unwrap()};
+                        let file2 = format! {"{}/{}{}", dir2, file1_path.file_stem().unwrap().to_str().unwrap(), ext2.as_ref().unwrap()};
 
                         let t1 = last_modified(&file1_path.display().to_string());
                         let t2 = last_modified(&file2);
@@ -2934,7 +2931,7 @@ fn zip_dir(
                             path.map(str::to_string).as_ref(),
                         ))
                     {
-                        log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path})
+                        log.warning(&format!{"Zip entry {1:?}/{0} already exists", entry.path().as_os_str().to_str().unwrap(), path})
                     }
                 } else if file_type.is_dir() {
                     let zip_path = match path {
