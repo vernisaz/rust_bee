@@ -754,7 +754,7 @@ impl GenBlockTup {
         fun_block: &GenBlock,
         res_prev: &Option<VarVal>,
     ) -> Option<VarVal> {
-        let name = fun_block.name.as_ref().unwrap().as_str();
+        let name = fun_block.name.as_ref()?.as_str();
         let write_lambda = |file: &mut File, fname| {
             let len = fun_block.params.len();
             for i in 1..len {
@@ -881,7 +881,7 @@ impl GenBlockTup {
                 ));
             }
             "exec" | "aexec" => {
-                let mut exec: String = fun_block.flex.as_ref().unwrap().to_string();
+                let mut exec: String = fun_block.flex.as_ref()?.to_string();
                 // look for var first
                 if let Some(exec1) = fun_block.search_up(&exec) {
                     exec = *process_template_value(log, &exec1.value, fun_block, res_prev);
@@ -976,7 +976,7 @@ impl GenBlockTup {
                     if let Ok(status) = status {
                         return Some(VarVal::from_i32(status.id() as i32));
                     }
-                    log.error(&format!("Command {} with {:?} in {} failed to start asynchronically at {}:{}: , reason {}", exec, params, cwd, fun_block.script_path(), fun_block.script_line, status.err().unwrap()))
+                    log.error(&format!("Command {} with {:?} in {} failed to start asynchronically at {}:{}: , reason {}", exec, params, cwd, fun_block.script_path(), fun_block.script_line, status.err()?))
                 } else if fun_block.out.is_some() {
                     let output = if cwd.is_empty() {
                         Command::new(&exec)
@@ -1006,14 +1006,13 @@ impl GenBlockTup {
                     // TODO more error handling
                     if output.status.success() {
                         let stdout = String::from_utf8_lossy(&output.stdout);
-                        let parent_block = fun_block.parent.clone().unwrap();
+                        let parent_block = fun_block.parent.clone()?;
                         let mut parent_block_mut = parent_block.borrow_mut();
-                        parent_block_mut.vars.insert(
-                            fun_block.out.clone().unwrap(),
-                            VarVal::from_string(stdout.trim()),
-                        );
+                        parent_block_mut
+                            .vars
+                            .insert(fun_block.out.clone()?, VarVal::from_string(stdout.trim()));
 
-                        return Some(VarVal::from_i32(output.status.code().unwrap()));
+                        return Some(VarVal::from_i32(output.status.code()?));
                     } else {
                         log.error(&format!(
                             "Command {} with {:?} in {} failed to start at {}:{}: , reason {}",
@@ -1278,7 +1277,7 @@ impl GenBlockTup {
                 if name == "canonicalize"
                     && let Ok(can_path) = fs::canonicalize(&path)
                 {
-                    path = can_path.into_os_string().into_string().unwrap()
+                    path = can_path.into_os_string().into_string()?
                 }
                 #[cfg(target_os = "windows")]
                 {
@@ -1325,12 +1324,7 @@ impl GenBlockTup {
                 log.debug(
                     &format! {"newerthen: {:?}/{:?} then {:?}/{:?}", &dir1, &ext1, &dir2, &ext2},
                 );
-                return Some(VarVal::from_vec(&find_newer(
-                    &dir1,
-                    &ext1.unwrap(),
-                    &dir2,
-                    &ext2,
-                )));
+                return Some(VarVal::from_vec(&find_newer(&dir1, &ext1?, &dir2, &ext2)));
             }
             "anynewer" => {
                 log.debug(&format!("evaluating anynewer: {}", fun_block.params.len()));
@@ -1544,8 +1538,7 @@ impl GenBlockTup {
                     return None;
                 }
                 let name = &fun_block.params[0];
-                let Some(var_block) = fun_block.parent.clone().unwrap().search_up_block(name)
-                else {
+                let Some(var_block) = fun_block.parent.clone()?.search_up_block(name) else {
                     log.error(&format!{"Specified argument {} wasn't found at {}:{}: ", &name,  fun_block.script_path(), fun_block.script_line});
                     return None;
                 };
@@ -1677,11 +1670,7 @@ impl GenBlockTup {
                     if !file_from.is_empty() && !file_to.is_empty() {
                         if PathBuf::from(&file_to).is_dir() {
                             file_to += &(MAIN_SEPARATOR_STR.to_owned()
-                                + PathBuf::from(&file_from)
-                                    .file_name()
-                                    .unwrap()
-                                    .to_str()
-                                    .unwrap())
+                                + PathBuf::from(&file_from).file_name()?.to_str()?)
                         }
                         if copy(&file_from, &file_to).is_ok() {
                             res.push(file_to) // possibly size copied
@@ -1710,11 +1699,7 @@ impl GenBlockTup {
                     if !file_from.is_empty() && !file_to.is_empty() {
                         if PathBuf::from(&file_to).is_dir() {
                             file_to += &(MAIN_SEPARATOR_STR.to_owned()
-                                + PathBuf::from(&file_from)
-                                    .file_name()
-                                    .unwrap()
-                                    .to_str()
-                                    .unwrap())
+                                + PathBuf::from(&file_from).file_name()?.to_str()?)
                         }
                         if rename(&file_from, &file_to).is_ok() {
                             res.push(file_to)
@@ -1900,10 +1885,10 @@ impl GenBlockTup {
                             zip_dir(log, &mut zip, files, path, None, None)
                         } else if files.is_file() {
                             if !zip.add(simzip::ZipEntry::from_file(
-                                files.as_os_str().to_str().unwrap(),
+                                files.as_os_str().to_str()?,
                                 path.map(str::to_string).as_ref(),
                             )) {
-                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &files.as_os_str().to_str().unwrap(), &path})
+                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &files.as_os_str().to_str()?, &path})
                             }
                         } else {
                             log.error(&format!{"Path {files:?} can't be zipped at {}:{}: ", fun_block.script_path(), &fun_block.script_line})
@@ -1952,12 +1937,7 @@ impl GenBlockTup {
                             }
                             let entry_path = Path::new(&entry);
                             let parent_files = entry_path.parent().unwrap_or(Path::new("."));
-                            let filename = entry_path
-                                .file_name()
-                                .unwrap()
-                                .to_str()
-                                .unwrap()
-                                .to_string();
+                            let filename = entry_path.file_name()?.to_str()?.to_string();
                             if let Some(pos) = filename.find("*") {
                                 let mut chars = filename.chars();
                                 let (start, end) = if chars.nth(0).unwrap() == '*' {
@@ -1970,9 +1950,9 @@ impl GenBlockTup {
                                 match parent_files.read_dir() {
                                     Ok(dir) => {
                                         for entry in dir.flatten() {
-                                            let name =
-                                                entry.file_name().to_str().unwrap().to_owned();
-                                            if entry.file_type().unwrap().is_file()
+                                            let name = entry.file_name().to_str()?.to_owned();
+                                            if let Ok(file_type) = entry.file_type()
+                                                && file_type.is_file()
                                                 && (start.is_some()
                                                     && name.starts_with(start.unwrap())
                                                     && end.is_some()
@@ -1985,7 +1965,7 @@ impl GenBlockTup {
                                                         && end.is_none()
                                                     || start.is_none() && end.is_none())
                                                 && !zip.add(simzip::ZipEntry::from_file(
-                                                    entry.path().as_os_str().to_str().unwrap(),
+                                                    entry.path().as_os_str().to_str()?,
                                                     path.map(str::to_string).as_ref(),
                                                 ))
                                             {
@@ -1999,23 +1979,24 @@ impl GenBlockTup {
                                 }
                             } else if entry_path.is_file() {
                                 if !zip.add(simzip::ZipEntry::from_file(
-                                    entry_path.as_os_str().to_str().unwrap(),
+                                    entry_path.as_os_str().to_str()?,
                                     path.map(str::to_string).as_ref(),
                                 )) {
-                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str().unwrap(), &path} )
+                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry_path.as_os_str().to_str()?, &path} )
                                 }
                             } else if entry_path.is_dir() {
                                 match entry_path.read_dir() {
                                     Ok(dir) => {
                                         for entry in dir {
                                             if let Ok(entry) = entry
-                                                && entry.file_type().unwrap().is_file()
+                                                && let Ok(file_type) = entry.file_type()
+                                                && file_type.is_file()
                                                 && !zip.add(simzip::ZipEntry::from_file(
-                                                    entry.path().as_os_str().to_str().unwrap(),
+                                                    entry.path().as_os_str().to_str()?,
                                                     path.map(str::to_string).as_ref(),
                                                 ))
                                             {
-                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str().unwrap(), &path} )
+                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", &entry.path().as_os_str().to_str()?, &path} )
                                             }
                                         }
                                     }
@@ -2074,7 +2055,7 @@ impl GenBlockTup {
         res_prev: &Option<VarVal>,
     ) -> Option<VarVal> {
         let name = fun_block.params[0].to_owned();
-        let mut parent = self.parent().unwrap(); // because fun block can't be Main
+        let mut parent = self.parent()?; // because fun block can't be Main
         let mut close_scope = None;
         loop {
             //println!("borrowed {:?} - {:?}", parent.0.borrow().name, parent.0.borrow().block_type);
@@ -2767,7 +2748,9 @@ pub fn timestamp(p: &str) -> Option<String> {
 }
 
 pub fn format_system_time(time: SystemTime) -> String {
-    let dur = time.duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    let dur = time
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default();
     let (y, m, d, h, min, s, _w) = time::get_datetime(1970, dur.as_secs());
     //println!{"week {} - {}", w, DAYS_OF_WEEK[w as usize]} ;
     format!("{:0>2}{:0>2}{:0>2}T{:0>2}{:0>2}{:0>2}Z", y, m, d, h, min, s) // see ISO 8601
