@@ -4,12 +4,11 @@ Options are:
   --version, -V          print a version information
   --quiet, -q            be extra quiet
   --verbose, -v          be extra verbose
-  --diagnostic, -d       print a debugging information
+  --diagnostic, -d       print a debug information
   --logfile <file>       use given file for log
-  -l       <file>        ''
+  -l        <file>       ''
   --buildfile <file>     use the given script file
-  --file    <file>       ''
-  -f       <file>        ''
+  --file <file>, -f file>''
   --keep-going, -k       execute all targets that do not depend
                          on failed target(s)
   --dry-run, -y          do not launch any executable, but show their arguments
@@ -20,7 +19,7 @@ Options are:
   -propertyfile <name>   load all properties from file with -D
                          properties taking precedence
   --find [<file>]        Search for a script file towards the root of 
-  -s    [<file>]         the filesystem and then use it 
+  -s     [<file>]        the filesystem and then use it 
   --targethelp, -t       print all target names in the script file with
                          descriptions/comments
   --                     a separator of argumets passed to the script target
@@ -29,7 +28,7 @@ Options are:
 Specifying an extension of script file name isn't required, unless it isn't the
 standard one.
 If a file name isn't specified, then any file which name starts with 'bee' is 
-considered as the script.
+considered as a script.
 Examples: rb jar -d -f project1
           rb compile -s
           rb clean compile -r
