@@ -267,7 +267,15 @@ impl GenBlockTup {
                             }
                         }
                         "anynewer" => {
-                            log.debug(&format!("evaluating anynewer: {}", dep_block.params.len()));
+                            if dep_block.params.len() != 2 {
+                                log.error(&format!(
+                                    "Dependency 'anynewer' requires two parameters, but specified {} at {}:{}: ",
+                                    dep_block.params.len(),
+                                    dep.script_path(),
+                                    dep.script_line
+                                ));
+                                return true;
+                            }
                             let p1 =
                                 process_template_value(log, &dep_block.params[0], &dep, prev_res);
                             let p2 =
@@ -1175,7 +1183,7 @@ impl GenBlockTup {
                         }
                     }
                     let timestamp = timestamp(&fname)?;
-                    return Some(VarVal::from_string(&timestamp))
+                    return Some(VarVal::from_string(&timestamp));
                 }
             }
             "cropname" => {
@@ -1318,9 +1326,7 @@ impl GenBlockTup {
                         dir2 = Some(cwd.value + MAIN_SEPARATOR_STR + dir2v)
                     }
                 }
-                log.debug(
-                    &format! {"newerthen: {:?}/{:?} then {:?}/{:?}", dir1, ext1, dir2, ext2},
-                );
+                log.debug(&format! {"newerthen: {:?}/{:?} then {:?}/{:?}", dir1, ext1, dir2, ext2});
                 return Some(VarVal::from_vec(&find_newer(&dir1, &ext1?, &dir2, &ext2)));
             }
             "anynewer" => {
