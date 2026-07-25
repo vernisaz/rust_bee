@@ -2096,12 +2096,18 @@ impl GenBlockTup {
         } else {
             let val = match fun_block.prev_or_search_up(&fun_block.params[1], res_prev) {
                 Some(var) => var,
-                None => VarVal::from_string(*process_template_value(
-                    log,
-                    &fun_block.params[1],
-                    fun_block,
-                    res_prev,
-                )),
+                None => {
+                    if PREV_VAL == fun_block.params[1] {
+                        VarVal::from_string(String::new())
+                    } else {
+                        VarVal::from_string(*process_template_value(
+                            log,
+                            &fun_block.params[1],
+                            fun_block,
+                            res_prev,
+                        ))
+                    }
+                }
             };
             let mut parent_nak = parent.0.borrow_mut();
             parent_nak.vars.insert(name, val)
