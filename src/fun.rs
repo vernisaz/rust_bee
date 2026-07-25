@@ -866,7 +866,7 @@ impl GenBlockTup {
             "assign" => return self.exec_assign(log, fun_block, res_prev),
             "neq" => {
                 log.debug(&format!(
-                    "comparing {:?} and {:?}",
+                    "comparing neq {:?} and {:?}",
                     self.parameter(log, 0, fun_block, res_prev),
                     self.parameter(log, 1, fun_block, res_prev)
                 ));
@@ -1364,7 +1364,7 @@ impl GenBlockTup {
             }
             "lt" => {
                 if fun_block.params.len() != 2 {
-                    log.error(&format!{"Littler than requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
+                    log.error(&format!{"Less than requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
                 } else {
                     let p1 = *self.parameter(log, 0, fun_block, res_prev);
                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
@@ -2119,7 +2119,7 @@ impl GenBlockTup {
             self.expand_parameter(log, &fun_block.params[i], fun_block, res_prev)
         } else {
             log.error(&format!(
-                "Calling for parameter {i} in non existing parameter of {:?} at {}:{}: ",
+                "Calling for non existing parameter {i} of {:?} at {}:{}: ",
                 fun_block.name,
                 fun_block.script_path(),
                 fun_block.script_line
@@ -2141,7 +2141,13 @@ impl GenBlockTup {
             param_val, fun_block.block_type, param
         ));
         match param {
-            None => process_template_value(log, param_val, fun_block, res_prev),
+            None => {
+                if PREV_VAL == param_val {
+                    Box::new(String::new())
+                } else {
+                    process_template_value(log, param_val, fun_block, res_prev)
+                }
+            }
             // TODO extend  val.value accordingly val.val_type
             Some(val) => {
                 let var = match val.val_type {
@@ -2165,7 +2171,7 @@ impl GenBlockTup {
                         }
                     }
                 };
-                process_template_value(log, &var.to_string(), fun_block, res_prev)
+                process_template_value(log, &var, fun_block, res_prev)
             }
         }
     }
