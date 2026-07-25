@@ -775,7 +775,7 @@ impl GenBlockTup {
         // TODO for arrays
         let is_true_lambda = |current| match self.prev_or_search_up(current, res_prev) {
             Some(var) if var.val_type == VarType::Array => var.is_true(),
-            _ => "true" == *self.expand_parameter(log, current, fun_block, res_prev),
+            _ => VarVal::from_string(*self.parameter(log, 0, fun_block, res_prev)).is_true(),
         };
         match name {
             "display" => {
