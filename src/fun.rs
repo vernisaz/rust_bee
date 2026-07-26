@@ -2043,7 +2043,7 @@ impl GenBlockTup {
             }
             _ => todo!(
                 "no such function: {:?} at {}:{}: ",
-                fun_block.name,
+                fun_block.name.clone().unwrap_or_default().red(),
                 fun_block.script_path(),
                 &fun_block.script_line
             ),
