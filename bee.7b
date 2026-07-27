@@ -10,7 +10,7 @@ crate_dir=..${~/~}crates
 doc_dir=..${~/~}docs
 comp opts=[--extern,simzip]
 version=1.16.03
-build=194
+build=195
 
 include(env.7b);
 
@@ -33,7 +33,7 @@ target crate {
 	dependency{target(version update)}
 }
 
-target install::Install RustBee for everyone's use  {
+target install::Install RustBee  {
     dependency {true}
     ask(Are you going to install the ${project}? [N/y/l],n)
     assign(install option, ~~)

@@ -14,7 +14,6 @@ use std::panic;
 use simcolor::{Colorized};
 
 mod help;
-mod ver;
 mod log;
 mod lex;
 mod fun;
@@ -38,6 +37,7 @@ enum CmdOption {
      TargetHelp
 }
 
+include!("ver.rs");
 
 static SYSTEM_PROPERTIES: RwLock<Option<HashMap<String, String>>> = RwLock::new(None);
 
@@ -250,9 +250,9 @@ fn main() -> Result<(), Box<dyn Error>> {
      }
      if !log.quiet {
         // TODO get year from time::
-          log.message(&format!("RustBee ({}) v {} © {} D. Rogatkin", "rb".bright().cyan(), ver::version().0, util::year_now()));
+          log.message(&format!("RustBee ({}) v {} © {} D. Rogatkin", "rb".bright().cyan(), version().0, util::year_now()));
           if options.contains(&CmdOption::Version) {
-               let (ver, build, date) = ver::version();
+               let (ver, build, date) = version();
                log.message(&format!("RB Version: {}/SC:{}{}{}/SZ:{}/ST:{}, build: {} on {}", ver.bold(),
                   simcolor::VERSION[..3].red(), simcolor::VERSION[3..5].green(), simcolor::VERSION[5..].blue().bright(),
                   simzip::VERSION.underline(), time::VERSION.dimmed(), build.reversed(), date.italic()))

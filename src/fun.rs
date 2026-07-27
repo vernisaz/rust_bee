@@ -25,7 +25,7 @@ use std::{
 use crate::CWD;
 use crate::get_property;
 use crate::util::{self, format_time, has_root};
-use crate::ver;
+use crate::version;
 
 pub const PREV_VAL: &str = "~~";
 
@@ -1821,7 +1821,7 @@ impl GenBlockTup {
                 }
                 let mut zip = simzip::ZipInfo::new_with_comment(
                     &zip_path,
-                    &format! {"Zipped by RustBee {}", ver::version().0},
+                    &format! {"Zipped by RustBee {}", version().0},
                 );
                 zip.prohibit_duplicates();
                 let flatten_params = &fun_block.params; //&fun_block.flatten_params(&res_prev);
