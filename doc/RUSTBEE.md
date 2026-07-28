@@ -171,9 +171,9 @@ and optionally sets timestamp of the file to the value specified by second param
 just append content
 - **zip**, write a zip file, a name is specified by the first parameter and a content is specified by the following parameter pairs. A pair can be:
 
-    * -\<A|E\> zip dir/name, content (when E specified, the content gets the execute permission under UNIX)
-    * -C zip dir, dir with a possible file wildcard name (all directories below are processed)
-    * -B zip dir, dir with a possible file wildcard name (no traverse of directories). There's a possibility
+    * -\<A|E\>['comment'] zip dir/name, content (when E specified, the content gets the execute permission under UNIX)
+    * -C['comment'] zip dir, dir with a possible file wildcard name (all directories below are processed)
+    * -B['comment'] zip dir, dir with a possible file wildcard name (no traverse of directories). There's a possibility
 of using an array of file paths, however to prevent an array flatten, use a name a var storing a name of the array of paths, like:
 ```
 assign(+TJWS libs, TJWS libs);
@@ -181,7 +181,8 @@ zip(${distro dir}${~/~}rds-${version}.zip,
   -B lib,
   +TJWS libs) # it's a reference to an array of component paths
 ```
-The function returns the stored zip path, or nothing in  a case of errors.
+If a comment specified, it gets applied for a single file entries.
+The function returns the stored zip path, or nothing in a case of errors.
 
 The result of a function or a block is stored in a temporary variable `\~\~` and can be consumed in the next operation. 
 

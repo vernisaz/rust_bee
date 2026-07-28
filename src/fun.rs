@@ -1821,7 +1821,7 @@ impl GenBlockTup {
                 }
                 let mut zip = simzip::ZipInfo::new_with_comment(
                     &zip_path,
-                    &format! {"Zipped by RustBee {}", version().0},
+                    &format! {"Zipped by RustBee v{}", version().0},
                 );
                 zip.prohibit_duplicates();
                 let flatten_params = &fun_block.params; //&fun_block.flatten_params(&res_prev);
@@ -1836,7 +1836,7 @@ impl GenBlockTup {
                     );
                     //println!{"{op} -> {}", &flaten_params[current_op]}
                     if op.starts_with("-A") || op.starts_with("-E") {
-                        let name = &op[3..].trim_start();
+                        let (name, comment) = get_name_comment(&op);
                         //normalize_path(&mut name);
                         current_op += 1;
                         // think of to work with array parameters
@@ -1850,11 +1850,12 @@ impl GenBlockTup {
                         if op.starts_with("-E") {
                             entry.attributes.insert(simzip::Attribute::Exec);
                         }
+                        entry.comment = comment.map(String::from);
                         if !zip.add(entry) {
                             log.warning(&format! {"Zip entry {} already exists", name})
                         }
                     } else if op.starts_with("-C") {
-                        let path = if op.len() > 3 { Some(&op[3..]) } else { None };
+                        let (path, comment) = get_name_comment(&op);
                         current_op += 1;
                         let mut files = *self.expand_parameter(
                             log,
@@ -1883,14 +1884,30 @@ impl GenBlockTup {
                             } else {
                                 (Some(&filename[0..pos]), Some(&filename[pos + 1..]))
                             };
-                            zip_dir(log, &mut zip, parent_files, path, start, end)
+                            zip_dir(
+                                log,
+                                &mut zip,
+                                parent_files,
+                                if path.is_empty() { None } else { Some(path) },
+                                start,
+                                end,
+                            )
                         } else if files.is_dir() {
-                            zip_dir(log, &mut zip, files, path, None, None)
+                            zip_dir(
+                                log,
+                                &mut zip,
+                                files,
+                                if path.is_empty() { None } else { Some(path) },
+                                None,
+                                None,
+                            )
                         } else if files.is_file() {
-                            if !zip.add(simzip::ZipEntry::from_file(
+                            let mut entry = simzip::ZipEntry::from_file(
                                 files.as_os_str().to_str()?,
-                                path.map(str::to_string).as_ref(),
-                            )) {
+                                if path.is_empty() { None } else { Some(path) },
+                            );
+                            entry.comment = comment.map(String::from);
+                            if !zip.add(entry) {
                                 log.warning(&format!{"Zip entry {1:?}/{0} already exists", files.as_os_str().to_str()?, path})
                             }
                         } else {
@@ -1898,7 +1915,7 @@ impl GenBlockTup {
                         }
                     } else if op.starts_with("-B") {
                         // probably -C takes all cases
-                        let path = if op.len() > 3 { Some(&op[3..]) } else { None };
+                        let (path, comment) = get_name_comment(&op);
                         current_op += 1;
                         // -B <some path>
                         // name of var the value of the var is a var name holding array of paths
@@ -1969,7 +1986,7 @@ impl GenBlockTup {
                                                     || start.is_none() && end.is_none())
                                                 && !zip.add(simzip::ZipEntry::from_file(
                                                     entry.path().as_os_str().to_str()?,
-                                                    path.map(str::to_string).as_ref(),
+                                                    if path.is_empty() { None } else { Some(path) },
                                                 ))
                                             {
                                                 log.warning(&format!{"Zip entry {1:?}/{0} already exists", name, path} )
@@ -1981,10 +1998,12 @@ impl GenBlockTup {
                                     ),
                                 }
                             } else if entry_path.is_file() {
-                                if !zip.add(simzip::ZipEntry::from_file(
+                                let mut zip_entry = simzip::ZipEntry::from_file(
                                     entry_path.as_os_str().to_str()?,
-                                    path.map(str::to_string).as_ref(),
-                                )) {
+                                    if path.is_empty() { None } else { Some(path) },
+                                );
+                                zip_entry.comment = comment.map(String::from);
+                                if !zip.add(zip_entry) {
                                     log.warning(&format!{"Zip entry {1:?}/{0} already exists", entry_path.as_os_str().to_str()?, path} )
                                 }
                             } else if entry_path.is_dir() {
@@ -1996,7 +2015,7 @@ impl GenBlockTup {
                                                 && file_type.is_file()
                                                 && !zip.add(simzip::ZipEntry::from_file(
                                                     entry.path().as_os_str().to_str()?,
-                                                    path.map(str::to_string).as_ref(),
+                                                    if path.is_empty() { None } else { Some(path) },
                                                 ))
                                             {
                                                 log.warning(&format!{"Zip entry {1:?}/{0} already exists", entry.path().as_os_str().to_str()?, path} )
@@ -2914,6 +2933,18 @@ fn matches(name: &str, filter: &str) -> bool {
                 }
             }
         }
+    }
+}
+
+fn get_name_comment<'a>(op: &'a str) -> (&'a str, Option<&'a str>) {
+    if op[2..3] == *"'" {
+        if let Some((comment, name)) = op[3..].split_once('\'') {
+            (name.trim_start(), Some(comment))
+        } else {
+            (op[3..].trim_start(), None) // generally broken comment, should be error
+        }
+    } else {
+        (op[3..].trim_start(), None)
     }
 }
 

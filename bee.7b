@@ -9,8 +9,8 @@ common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 doc_dir=..${~/~}docs
 comp opts=[--extern,simzip]
-version=1.16.03
-build=195
+version=1.17.00
+build=197
 
 include(env.7b);
 
@@ -136,17 +136,17 @@ target package::Creates a zip with the tool and supplied files {
     	anynewer(env.7b,.${~/~}rustbee-${version}.zip)
     }
     zip(.${~/~}rustbee-${version}.zip,
-	-B ${project},
+	-B'run script' ${project},
 	.${~/~}bee.7b,
-	-B ${project},
+	-B'env for script(obsolete\)' ${project},
 	.${~/~}env.7b,
-	-B ${project},
+	-B'documentation' ${project},
 	.${~/~}doc${~/~}RUSTBEE.md,
-	-B ${project},
+	-B'base read me' ${project},
 	.${~/~}README.md,
-	-B ${project},
+	-B'Rust Bee' ${project},
 	.${~/~}rb${ext},
-	-B ${project},
+	-B'add to path' ${project},
 	.${~/~}addpath.sh)
 	display(done ${~~})
 }
