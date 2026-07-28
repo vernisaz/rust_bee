@@ -2936,7 +2936,7 @@ fn matches(name: &str, filter: &str) -> bool {
     }
 }
 
-fn get_name_comment<'a>(op: &'a str) -> (&'a str, Option<&'a str>) {
+fn get_name_comment(op: &str) -> (&str, Option<&str>) {
     if op[2..3] == *"'" {
         if let Some((comment, name)) = op[3..].split_once('\'') {
             (name.trim_start(), Some(comment))
