@@ -1609,9 +1609,12 @@ impl GenBlockTup {
                     let filename = path.file_name()?.display().to_string();
                     // TODO introduce esc * in future
                     if let Some((start, end)) = filename.split_once('*') {
-                        let start = if start.is_empty() { None } else { Some(start) };
-                        let end = if end.is_empty() { None } else { Some(end) };
                         let dir = path.parent().unwrap_or(Path::new(MAIN_SEPARATOR_STR));
+                        #[cfg(target_os = "windows")]
+                        {
+                            fill_dir(&mut res, dir, &start.to_ascii_uppercase(), &end.to_ascii_uppercase(), recursive, false)
+                        }
+                        #[cfg(not(target_os = "windows"))]
                         fill_dir(&mut res, dir, &start, &end, recursive, false)
                     } else {
                         res.push(file)
@@ -2997,22 +3000,23 @@ fn zip_dir(
 fn fill_dir(
     res: &mut Vec<String>,
     dir: &Path,
-    start: &Option<&str>,
-    end: &Option<&str>,
+    start: &str,
+    end: &str,
     subdir: bool,
     dir_name: bool,
 ) {
     if let Ok(dir) = dir.read_dir() {
+        let mask_len = start.len() + end.len();
         for entry in dir.flatten() {
             if let Ok(entry_type) = entry.file_type() {
+                #[cfg(not(target_os = "windows"))]
                 let name = entry.file_name().to_str().unwrap().to_owned();
-                let accept = !start.is_none()
-                    && name.starts_with(start.unwrap())
-                    && !end.is_none()
-                    && name.ends_with(end.unwrap())
-                    || start.is_none() && !end.is_none() && name.ends_with(end.unwrap())
-                    || !start.is_none() && name.starts_with(start.unwrap()) && end.is_none()
-                    || start.is_none() && end.is_none();
+                #[cfg(target_os = "windows")]
+                let mut name = entry.file_name().to_str().unwrap().to_owned();
+                #[cfg(target_os = "windows")]
+                name.make_ascii_uppercase();
+                let accept =
+                    name.len() >= mask_len && name.starts_with(start) && name.ends_with(end);
                 if entry_type.is_file() {
                     if accept {
                         res.push(entry.path().into_os_string().into_string().unwrap())
