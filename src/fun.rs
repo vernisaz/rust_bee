@@ -1612,10 +1612,17 @@ impl GenBlockTup {
                         let dir = path.parent().unwrap_or(Path::new(MAIN_SEPARATOR_STR));
                         #[cfg(target_os = "windows")]
                         {
-                            fill_dir(&mut res, dir, &start.to_ascii_uppercase(), &end.to_ascii_uppercase(), recursive, false)
+                            fill_dir(
+                                &mut res,
+                                dir,
+                                &start.to_ascii_uppercase(),
+                                &end.to_ascii_uppercase(),
+                                recursive,
+                                false,
+                            )
                         }
                         #[cfg(not(target_os = "windows"))]
-                        fill_dir(&mut res, dir, &start, &end, recursive, false)
+                        fill_dir(&mut res, dir, start, end, recursive, false)
                     } else {
                         res.push(file)
                     }
@@ -1876,7 +1883,10 @@ impl GenBlockTup {
                         let files = Path::new(&files);
                         assert!(&files.has_root());
                         let parent_files = files.parent().unwrap_or(Path::new("."));
-                        let filename = files.file_name()?.display().to_string();
+                        #[allow(unused_mut)]
+                        let mut filename = files.file_name()?.display().to_string();
+                        #[cfg(target_os = "windows")]
+                        filename.make_ascii_uppercase();
                         let (before, after) =
                             if let Some((before, after)) = filename.split_once("*") {
                                 (before, after)
@@ -1964,14 +1974,20 @@ impl GenBlockTup {
                             }
                             let entry_path = Path::new(&entry);
                             let parent_files = entry_path.parent().unwrap_or(Path::new("."));
-                            let filename = entry_path.file_name()?.to_str()?.to_string();
+                            #[allow(unused_mut)]
+                            let mut filename = entry_path.file_name()?.to_str()?.to_string();
+                            #[cfg(target_os = "windows")]
+                            filename.make_ascii_uppercase();
                             if let Some((before, after)) = filename.split_once("*") {
                                 // wildcard
                                 let mask_len = after.len() + before.len();
                                 match parent_files.read_dir() {
                                     Ok(dir) => {
                                         for entry in dir.flatten() {
-                                            let name = entry.file_name().to_str()?.to_owned();
+                                            #[allow(unused_mut)]
+                                            let mut name = entry.file_name().to_str()?.to_owned();
+                                            #[cfg(target_os = "windows")]
+                                            name.make_ascii_uppercase();
                                             if name.len() >= mask_len
                                                 && let Ok(file_type) = entry.file_type()
                                                 && file_type.is_file()
@@ -2962,7 +2978,10 @@ fn zip_dir(
             if let Ok(entry) = entry
                 && let Ok(file_type) = entry.file_type()
             {
-                let name = entry.file_name().to_str().unwrap().to_owned();
+                #[allow(unused_mut)]
+                let mut name = entry.file_name().to_str().unwrap().to_owned();
+                #[cfg(target_os = "windows")]
+                name.make_ascii_uppercase();
                 let mask_len = mask_start.len() + mask_end.len();
                 if file_type.is_file()
                     && name.len() > mask_len
