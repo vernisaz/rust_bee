@@ -2978,15 +2978,16 @@ fn zip_dir(
             if let Ok(entry) = entry
                 && let Ok(file_type) = entry.file_type()
             {
-                #[allow(unused_mut)]
-                let mut name = entry.file_name().to_str().unwrap().to_owned();
+                let name = entry.file_name().to_str().unwrap().to_owned();
                 #[cfg(target_os = "windows")]
-                name.make_ascii_uppercase();
+                let os_name = name.to_ascii_uppercase();
+                #[cfg(not(target_os = "windows"))]
+                let os_name = &name;
                 let mask_len = mask_start.len() + mask_end.len();
                 if file_type.is_file()
                     && name.len() > mask_len
-                    && name.starts_with(mask_start)
-                    && name.ends_with(mask_end)
+                    && os_name.starts_with(mask_start)
+                    && os_name.ends_with(mask_end)
                 {
                     let mut zip_entry = simzip::ZipEntry::from_file(
                         entry.path().as_os_str().to_str().unwrap(),
