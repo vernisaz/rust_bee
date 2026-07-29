@@ -1874,34 +1874,28 @@ impl GenBlockTup {
                         assert!(&files.has_root());
                         let parent_files = files.parent().unwrap_or(Path::new("."));
                         let filename = files.file_name()?.display().to_string();
-
-                        if let Some(pos) = filename.find("*") {
-                            let mut chars = filename.chars();
-                            let (start, end) = if chars.nth(0).unwrap() == '*' {
-                                (None, Some(&filename[1..]))
-                            } else if chars.last().unwrap() == '*' {
-                                (Some(&filename[0..pos]), None)
+                        let (before, after) =
+                            if let Some((before, after)) = filename.split_once("*") {
+                                (before, after)
                             } else {
-                                (Some(&filename[0..pos]), Some(&filename[pos + 1..]))
+                                ("", "")
                             };
-                            zip_dir(
-                                log,
-                                &mut zip,
-                                parent_files,
-                                if path.is_empty() { None } else { Some(path) },
-                                start,
-                                end,
-                            )
-                        } else if files.is_dir() {
+                        let mask_len = before.len() + after.len();
+                        if files.is_dir() {
                             zip_dir(
                                 log,
                                 &mut zip,
                                 files,
                                 if path.is_empty() { None } else { Some(path) },
-                                None,
-                                None,
+                                before,
+                                after,
+                                &comment.map(String::from),
                             )
-                        } else if files.is_file() {
+                        } else if files.is_file()
+                            && filename.len() > mask_len
+                            && filename.starts_with(before)
+                            && filename.ends_with(after)
+                        {
                             let mut entry = simzip::ZipEntry::from_file(
                                 files.as_os_str().to_str()?,
                                 if path.is_empty() { None } else { Some(path) },
@@ -1910,6 +1904,16 @@ impl GenBlockTup {
                             if !zip.add(entry) {
                                 log.warning(&format!{"Zip entry {1:?}/{0} already exists", files.as_os_str().to_str()?, path})
                             }
+                        } else if mask_len > 0 {
+                            zip_dir(
+                                log,
+                                &mut zip,
+                                parent_files,
+                                if path.is_empty() { None } else { Some(path) },
+                                before,
+                                after,
+                                &comment.map(String::from),
+                            )
                         } else {
                             log.error(&format!{"Path {files:?} can't be zipped at {}:{}: ", fun_block.script_path(), fun_block.script_line})
                         }
@@ -1958,38 +1962,27 @@ impl GenBlockTup {
                             let entry_path = Path::new(&entry);
                             let parent_files = entry_path.parent().unwrap_or(Path::new("."));
                             let filename = entry_path.file_name()?.to_str()?.to_string();
-                            if let Some(pos) = filename.find("*") {
-                                let mut chars = filename.chars();
-                                let (start, end) = if chars.nth(0).unwrap() == '*' {
-                                    (None, Some(&filename[1..]))
-                                } else if chars.last().unwrap() == '*' {
-                                    (Some(&filename[0..pos]), None)
-                                } else {
-                                    (Some(&filename[0..pos]), Some(&filename[pos + 1..]))
-                                };
+                            if let Some((before, after)) = filename.split_once("*") {
+                                // wildcard
+                                let mask_len = after.len() + before.len();
                                 match parent_files.read_dir() {
                                     Ok(dir) => {
                                         for entry in dir.flatten() {
                                             let name = entry.file_name().to_str()?.to_owned();
-                                            if let Ok(file_type) = entry.file_type()
+                                            if name.len() >= mask_len
+                                                && let Ok(file_type) = entry.file_type()
                                                 && file_type.is_file()
-                                                && (start.is_some()
-                                                    && name.starts_with(start.unwrap())
-                                                    && end.is_some()
-                                                    && name.ends_with(end.unwrap())
-                                                    || start.is_none()
-                                                        && end.is_some()
-                                                        && name.ends_with(end.unwrap())
-                                                    || start.is_some()
-                                                        && name.starts_with(start.unwrap())
-                                                        && end.is_none()
-                                                    || start.is_none() && end.is_none())
-                                                && !zip.add(simzip::ZipEntry::from_file(
+                                                && name.starts_with(before)
+                                                && name.ends_with(after)
+                                            {
+                                                let mut zip_entry = simzip::ZipEntry::from_file(
                                                     entry.path().as_os_str().to_str()?,
                                                     if path.is_empty() { None } else { Some(path) },
-                                                ))
-                                            {
-                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", name, path} )
+                                                );
+                                                zip_entry.comment = comment.map(String::from);
+                                                if !zip.add(zip_entry) {
+                                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", name, path} )
+                                                }
                                             }
                                         }
                                     }
@@ -2013,12 +2006,15 @@ impl GenBlockTup {
                                             if let Ok(entry) = entry
                                                 && let Ok(file_type) = entry.file_type()
                                                 && file_type.is_file()
-                                                && !zip.add(simzip::ZipEntry::from_file(
+                                            {
+                                                let mut zip_entry = simzip::ZipEntry::from_file(
                                                     entry.path().as_os_str().to_str()?,
                                                     if path.is_empty() { None } else { Some(path) },
-                                                ))
-                                            {
-                                                log.warning(&format!{"Zip entry {1:?}/{0} already exists", entry.path().as_os_str().to_str()?, path} )
+                                                );
+                                                zip_entry.comment = comment.map(String::from);
+                                                if !zip.add(zip_entry) {
+                                                    log.warning(&format!{"Zip entry {1:?}/{0} already exists", entry.path().as_os_str().to_str()?, path} )
+                                                }
                                             }
                                         }
                                     }
@@ -2953,8 +2949,9 @@ fn zip_dir(
     zip: &mut simzip::ZipInfo,
     dir: &Path,
     path: Option<&str>,
-    mask_start: Option<&str>,
-    mask_end: Option<&str>,
+    mask_start: &str,
+    mask_end: &str,
+    comment: &Option<String>,
 ) {
     //println!("zipping {dir:?} in {path:?} {mask_start:?}-{mask_end:?}");
     if let Ok(dir) = dir.read_dir() {
@@ -2963,23 +2960,18 @@ fn zip_dir(
                 && let Ok(file_type) = entry.file_type()
             {
                 let name = entry.file_name().to_str().unwrap().to_owned();
-                if file_type.is_file() {
-                    if (mask_start.is_some()
-                        && name.starts_with(mask_start.unwrap())
-                        && mask_end.is_some()
-                        && name.ends_with(mask_end.unwrap())
-                        || mask_start.is_none()
-                            && mask_end.is_some()
-                            && name.ends_with(mask_end.unwrap())
-                        || mask_start.is_some()
-                            && name.starts_with(mask_start.unwrap())
-                            && mask_end.is_none()
-                        || mask_start.is_none() && mask_end.is_none())
-                        && !zip.add(simzip::ZipEntry::from_file(
-                            entry.path().as_os_str().to_str().unwrap(),
-                            path.map(str::to_string).as_ref(),
-                        ))
-                    {
+                let mask_len = mask_start.len() + mask_end.len();
+                if file_type.is_file()
+                    && name.len() > mask_len
+                    && name.starts_with(mask_start)
+                    && name.ends_with(mask_end)
+                {
+                    let mut zip_entry = simzip::ZipEntry::from_file(
+                        entry.path().as_os_str().to_str().unwrap(),
+                        path.map(str::to_string).as_ref(),
+                    );
+                    zip_entry.comment = comment.clone(); // TODO - change to work with references
+                    if !zip.add(zip_entry) {
                         log.warning(&format!{"Zip entry {1:?}/{0} already exists", entry.path().as_os_str().to_str().unwrap(), path})
                     }
                 } else if file_type.is_dir() {
@@ -2994,6 +2986,7 @@ fn zip_dir(
                         Some(&zip_path),
                         mask_start,
                         mask_end,
+                        comment,
                     )
                 }
             }
