@@ -181,7 +181,7 @@ zip(${distro dir}${~/~}rds-${version}.zip,
   -B lib,
   +TJWS libs) # it's a reference to an array of component paths
 ```
-If a comment specified, it gets applied for a single file entries.
+If a comment specified, it gets applied for all entries added the command.
 The function returns the stored zip path, or nothing in a case of errors.
 
 The result of a function or a block is stored in a temporary variable `\~\~` and can be consumed in the next operation. 
