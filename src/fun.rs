@@ -113,12 +113,12 @@ pub type WeakGenBlock = Weak<RefCell<GenBlock>>; // use Rc::new_cyclic
 
 #[cfg(target_os = "windows")]
 mod windows {
+    use std::ffi::OsString;
     use std::fs::File;
+    use std::os::windows::ffi::OsStringExt;
     use std::os::windows::io::AsRawHandle;
     use std::ptr::null_mut;
-    use std::ffi::OsString;
-    use std::os::windows::ffi::OsStringExt;
-    
+
     #[link(name = "kernel32")]
     unsafe extern "system" {
         fn GetFinalPathNameByHandleW(
@@ -128,23 +128,23 @@ mod windows {
             dwFlags: u32,
         ) -> u32;
     }
-    
+
     const FILE_NAME_NORMALIZED: u32 = 0x0;
-    
+
     pub fn get_canonical_path_without_prefix(file: &File) -> Option<String> {
         let handle = file.as_raw_handle();
-    
+
         // First call: get required buffer size
         let size = unsafe {
             GetFinalPathNameByHandleW(handle as *mut _, null_mut(), 0, FILE_NAME_NORMALIZED)
         };
-    
+
         if size == 0 {
             return None;
         }
-    
+
         let mut buffer = vec![0u16; size as usize];
-    
+
         // Second call: retrieve actual path
         let written = unsafe {
             GetFinalPathNameByHandleW(
@@ -154,22 +154,22 @@ mod windows {
                 FILE_NAME_NORMALIZED,
             )
         };
-    
+
         if written == 0 {
             return None;
         }
-    
+
         // Convert UTF‑16 → Rust String
         let mut path = OsString::from_wide(&buffer[..written as usize])
             .to_string_lossy()
             .into_owned();
-    
+
         // Strip the \\?\ prefix if present
         const PREFIX: &str = r"\\?\";
         if path.starts_with(PREFIX) {
             path = path[PREFIX.len()..].to_string();
         }
-    
+
         Some(path)
     }
 }
@@ -1349,7 +1349,9 @@ impl GenBlockTup {
                 }
                 #[cfg(target_os = "windows")]
                 {
-                    path = crate::fun::windows::get_canonical_path_without_prefix(&File::open(&path).ok()?)?
+                    path = crate::fun::windows::get_canonical_path_without_prefix(
+                        &File::open(&path).ok()?,
+                    )?
                 }
                 return Some(VarVal::from_string(path));
             }
@@ -2948,7 +2950,10 @@ pub fn newest(mask: &str) -> Option<SystemTime> {
     let parent = path.parent()?;
     // check if the parent is '*' (wildcard) and if so,
     // set traverse flag  and to get a parent again
-    let str_name = path.file_name()?.display().to_string();
+    #[allow(unused_mut)]
+    let mut str_name = path.file_name()?.display().to_string();
+    #[cfg(target_os = "windows")]
+    str_name.make_ascii_uppercase();
     if let Some((start, end)) = str_name.split_once('*') {
         // only first * meaningful
         let mut last: Option<SystemTime> = None;
@@ -2957,7 +2962,10 @@ pub fn newest(mask: &str) -> Option<SystemTime> {
         for entry in dir {
             let entry = entry.ok()?;
             let file_type = entry.file_type().ok()?;
-            let name = entry.file_name().display().to_string();
+            #[allow(unused_mut)]
+            let mut name = entry.file_name().display().to_string();
+            #[cfg(target_os = "windows")]
+            name.make_ascii_uppercase();
             if file_type.is_file()
                 && name.len() >= mask_len
                 && name.starts_with(start)
