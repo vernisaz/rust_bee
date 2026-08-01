@@ -2905,7 +2905,6 @@ fn dir_ext_param(parameter: &str) -> (Option<String>, Option<String>) {
     }
 }
 
-// TODO implement as pushing in passing through vector
 fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<String>) -> Vec<String> {
     let mut result = Vec::new();
     let Ok(dir) = fs::read_dir(dir1) else {
@@ -2913,6 +2912,18 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
     };
     for file1 in dir.flatten() {
         let file1_path = file1.path();
+        #[cfg(target_os = "windows")]
+        let ext = if let Some(ext) = file1_path.extension() {
+            Some(ext.to_ascii_uppercase())
+        } else {
+            None
+        };
+        #[cfg(not(target_os = "windows"))]
+        let ext = if let Some(ext) = file1_path.extension() {
+            Some(ext)
+        } else {
+            None
+        };
         if let Ok(file_type) = file1.file_type() {
             if file_type.is_dir() {
                 let file2_str = dir2
@@ -2924,7 +2935,7 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
                 ]
                 .concat();
             } else if file_type.is_file()
-                && let Some(ext) = file1_path.extension()
+                && let Some(ext) = ext
                 && ext == &ext1[1..]
             // skip .
             {
