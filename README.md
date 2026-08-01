@@ -31,7 +31,7 @@ Their repositories need to be checked out before building the **RustBee**.
 Since the product supports colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
 
 ## Version
-The current version is **1.16.03**.
+The current version is **1.17.00**.
 
 ## Scripting examples
 
