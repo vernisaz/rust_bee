@@ -1555,6 +1555,7 @@ impl GenBlockTup {
                 if let Some(param) = param
                     && param.val_type == VarType::Array
                 {
+                    // TODO think if filtering should be case insesible on Windows
                     let filter_vals = fun_block.params[1..]
                         .iter()
                         .map(|filter| process_template_value(log, filter, fun_block, res_prev))
@@ -1669,22 +1670,15 @@ impl GenBlockTup {
                     // str ends / then search will be in the current dir and all subdirs
                     let recursive = file.ends_with(MAIN_SEPARATOR);
                     let path = PathBuf::from(&file);
+                    #[cfg(not(target_os = "windows"))]
                     let filename = path.file_name()?.display().to_string();
+                    #[cfg(target_os = "windows")]
+                    let mut filename = path.file_name()?.display().to_string();
+                    #[cfg(target_os = "windows")]
+                    filename.make_ascii_uppercase();
                     // TODO introduce esc * in future
                     if let Some((start, end)) = filename.split_once('*') {
                         let dir = path.parent().unwrap_or(Path::new(MAIN_SEPARATOR_STR));
-                        #[cfg(target_os = "windows")]
-                        {
-                            fill_dir(
-                                &mut res,
-                                dir,
-                                &start.to_ascii_uppercase(),
-                                &end.to_ascii_uppercase(),
-                                recursive,
-                                false,
-                            )
-                        }
-                        #[cfg(not(target_os = "windows"))]
                         fill_dir(&mut res, dir, start, end, recursive, false)
                     } else {
                         res.push(file)
