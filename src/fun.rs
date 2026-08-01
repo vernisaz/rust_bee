@@ -2884,6 +2884,17 @@ pub fn exec_anynewer(block: &GenBlockTup, p1: &String, p2: &String) -> bool {
 
 fn dir_ext_param(parameter: &str) -> (Option<String>, Option<String>) {
     if let Some((path, ext)) = parameter.rsplit_once('/') {
+        #[cfg(target_os = "windows")]
+        if ext.is_empty() {
+            (Some(path.to_string()), None)
+        } else {
+            #[cfg(target_os = "windows")]
+            (
+                Some(path.to_string()),
+                Some(ext.to_string().to_ascii_uppercase()),
+            )
+        }
+        #[cfg(not(target_os = "windows"))]
         if ext.is_empty() {
             (Some(path.to_string()), None)
         } else {
