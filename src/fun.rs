@@ -2885,20 +2885,13 @@ pub fn exec_anynewer(block: &GenBlockTup, p1: &String, p2: &String) -> bool {
 fn dir_ext_param(parameter: &str) -> (Option<String>, Option<String>) {
     if let Some((path, ext)) = parameter.rsplit_once('/') {
         #[cfg(target_os = "windows")]
-        if ext.is_empty() {
-            (Some(path.to_string()), None)
-        } else {
-            #[cfg(target_os = "windows")]
-            (
-                Some(path.to_string()),
-                Some(ext.to_string().to_ascii_uppercase()),
-            )
-        }
+        let ext = ext.to_ascii_uppercase();
         #[cfg(not(target_os = "windows"))]
+        let ext = ext.to_string();
         if ext.is_empty() {
             (Some(path.to_string()), None)
         } else {
-            (Some(path.to_string()), Some(ext.to_string()))
+            (Some(path.to_string()), Some(ext))
         }
     } else {
         (None, None)
@@ -2913,11 +2906,7 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
     for file1 in dir.flatten() {
         let file1_path = file1.path();
         #[cfg(target_os = "windows")]
-        let ext = if let Some(ext) = file1_path.extension() {
-            Some(ext.to_ascii_uppercase())
-        } else {
-            None
-        };
+        let ext = file1_path.extension().map(|ext| ext.to_ascii_uppercase());
         #[cfg(not(target_os = "windows"))]
         let ext = file1_path.extension();
         if let Ok(file_type) = file1.file_type() {
@@ -2932,7 +2921,7 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
                 .concat();
             } else if file_type.is_file()
                 && let Some(ext) = ext
-                && ext == &ext1[1..]
+                && ext == ext1[1..]
             // skip .
             {
                 match dir2 {
