@@ -2919,11 +2919,7 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
             None
         };
         #[cfg(not(target_os = "windows"))]
-        let ext = if let Some(ext) = file1_path.extension() {
-            Some(ext)
-        } else {
-            None
-        };
+        let ext = file1_path.extension();
         if let Ok(file_type) = file1.file_type() {
             if file_type.is_dir() {
                 let file2_str = dir2
