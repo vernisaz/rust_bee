@@ -2921,7 +2921,7 @@ fn find_newer(dir1: &str, ext1: &str, dir2: &Option<String>, ext2: &Option<Strin
                 .concat();
             } else if file_type.is_file()
                 && let Some(ext) = ext
-                && ext == ext1[1..]
+                && *ext == ext1[1..]
             // skip .
             {
                 match dir2 {
