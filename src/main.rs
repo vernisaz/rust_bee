@@ -234,11 +234,11 @@ fn main() -> Result<(), Box<dyn Error>> {
      for target in targets {
           real_targets.push(target.to_string())
      }
-     let _ = &lex_tree.add_var(String::from("~args~"), lex::VarVal::from_vec(&run_args));
-     let _ = &lex_tree.add_var(String::from("~os~"),  lex::VarVal::from_string(std::env::consts::OS));
-     let _ = &lex_tree.add_var(String::from("~separator~"),  lex::VarVal::from_string(std::path::MAIN_SEPARATOR_STR));
-     let _ = &lex_tree.add_var(String::from("~/~"), lex::VarVal::from_string(std::path::MAIN_SEPARATOR_STR));
-     let _ = &lex_tree.add_var(String::from("~path_separator~"), if std::env::consts::OS == "windows" {
+     let _ = lex_tree.add_var(String::from("~args~"), lex::VarVal::from_vec(run_args));
+     let _ = lex_tree.add_var(String::from("~os~"),  lex::VarVal::from_string(std::env::consts::OS));
+     let _ = lex_tree.add_var(String::from("~separator~"),  lex::VarVal::from_string(std::path::MAIN_SEPARATOR_STR));
+     let _ = lex_tree.add_var(String::from("~/~"), lex::VarVal::from_string(std::path::MAIN_SEPARATOR_STR));
+     let _ = lex_tree.add_var(String::from("~path_separator~"), if std::env::consts::OS == "windows" {
           lex::VarVal::from_string(";") } else {lex::VarVal::from_string(":")});
      
      let cwd = env::current_dir()?.display().to_string();
