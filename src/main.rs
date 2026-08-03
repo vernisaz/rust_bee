@@ -84,7 +84,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
          //println!("analizing {}", arg);
           if arg.starts_with("-h") || arg.starts_with("--h") || cfg!(windows) && arg.starts_with("/h") {
               options.push(CmdOption::Help)
-          } else if arg == "-f" || arg.starts_with("--file") || arg.starts_with("--build") || cfg!(windows) && arg == "/F" {
+          } else if arg == "-f" || arg.starts_with("--file") || arg.starts_with("--build") || cfg!(windows) && (arg == "/F" || arg == "/f") {
                arg_n += 1;
                if arg_n < len {
                     options.push(CmdOption::ScriptFile(args[arg_n].to_string()))
@@ -94,7 +94,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
           } else if arg.starts_with("-s") || arg.starts_with("--find") {
                arg_n += 1;
                if arg_n < len {
-                    if args[arg_n].starts_with("-") {
+                    if args[arg_n].starts_with("-") || cfg!(windows) && arg.starts_with("/") {
                          options.push(CmdOption::SearchUp(None));
                          arg_n -= 1
                     } else {
