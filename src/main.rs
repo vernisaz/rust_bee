@@ -84,7 +84,7 @@ fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&
          //println!("analizing {}", arg);
           if arg.starts_with("-h") || arg.starts_with("--h") || cfg!(windows) && arg.starts_with("/h") {
               options.push(CmdOption::Help)
-          } else if arg == "-f" || arg.starts_with("--file") || arg.starts_with("--build") {
+          } else if arg == "-f" || arg.starts_with("--file") || arg.starts_with("--build") || cfg!(windows) && arg == "/F" {
                arg_n += 1;
                if arg_n < len {
                     options.push(CmdOption::ScriptFile(args[arg_n].to_string()))
