@@ -1390,7 +1390,7 @@ impl GenBlockTup {
                     }
                 }
                 log.debug(&format! {"newerthen: {:?}/{:?} then {:?}/{:?}", dir1, ext1, dir2, ext2});
-                return Some(VarVal::from_vec(&find_newer(&dir1, &ext1?, &dir2, &ext2)));
+                return Some(VarVal::from_vec(find_newer(&dir1, &ext1?, &dir2, &ext2)));
             }
             "anynewer" => {
                 log.debug(&format!("evaluating anynewer: {}", fun_block.params.len()));
@@ -1538,7 +1538,7 @@ impl GenBlockTup {
                     }
                 }
                 //eprintln!{"vec -> {:?}", &res};
-                return Some(VarVal::from_vec(&res));
+                return Some(VarVal::from_vec(res));
             }
             "split" => {
                 let val = *self.parameter(log, 0, fun_block, res_prev);
@@ -1585,7 +1585,7 @@ impl GenBlockTup {
                             true
                         })
                         .collect();
-                    return Some(VarVal::from_vec(&vec));
+                    return Some(VarVal::from_vec(vec));
                 } else {
                     log.error(&format!{"Variable {} not found or not an array at {}:{}: ", fun_block.params[0], fun_block.script_path(), fun_block.script_line})
                 }
@@ -1684,7 +1684,7 @@ impl GenBlockTup {
                         res.push(file)
                     }
                 }
-                return Some(VarVal::from_vec(&res));
+                return Some(VarVal::from_vec(res));
             }
             "range" | "slice" => {
                 let start = *self.parameter(log, 1, fun_block, res_prev);
@@ -1700,7 +1700,7 @@ impl GenBlockTup {
                             var.values.len()
                         };
                         if start < end {
-                            return Some(VarVal::from_vec(&var.values[start..end].to_vec()));
+                            return Some(VarVal::from_vec(var.values[start..end].to_vec()));
                         } else {
                             return None;
                         }
@@ -1747,7 +1747,7 @@ impl GenBlockTup {
                         }
                     }
                 }
-                return Some(VarVal::from_vec(&res));
+                return Some(VarVal::from_vec(res));
             }
             "mv" => {
                 let mut res: Vec<_> = Vec::new();
@@ -1776,7 +1776,7 @@ impl GenBlockTup {
                         }
                     }
                 }
-                return Some(VarVal::from_vec(&res));
+                return Some(VarVal::from_vec(res));
             }
             "mkd" => {
                 let mut res: Vec<_> = Vec::new();
@@ -1795,7 +1795,7 @@ impl GenBlockTup {
                         }
                     }
                 }
-                return Some(VarVal::from_vec(&res));
+                return Some(VarVal::from_vec(res));
             }
             "rm" => {
                 let mut res: Vec<_> = Vec::new();
@@ -1814,7 +1814,7 @@ impl GenBlockTup {
                         }
                     }
                 }
-                return Some(VarVal::from_vec(&res));
+                return Some(VarVal::from_vec(res));
             }
             "rmdir" | "rmdira" => {
                 let mut res: Vec<_> = Vec::new();
@@ -1835,7 +1835,7 @@ impl GenBlockTup {
                         }
                     }
                 }
-                return Some(VarVal::from_vec(&res));
+                return Some(VarVal::from_vec(res));
             }
             "calc" => {
                 if fun_block.params.len() > 1 {
@@ -1847,7 +1847,7 @@ impl GenBlockTup {
                             _ => continue,
                         }
                     }
-                    return Some(VarVal::from_vec(&res));
+                    return Some(VarVal::from_vec(res));
                 } else {
                     match self.calc(*self.parameter(log, 0, fun_block, res_prev)) {
                         Ok(res) => {

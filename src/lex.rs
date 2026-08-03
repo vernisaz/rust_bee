@@ -158,8 +158,8 @@ impl VarVal {
         VarVal{val_type: VarType::Number, value: format!{"{number}"}, values: Vec::new()}  // 
     }
 
-    pub fn from_vec(vec: &Vec<String>) -> VarVal {
-        VarVal{val_type: VarType::Array, value: String::new(), values: vec.clone()}  
+    pub fn from_vec(vec: Vec<String>) -> VarVal {
+        VarVal{val_type: VarType::Array, value: String::new(), values: vec}  
     }
     
     pub fn from_iter<'a>(iter: impl Iterator<Item = &'a str>) -> VarVal {
@@ -2082,7 +2082,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                 if value.starts_with("[") && value.ends_with("]") {
                     let res = process_array_value(log, &value);
                     if let Ok(res) = res {
-                        VarVal::from_vec(&res)
+                        VarVal::from_vec(res)
                     } else {
                         log.error(&format!{"The array isn't well defined: {} at  {}:{}:{}", value, file.to_string_lossy(), all_chars.line, all_chars.line_offset});
                         VarVal::from_string(&value)
