@@ -25,6 +25,9 @@ The following crates will be required to build the **RustBee**
 - [SimZip](https://github.com/vernisaz/simple_rust_zip)
 - [SimColor](https://github.com/vernisaz/simcolor)
 
+and
+- [Common shared modules](https://github.com/vernisaz/simincmod) (the repository should be just checked out, nothing to build there is required)
+
 Their repositories need to be checked out before building the **RustBee**.
 
 ### Color

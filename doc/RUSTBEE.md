@@ -133,7 +133,7 @@ no value parameter means cleaning the variable parameter
 - **cropname**, cut a part of the name specified by fist parameter by a matching second one (\* means a variable part and can be ommited at the end) 
 and replace it with 3rd parameter when it's specified
 - **display** - display a message specified by a parameter
-- **element**, set/get an element of an array, first parameter specifies an array, second an index, and optional 3rd, when a value has to be set
+- **element**, set/get an element of an array, first parameter specifies an array, second an offset of the element, and optional 3rd, when a value has to be set
 - **eq**, compares two parameters and returns true if they are equal, only one parameter compares it with *None*
 - **exec**, executes a process on the underline OS, a name of a process separated by a blank from *exec*, 
 parameters are parameters of the process, a current directory, and a variable to keep the process stdout can be
