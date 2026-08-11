@@ -26,12 +26,12 @@ The following crates will be required to build the **RustBee**
 - [SimColor](https://github.com/vernisaz/simcolor)
 
 and
-- [Common shared modules](https://github.com/vernisaz/simincmod) (the repository should be just checked out, nothing to build there is required)
+- [Common shared modules](https://github.com/vernisaz/simincmod) (the repository should be just checked out on Windows)
 
 Their repositories need to be checked out before building the **RustBee**.
 
 ### Color
-Since the product supports colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
+Since the product supports a colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
 
 ## Version
 The current version is **1.17.00**.
