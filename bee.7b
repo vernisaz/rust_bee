@@ -9,8 +9,8 @@ common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 doc_dir=..${~/~}docs
 comp opts=[--extern,simzip]
-version=1.17.00
-build=199
+version=1.17.01
+build=200
 
 include(env.7b);
 

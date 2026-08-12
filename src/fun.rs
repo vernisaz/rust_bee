@@ -115,6 +115,10 @@ pub type WeakGenBlock = Weak<RefCell<GenBlock>>; // use Rc::new_cyclic
 #[path = "../../simincmod/real_path_win.rs"]
 mod windows;
 
+#[cfg(target_os = "windows")]
+#[path = "../../simincmod/cmp_str.rs"]
+mod winops;
+
 impl Deref for GenBlockTup {
     type Target = Rc<RefCell<GenBlock>>;
     fn deref(&self) -> &Self::Target {
@@ -1611,12 +1615,7 @@ impl GenBlockTup {
                     // str ends / then search will be in the current dir and all subdirs
                     let recursive = file.ends_with(MAIN_SEPARATOR);
                     let path = PathBuf::from(&file);
-                    #[cfg(not(target_os = "windows"))]
                     let filename = path.file_name()?.display().to_string();
-                    #[cfg(target_os = "windows")]
-                    let mut filename = path.file_name()?.display().to_string();
-                    #[cfg(target_os = "windows")]
-                    filename.make_ascii_uppercase();
                     // TODO introduce esc * in future
                     if let Some((start, end)) = filename.split_once('*') {
                         let dir = path.parent().unwrap_or(Path::new(MAIN_SEPARATOR_STR));
@@ -3040,14 +3039,14 @@ fn fill_dir(
         let mask_len = start.len() + end.len();
         for entry in dir.flatten() {
             if let Ok(entry_type) = entry.file_type() {
-                #[cfg(not(target_os = "windows"))]
                 let name = entry.file_name().to_str().unwrap().to_owned();
-                #[cfg(target_os = "windows")]
-                let mut name = entry.file_name().to_str().unwrap().to_owned();
-                #[cfg(target_os = "windows")]
-                name.make_ascii_uppercase();
+                #[cfg(not(target_os = "windows"))]
                 let accept =
                     name.len() >= mask_len && name.starts_with(start) && name.ends_with(end);
+                #[cfg(target_os = "windows")]
+                 let accept =
+                    name.len() >= mask_len && winops::eq_str_ascii_ignorecase(start, &name[0..start.len()])
+                    && winops::eq_ascii_ignorecase(end.as_bytes(), &name.as_bytes()[name.len()-end.len()..]);
                 if entry_type.is_file() {
                     if accept {
                         res.push(entry.path().into_os_string().into_string().unwrap())
