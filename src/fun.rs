@@ -1905,7 +1905,7 @@ impl GenBlockTup {
                                 && filename.ends_with(after)
                                 || cfg!(windows)
                                     && winops::eq_str_ascii_ignorecase(
-                                        &before,
+                                        before,
                                         &filename[0..before.len()],
                                     )
                                     && winops::eq_ascii_ignorecase(
@@ -2920,7 +2920,7 @@ pub fn newest(mask: &str) -> Option<SystemTime> {
                 && name.len() >= mask_len
                 && (!cfg!(windows) && name.starts_with(start) && name.ends_with(end)
                     || cfg!(windows)
-                        && winops::eq_str_ascii_ignorecase(&start, &name[0..start.len()])
+                        && winops::eq_str_ascii_ignorecase(start, &name[0..start.len()])
                         && winops::eq_ascii_ignorecase(
                             end.as_bytes(),
                             &name.as_bytes()[name.len() - end.len()..],
