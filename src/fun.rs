@@ -1880,10 +1880,7 @@ impl GenBlockTup {
                         let files = Path::new(&files);
                         assert!(&files.has_root());
                         let parent_files = files.parent().unwrap_or(Path::new("."));
-                        #[allow(unused_mut)]
-                        let mut filename = files.file_name()?.display().to_string();
-                        #[cfg(target_os = "windows")]
-                        filename.make_ascii_uppercase();
+                        let filename = files.file_name()?.display().to_string();
                         let (before, after) =
                             if let Some((before, after)) = filename.split_once("*") {
                                 (before, after)
@@ -1903,8 +1900,18 @@ impl GenBlockTup {
                             )
                         } else if files.is_file()
                             && filename.len() > mask_len
-                            && filename.starts_with(before)
-                            && filename.ends_with(after)
+                            && (!cfg!(windows)
+                                && filename.starts_with(before)
+                                && filename.ends_with(after)
+                                || cfg!(windows)
+                                    && winops::eq_str_ascii_ignorecase(
+                                        &before,
+                                        &filename[0..before.len()],
+                                    )
+                                    && winops::eq_ascii_ignorecase(
+                                        after.as_bytes(),
+                                        &filename.as_bytes()[filename.len() - after.len()..],
+                                    ))
                         {
                             let mut entry = simzip::ZipEntry::from_file(
                                 files.as_os_str().to_str()?,
@@ -1981,15 +1988,23 @@ impl GenBlockTup {
                                 match parent_files.read_dir() {
                                     Ok(dir) => {
                                         for entry in dir.flatten() {
-                                            #[allow(unused_mut)]
-                                            let mut name = entry.file_name().to_str()?.to_owned();
-                                            #[cfg(target_os = "windows")]
-                                            name.make_ascii_uppercase();
+                                            let name = entry.file_name().to_str()?.to_owned();
                                             if name.len() >= mask_len
                                                 && let Ok(file_type) = entry.file_type()
                                                 && file_type.is_file()
-                                                && name.starts_with(before)
-                                                && name.ends_with(after)
+                                                && (!cfg!(windows)
+                                                    && name.starts_with(before)
+                                                    && name.ends_with(after)
+                                                    || cfg!(windows)
+                                                        && winops::eq_str_ascii_ignorecase(
+                                                            before,
+                                                            &name[0..before.len()],
+                                                        )
+                                                        && winops::eq_ascii_ignorecase(
+                                                            after.as_bytes(),
+                                                            &name.as_bytes()
+                                                                [name.len() - after.len()..],
+                                                        ))
                                             {
                                                 let mut zip_entry = simzip::ZipEntry::from_file(
                                                     entry.path().as_os_str().to_str()?,
@@ -2891,10 +2906,7 @@ pub fn newest(mask: &str) -> Option<SystemTime> {
     let parent = path.parent()?;
     // check if the parent is '*' (wildcard) and if so,
     // set traverse flag  and to get a parent again
-    #[allow(unused_mut)]
-    let mut str_name = path.file_name()?.display().to_string();
-    #[cfg(target_os = "windows")]
-    str_name.make_ascii_uppercase();
+    let str_name = path.file_name()?.display().to_string();
     if let Some((start, end)) = str_name.split_once('*') {
         // only first * meaningful
         let mut last: Option<SystemTime> = None;
@@ -2903,14 +2915,16 @@ pub fn newest(mask: &str) -> Option<SystemTime> {
         for entry in dir {
             let entry = entry.ok()?;
             let file_type = entry.file_type().ok()?;
-            #[allow(unused_mut)]
-            let mut name = entry.file_name().display().to_string();
-            #[cfg(target_os = "windows")]
-            name.make_ascii_uppercase();
+            let name = entry.file_name().display().to_string();
             if file_type.is_file()
                 && name.len() >= mask_len
-                && name.starts_with(start)
-                && name.ends_with(end)
+                && (!cfg!(windows) && name.starts_with(start) && name.ends_with(end)
+                    || cfg!(windows)
+                        && winops::eq_str_ascii_ignorecase(&start, &name[0..start.len()])
+                        && winops::eq_ascii_ignorecase(
+                            end.as_bytes(),
+                            &name.as_bytes()[name.len() - end.len()..],
+                        ))
                 || file_type.is_dir()
             {
                 let dir_entry_path = entry.path().display().to_string();
@@ -2989,15 +3003,19 @@ fn zip_dir(
                 && let Ok(file_type) = entry.file_type()
             {
                 let name = entry.file_name().to_str().unwrap().to_owned();
-                #[cfg(target_os = "windows")]
-                let os_name = name.to_ascii_uppercase();
-                #[cfg(not(target_os = "windows"))]
-                let os_name = &name;
                 let mask_len = mask_start.len() + mask_end.len();
                 if file_type.is_file()
                     && name.len() > mask_len
-                    && os_name.starts_with(mask_start)
-                    && os_name.ends_with(mask_end)
+                    && (!cfg!(windows) && name.starts_with(mask_start) && name.ends_with(mask_end)
+                        || cfg!(windows)
+                            && winops::eq_str_ascii_ignorecase(
+                                mask_start,
+                                &name[0..mask_start.len()],
+                            )
+                            && winops::eq_ascii_ignorecase(
+                                mask_end.as_bytes(),
+                                &name.as_bytes()[name.len() - mask_end.len()..],
+                            ))
                 {
                     let mut zip_entry = simzip::ZipEntry::from_file(
                         entry.path().as_os_str().to_str().unwrap(),
@@ -3044,9 +3062,12 @@ fn fill_dir(
                 let accept =
                     name.len() >= mask_len && name.starts_with(start) && name.ends_with(end);
                 #[cfg(target_os = "windows")]
-                 let accept =
-                    name.len() >= mask_len && winops::eq_str_ascii_ignorecase(start, &name[0..start.len()])
-                    && winops::eq_ascii_ignorecase(end.as_bytes(), &name.as_bytes()[name.len()-end.len()..]);
+                let accept = name.len() >= mask_len
+                    && winops::eq_str_ascii_ignorecase(start, &name[0..start.len()])
+                    && winops::eq_ascii_ignorecase(
+                        end.as_bytes(),
+                        &name.as_bytes()[name.len() - end.len()..],
+                    );
                 if entry_type.is_file() {
                     if accept {
                         res.push(entry.path().into_os_string().into_string().unwrap())
