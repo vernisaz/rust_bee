@@ -115,7 +115,6 @@ pub type WeakGenBlock = Weak<RefCell<GenBlock>>; // use Rc::new_cyclic
 #[path = "../../simincmod/real_path_win.rs"]
 mod windows;
 
-#[cfg(target_os = "windows")]
 #[path = "../../simincmod/cmp_str.rs"]
 mod winops;
 
