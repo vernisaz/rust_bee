@@ -2087,7 +2087,7 @@ impl GenBlockTup {
                 return Some(VarVal::from_string(cfg_path));
             }
             _ => todo!(
-                "no such function: {:?} at {}:{}: ",
+                "no such function: {} at {}:{}: ",
                 fun_block.name.clone().unwrap_or_default().red(),
                 fun_block.script_path(),
                 &fun_block.script_line

@@ -216,9 +216,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     #[cfg(feature = "release")]
     panic::set_hook(Box::new(|panic_info| {
         if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
-            eprintln!("Abnormal RustBee termination: {s:?}")
+            eprintln!("Abnormal RustBee termination: {s}")
         } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
-            eprintln!("Abnormal RustBee termination: {s:?}")
+            eprintln!("Abnormal RustBee termination: {s}")
         } else {
             eprintln!("Abnormal RustBee termination")
         }
