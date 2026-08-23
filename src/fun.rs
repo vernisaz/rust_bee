@@ -1293,9 +1293,7 @@ impl GenBlockTup {
                 }
                 #[cfg(target_os = "windows")]
                 {
-                    path = crate::fun::windows::get_canonical_path_without_prefix(
-                        &File::open(&path).ok()?,
-                    )?
+                    path = crate::fun::windows::get_canonical_path_without_prefix(&path)?
                 }
                 return Some(VarVal::from_string(path));
             }
