@@ -17,7 +17,7 @@ It's a self building tool, however it needs a bootstrapping. [7Bee](https://gith
 You can use **RustBee** itself for building it after you built the starter version. 
 
 The RustBee [script](./bee.7b) has one dependency [SimScript](https://github.com/vernisaz/simscript).
-Clone it first at at the same directory level as `rust_bee`. You can use the **install** target of the script for installing the tool.
+Clone it first at the same directory level as `rust_bee`. You can use the **install** target of the script for installing the tool.
 
 ### Dependencies
 The following crates will be required to build the **RustBee**
@@ -25,16 +25,16 @@ The following crates will be required to build the **RustBee**
 - [SimZip](https://github.com/vernisaz/simple_rust_zip)
 - [SimColor](https://github.com/vernisaz/simcolor)
 
+Their repositories need to be checked out before building the **RustBee**.
+
 and
 - [Common shared modules](https://github.com/vernisaz/simincmod) (the repository should be just checked out on Windows)
-
-Their repositories need to be checked out before building the **RustBee**.
 
 ### Color
 Since the product supports a colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
 
 ## Version
-The current version is **1.17.00**.
+The current version is **1.17.01**.
 
 ## Scripting examples
 
