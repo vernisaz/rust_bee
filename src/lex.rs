@@ -2334,6 +2334,17 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                         inner_block.script_line = all_chars.line;
                         scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))))
                     },
+                    "closure" => {
+                        let mut inner_block = GenBlock::new(BlockType::Closure);
+                        inner_block .name = Some(name.clone());
+                        inner_block.script_line = all_chars.line;
+                        inner_block.parent  = Some(GenBlockTup(Rc::clone(&scoped_block.0)));
+                        let clos = GenBlockTup(Rc::new(RefCell::new(inner_block)));
+                        if let Some(closure) = scoped_block.borrow_mut().closures.insert(name, clos.clone()) {
+                            log.warning(&format!("closure {} is already defined at {} replaced by {}:{}:{}", closure.borrow() .name.as_ref().unwrap(), closure.borrow().script_line, scoped_block.borrow().script_path(), all_chars.line, all_chars.line_offset))
+                        };
+                        scoped_block = clos;
+                    }
                     _ => log.error(&format!("unknown block {} of {:?} at  {}:{}:{}", type_hdr, parent_type, scoped_block.borrow().script_path(), all_chars.line, all_chars.line_offset))
                 }
                 

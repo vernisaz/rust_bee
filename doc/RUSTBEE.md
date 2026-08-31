@@ -115,6 +115,9 @@ Currently `if`, `while`, `case`, and `for`  operators are supported. More detail
 ```
 Ifs,  fors, cases, and whiles  can be nested.
 
+### Closures
+Block of operators can be defined as a `closure`. Closures cab be called as functions with a closure name ending by '!'.
+
 A function can be one of the following:
 - **and**, considers parameters as boolean values and returns true if all parameters are true
 - **anynewer**, compares the modification time of a file specified by first parameter with

@@ -55,6 +55,7 @@ pub enum BlockType {
     While,
     Case,
     Choice,
+    Closure,
 }
 
 #[derive(/*Debug,*/ Default)]
@@ -67,6 +68,7 @@ pub struct GenBlock {
     pub vars: HashMap<String, VarVal>,
     pub params: Vec<String>, // for a function, perhsps should be a tuple as parameter(value,type)
     pub children: Vec<GenBlockTup>,
+    pub closures: HashMap<String, GenBlockTup>,
     pub deps: Vec<GenBlockTup>,
     //pub parent: Option<WeakGenBlock>,
     pub parent: Option<GenBlockTup>,
@@ -242,6 +244,16 @@ impl GenBlockTup {
         }
     }
 
+    fn search_closure_up(&self, name: &str) -> Option<GenBlockTup> {
+        match self.borrow().closures.get(name) {
+            Some(closure) => Some(closure.clone()),
+            None => match self.parent() {
+                Some(parent) => parent.search_closure_up(name),
+                None => None,
+            },
+        }
+    }
+
     pub fn parent(&self) -> Option<GenBlockTup> {
         //println!("borrowed {:?} - {:?}", self.0.borrow().name, self.0.borrow().block_type);
         self.0.borrow().parent.clone()
@@ -403,7 +415,11 @@ impl GenBlockTup {
         let block_type = &self.borrow().block_type.clone();
         log.debug(&format!("processing block of {:?}", block_type));
         match block_type {
-            BlockType::Scope | BlockType::Then | BlockType::Else | BlockType::Choice => {
+            BlockType::Scope
+            | BlockType::Then
+            | BlockType::Else
+            | BlockType::Choice
+            | BlockType::Closure => {
                 let mut res = prev_res.clone();
                 let children = &self.0.borrow().children.clone();
                 for child in children {
@@ -419,6 +435,7 @@ impl GenBlockTup {
                     if child_nak.block_type == BlockType::Function
                         && child_nak.name == Some("include".into())
                         || child_nak.block_type == BlockType::Target
+                        || child_nak.block_type == BlockType::Closure
                     {
                         continue;
                     }
@@ -786,14 +803,14 @@ impl GenBlockTup {
         };
         match name {
             "display" => {
-                println!(
-                    "{}",
-                    util::insert_ctrl_char(*self.parameter(log, 0, fun_block, res_prev))
-                );
-                io::stdout().flush().unwrap();
-                if fun_block.params.len() > 1 {
-                    log.error(&format!{"Display parameters are ignored after first one at {}:{}: ", fun_block.script_path(), fun_block.script_line})
+                for idx in 0..fun_block.params.len() {
+                    println!(
+                        "{}",
+                        util::insert_ctrl_char(*self.parameter(log, idx, fun_block, res_prev))
+                    );
                 }
+
+                io::stdout().flush().unwrap();
                 return res_prev.clone();
             }
             "now" => {
@@ -2083,6 +2100,32 @@ impl GenBlockTup {
                     cfg_path = String::new();
                 }
                 return Some(VarVal::from_string(cfg_path));
+            }
+            _ if name.ends_with("!") => {
+                if let Some(closure_name) = name.strip_suffix("!") {
+                    // search the closure
+                    if let Some(closure) = fun_block
+                        .parent
+                        .as_ref()
+                        .unwrap()
+                        .search_closure_up(closure_name)
+                    {
+// TODO  how to clear prev call parameters?
+                        for idx in 0..fun_block.params.len() {
+                            let var =
+                                VarVal::from_string(*self.parameter(log, idx, fun_block, res_prev));
+                            closure.add_var(format!("~{}~", idx + 1), var);
+                        }
+                        return closure.exec(log, &res_prev);
+                    } else {
+                        log.warning(&format!(
+                            "no closure {} found at {}:{}: ",
+                            closure_name.bold(),
+                            fun_block.script_path(),
+                            &fun_block.script_line
+                        ));
+                    }
+                }
             }
             _ => todo!(
                 "no such function: {} at {}:{}: ",
