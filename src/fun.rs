@@ -2110,13 +2110,13 @@ impl GenBlockTup {
                         .unwrap()
                         .search_closure_up(closure_name)
                     {
-// TODO  how to clear prev call parameters?
+                        // TODO  how to clear prev call parameters?
                         for idx in 0..fun_block.params.len() {
                             let var =
                                 VarVal::from_string(*self.parameter(log, idx, fun_block, res_prev));
                             closure.add_var(format!("~{}~", idx + 1), var);
                         }
-                        return closure.exec(log, &res_prev);
+                        return closure.exec(log, res_prev);
                     } else {
                         log.warning(&format!(
                             "no closure {} found at {}:{}: ",
