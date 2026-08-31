@@ -2101,6 +2101,10 @@ impl GenBlockTup {
                 }
                 return Some(VarVal::from_string(cfg_path));
             }
+            "return" => 
+            if fun_block.params.len() == 1 {
+                return Some(VarVal::from_string(util::insert_ctrl_char(*self.parameter(log, 0, fun_block, res_prev))))
+            }
             _ if name.ends_with("!") => {
                 if let Some(closure_name) = name.strip_suffix("!") {
                     // search the closure
