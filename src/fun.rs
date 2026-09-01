@@ -2119,16 +2119,14 @@ impl GenBlockTup {
                     {
                         // TODO  how to clear prev call parameters?
                         for idx in 0..fun_block.params.len() {
-                            if let Some(var) =
+                            let var = if let Some(var) =
                                 fun_block.prev_or_search_up(&fun_block.params[idx], res_prev)
                             {
-                                closure.add_var(format!("~{}~", idx + 1), var.clone());
+                                var.clone()
                             } else {
-                                let var = VarVal::from_string(
-                                    *self.parameter(log, idx, fun_block, res_prev),
-                                );
-                                closure.add_var(format!("~{}~", idx + 1), var);
-                            }
+                                VarVal::from_string(*self.parameter(log, idx, fun_block, res_prev))
+                            };
+                            closure.add_var(format!("~{}~", idx + 1), var);
                         }
                         return closure.exec(log, res_prev);
                     } else {
