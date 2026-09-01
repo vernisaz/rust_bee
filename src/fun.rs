@@ -2101,9 +2101,12 @@ impl GenBlockTup {
                 }
                 return Some(VarVal::from_string(cfg_path));
             }
-            "return" => 
-            if fun_block.params.len() == 1 {
-                return Some(VarVal::from_string(util::insert_ctrl_char(*self.parameter(log, 0, fun_block, res_prev))))
+            "return" => {
+                if fun_block.params.len() == 1 {
+                    return Some(VarVal::from_string(util::insert_ctrl_char(
+                        *self.parameter(log, 0, fun_block, res_prev),
+                    )));
+                }
             }
             _ if name.ends_with("!") => {
                 if let Some(closure_name) = name.strip_suffix("!") {
@@ -2116,9 +2119,16 @@ impl GenBlockTup {
                     {
                         // TODO  how to clear prev call parameters?
                         for idx in 0..fun_block.params.len() {
-                            let var =
-                                VarVal::from_string(*self.parameter(log, idx, fun_block, res_prev));
-                            closure.add_var(format!("~{}~", idx + 1), var);
+                            if let Some(var) =
+                                fun_block.prev_or_search_up(&fun_block.params[idx], res_prev)
+                            {
+                                closure.add_var(format!("~{}~", idx + 1), var.clone());
+                            } else {
+                                let var = VarVal::from_string(
+                                    *self.parameter(log, idx, fun_block, res_prev),
+                                );
+                                closure.add_var(format!("~{}~", idx + 1), var);
+                            }
                         }
                         return closure.exec(log, res_prev);
                     } else {
