@@ -188,7 +188,7 @@ impl VarVal {
             VarType::Array => self.values.iter().any(|current| !current.is_empty()),
             VarType::Number => !self.value.is_empty() && self.value.parse::<i64>().unwrap_or_default() != 0,
             VarType::Bool => self.value == "true",
-            _ => !self.value.is_empty() // consider adding interpolation
+            _ => !self.value.is_empty() &&  self.value != "false" // consider adding interpolation
         }
     }
 }
