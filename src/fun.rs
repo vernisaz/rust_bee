@@ -2135,6 +2135,7 @@ impl GenBlockTup {
                             };
                             closure.add_var(format!("~{}~", idx + 1), var);
                         }
+                        closure.add_var("~{params}~".to_string(), VarVal::from_vec(fun_block.params.clone()));
                         return closure.exec(log, res_prev);
                     } else {
                         log.warning(&format!(
@@ -2163,6 +2164,14 @@ impl GenBlockTup {
         res_prev: &Option<VarVal>,
     ) -> Option<VarVal> {
         let name = *process_template_value(log, &fun_block.params[0], fun_block, res_prev);
+        if name.starts_with("~") && name.ends_with("~") {
+            log.error(&format!(
+                "a variable name can't start with the reserved character at {}:{}: ",
+                fun_block.script_path(),
+                &fun_block.script_line
+            ));
+            return None;
+        }
         let mut parent = self.parent()?; // because fun block can't be Main
         let mut close_scope = None;
         loop {
