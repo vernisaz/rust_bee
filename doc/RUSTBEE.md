@@ -116,9 +116,36 @@ Currently `if`, `while`, `case`, and `for`  operators are supported. More detail
 Ifs,  fors, cases, and whiles  can be nested.
 
 ### Closures
-Block of operators can be defined as a `closure`. Closures can be called as functions with a closure name ending by '!'.
-Parameters can be accessed as variables - `~1~` ... A result of a closure is the result of last function, which can
-be a special function `return`.
+Block of operators can be defined as a `closure`. Closures can be called as a function with the closure name ending by '!'.
+Parameters can be accessed as variables - `~1~` ... A result of a closure is the result of last function in it, which can
+be a special function `return`. If ending parameters are ommitted in a call, they are used from the previous its call if any.
+
+```
+closure add {
+    assign(sum,0)
+    assign (param index,1)
+    assign(control,true)
+    while control {
+        value(~${param index}~)
+    	calc(~~+sum)
+    	assign(sum,~~)
+    	calc(param index+1)
+    	assign(param index,~~)
+    	value(~${param index}~)
+    	if {
+    		eq(~~,) then {
+    			assign (control,false)
+    		}
+    	}
+    	
+    }
+    return(sum)
+}
+
+ add!(4,10,12)
+```
+
+### Functions
 
 A function can be one of the following:
 - **and**, considers parameters as boolean values and returns true if all parameters are true
@@ -167,14 +194,15 @@ otherwise returns false
 - **rm**, removes files defined in parameters
 - **rmdir**, **rmdira** removes an empty directory (rmdir), or a directory with all content (rmdira) specified in parameters
 - **scalar** | **join** , if a parameter is an array, then concatenates all elements using a separator specified by second parameter or TAB when no second parameter
-- **set_env**, set the environment key specified by first parameter to the value specified by the second one
-- **split**, split the first parameter value by a specified separator by the second parameter or tab, a result of the function is an array
+- **set_env**, sets the environment key specified by first parameter to the value specified by the second one
+- **split**, splits the first parameter value by a specified separator by the second parameter or tab, a result of the function is an array
 - **timestamp**, returns a timestamp of a file specified by first parameter, 
 and optionally sets timestamp of the file to the value specified by second parameter in ISO 8601
+- **value**, returns a value of a variable which name is a parameter value
 - **write**, writes to the file specified by first parameter, content of the rest parameters
 - **writea**, writes to the file specified by first parameter, content of the rest parameters. It doesn't create a new file if it already exists,
 just append content
-- **zip**, write a zip file, a name is specified by the first parameter and a content is specified by the following parameter pairs. A pair can be:
+- **zip**, writes a zip file, a name is specified by the first parameter and a content is specified by the following parameter pairs. A pair can be:
 
     * -\<A|E\>['comment'] zip dir/name, content (when E specified, the content gets the execute permission under UNIX)
     * -C['comment'] zip dir, dir with a possible file wildcard name (all directories below are processed)

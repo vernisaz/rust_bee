@@ -1796,14 +1796,14 @@ impl GenBlockTup {
                     // return a vector then
                     let mut res = Vec::new();
                     for i in 0..fun_block.params.len() {
-                        match self.calc(*self.parameter(log, i, fun_block, res_prev)) {
+                        match self.calc(*self.parameter(log, i, fun_block, res_prev), res_prev) {
                             Ok(cur) => res.push(cur.to_string()),
                             _ => continue,
                         }
                     }
                     return Some(VarVal::from_vec(res));
                 } else {
-                    match self.calc(*self.parameter(log, 0, fun_block, res_prev)) {
+                    match self.calc(*self.parameter(log, 0, fun_block, res_prev),res_prev) {
                         Ok(res) => {
                             return Some(VarVal::from_f64(res))
                         },
@@ -2101,6 +2101,13 @@ impl GenBlockTup {
                 }
                 return Some(VarVal::from_string(cfg_path));
             }
+            "value" => {
+                if fun_block.params.len() == 1 {
+                    let name =
+                        *process_template_value(log, &fun_block.params[0], fun_block, res_prev);
+                    return fun_block.prev_or_search_up(&name, res_prev);
+                }
+            }
             "return" => {
                 if fun_block.params.len() == 1 {
                     return Some(VarVal::from_string(util::insert_ctrl_char(
@@ -2155,7 +2162,7 @@ impl GenBlockTup {
         fun_block: &GenBlock,
         res_prev: &Option<VarVal>,
     ) -> Option<VarVal> {
-        let name = fun_block.params[0].to_owned();
+        let name = *process_template_value(log, &fun_block.params[0], fun_block, res_prev);
         let mut parent = self.parent()?; // because fun block can't be Main
         let mut close_scope = None;
         loop {
@@ -2309,7 +2316,7 @@ impl GenBlockTup {
         }
     }
 
-    fn calc(&self, str: String) -> CalcResult {
+    fn calc(&self, str: String, res_prev: &Option<VarVal>) -> CalcResult {
         let chars = str.chars();
         let mut pos = 0usize;
         let mut state = Default::default();
@@ -2356,7 +2363,7 @@ impl GenBlockTup {
                         CalcState::Var => {
                             state = CalcState::Oper;
                             let var: String = buf_var[0..name_pos].iter().collect();
-                            if let Some(val) = self.search_up(&var) {
+                            if let Some(val) = self.prev_or_search_up(&var, res_prev) {
                                 if let Ok(val) = val.value.parse::<f64>() {
                                     match op {
                                         Op::Div => {
@@ -2442,7 +2449,7 @@ impl GenBlockTup {
                         CalcState::Var => {
                             state = CalcState::Oper;
                             let var: String = buf_var[0..name_pos].iter().collect();
-                            if let Some(val) = self.search_up(&var) {
+                            if let Some(val) = self.prev_or_search_up(&var, res_prev) {
                                 //println!{"st {state:?} car {c} val {}", val.value};
                                 if let Ok(val) = val.value.parse::<f64>() {
                                     match op {
@@ -2592,7 +2599,7 @@ impl GenBlockTup {
                     match state {
                         CalcState::Var => {
                             let var: String = buf_var[0..name_pos].iter().collect();
-                            if let Some(val) = self.search_up(&var) {
+                            if let Some(val) = self.prev_or_search_up(&var, res_prev) {
                                 if let Ok(val) = val.value.parse::<f64>() {
                                     match op {
                                         Op::Div => {
@@ -2694,7 +2701,7 @@ impl GenBlockTup {
             CalcState::Var => {
                 let var: String = buf_var[0..name_pos].iter().collect();
                 //println!{"st {state:?} var {var}"};
-                if let Some(val) = self.search_up(&var) {
+                if let Some(val) = self.prev_or_search_up(&var, res_prev) {
                     if let Ok(val) = val.value.parse::<f64>() {
                         exp_val = val
                     } else {
