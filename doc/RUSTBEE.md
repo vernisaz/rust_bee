@@ -117,7 +117,8 @@ Ifs,  fors, cases, and whiles  can be nested.
 
 ### Closures
 Block of operators can be defined as a `closure`. Closures can be called as a function with the closure name ending by '!'.
-Parameters can be accessed as variables - `~1~` ... A result of a closure is the result of last function in it, which can
+Parameters can be accessed as variables - `~1~` ... Parameters can be also reached as an array - `~params~`.
+A result of a closure is the result of last function in it, which can
 be a special function `return`. If ending parameters are ommitted in a call, they are used from the previous its call if any.
 
 ```
