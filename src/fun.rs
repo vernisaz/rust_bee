@@ -2124,6 +2124,7 @@ impl GenBlockTup {
                         .unwrap()
                         .search_closure_up(closure_name)
                     {
+                        let mut params = vec![];
                         // TODO  how to clear prev call parameters?
                         for idx in 0..fun_block.params.len() {
                             let var = if let Some(var) =
@@ -2133,9 +2134,10 @@ impl GenBlockTup {
                             } else {
                                 VarVal::from_string(*self.parameter(log, idx, fun_block, res_prev))
                             };
+                            params.push(var.value.clone());
                             closure.add_var(format!("~{}~", idx + 1), var);
                         }
-                        closure.add_var("~params~".to_string(), VarVal::from_vec(fun_block.params.clone()));
+                        closure.add_var("~params~".to_string(), VarVal::from_vec(params));
                         return closure.exec(log, res_prev);
                     } else {
                         log.warning(&format!(
