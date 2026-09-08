@@ -2134,7 +2134,7 @@ impl GenBlockTup {
                             } else {
                                 VarVal::from_string(*self.parameter(log, idx, fun_block, res_prev))
                             };
-                            params.push(var.value.clone());
+                            params.push(self.array_to_string(&Some(var.clone()),"\t", res_prev).unwrap());
                             closure.add_var(format!("~{}~", idx + 1), var);
                         }
                         closure.add_var("~params~".to_string(), VarVal::from_vec(params));
