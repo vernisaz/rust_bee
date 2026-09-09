@@ -2140,7 +2140,7 @@ impl GenBlockTup {
                         closure.add_var("~params~".to_string(), VarVal::from_vec(params));
                         return closure.exec(log, res_prev);
                     } else {
-                        log.warning(&format!(
+                        log.error(&format!(
                             "no closure {} found at {}:{}: ",
                             closure_name.bold(),
                             fun_block.script_path(),

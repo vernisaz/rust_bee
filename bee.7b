@@ -10,7 +10,7 @@ crate_dir=..${~/~}crates
 doc_dir=..${~/~}docs
 comp opts=[--extern,simzip]
 version=1.18.00
-build=205
+build=206
 
 include(env.7b);
 
@@ -42,9 +42,9 @@ target install::Install RustBee  {
 	    if {
 	      eq(windows,~os~) then {    
 	           display(Make sure that you have elevated privileges for a successful Windows install)
-	           env(SYSTEMROOT) # assume that the directory added in PATH for all users
+	           env(SYSTEMROOT) # assumes that the directory added in PATH for all users
 	           assign(INSTALL DIR,~~)
-	           cp(rb.exe,${INSTALL DIR}${~/~}rb.exe)
+	           cp(rb.exe,${INSTALL DIR}${~/~}${project}.exe)
 	           if {
 	           		eq(~~, ${INSTALL DIR}${~/~}${project}.exe) then {
 	           			display(Installed ${~~} in ${INSTALL DIR})
@@ -56,7 +56,7 @@ target install::Install RustBee  {
 	        if {
 	            neq(${User}, root)
 	            then {
-	                display(Please run the script as an administrator)
+	                display(Please run the script as an administrator/root)
 	            }
 	            else {
                    cp(${~cwd~}/${project},/usr/local/bin)
@@ -64,7 +64,7 @@ target install::Install RustBee  {
 		           		eq(~~, /usr/local/bin/${project}) then {
 		           			display(Installed.)
 		           		} else {
-		           			display(Installation has failed ${~~}.)
+		           			display(Installation has failed.)
 		           		}
 		           }
 	            }
@@ -94,7 +94,7 @@ target install::Install RustBee  {
 	           if {
 	               contains (path, .rustbee${~/~}bin)
 	               else {
-	                  display(Add in env %PATH%;${rustbee})
+	                  display(Add in env PATH - %PATH%;${rustbee})
 	                  #exec setx (PATH, %path%;${rustbee} )
 	               }
 	           }
