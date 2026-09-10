@@ -2109,10 +2109,17 @@ impl GenBlockTup {
                 }
             }
             "return" => {
+                // TODO store result in ~return~ and then return as result of the closure
                 if fun_block.params.len() == 1 {
-                    return Some(VarVal::from_string(util::insert_ctrl_char(
-                        *self.parameter(log, 0, fun_block, res_prev),
-                    )));
+                    return if let Some(var) =
+                        fun_block.prev_or_search_up(&fun_block.params[0], res_prev)
+                    {
+                        Some(var.clone())
+                    } else {
+                        Some(VarVal::from_string(util::insert_ctrl_char(
+                            *self.parameter(log, 0, fun_block, res_prev),
+                        )))
+                    };
                 }
             }
             _ if name.ends_with("!") => {
@@ -2134,7 +2141,10 @@ impl GenBlockTup {
                             } else {
                                 VarVal::from_string(*self.parameter(log, idx, fun_block, res_prev))
                             };
-                            params.push(self.array_to_string(&Some(var.clone()),"\t", res_prev).unwrap());
+                            params.push(
+                                self.array_to_string(&Some(var.clone()), "\t", res_prev)
+                                    .unwrap(),
+                            );
                             closure.add_var(format!("~{}~", idx + 1), var);
                         }
                         closure.add_var("~params~".to_string(), VarVal::from_vec(params));
