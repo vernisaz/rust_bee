@@ -258,6 +258,17 @@ impl GenBlockTup {
         //println!("borrowed {:?} - {:?}", self.0.borrow().name, self.0.borrow().block_type);
         self.0.borrow().parent.clone()
     }
+    
+    fn part_of(&self, block_type:BlockType) -> bool {
+         if self.borrow().block_type == block_type {
+             true
+         } else {
+             match self.parent() {
+                 Some(parent) => parent.part_of(block_type),
+                 None => false
+             }
+         }
+    }
 
     pub fn eval_dep(&self, log: &Log, prev_res: &Option<VarVal>) -> bool {
         let dep = self.0.borrow();
@@ -2110,7 +2121,7 @@ impl GenBlockTup {
             }
             "return" => {
                 // TODO store result in ~return~ and then return as result of the closure
-                if fun_block.params.len() == 1 {
+                if fun_block.params.len() == 1 &&  fun_block.parent.clone().unwrap().part_of(BlockType::Closure) {
                     return if let Some(var) =
                         fun_block.prev_or_search_up(&fun_block.params[0], res_prev)
                     {
@@ -2120,6 +2131,12 @@ impl GenBlockTup {
                             *self.parameter(log, 0, fun_block, res_prev),
                         )))
                     };
+                } else {
+                    log.error(&format!(
+                            "using 'return' outside of a closure or having not only 1 parameter isn't allowed at {}:{}: ",
+                            fun_block.script_path(),
+                            &fun_block.script_line
+                        ));
                 }
             }
             _ if name.ends_with("!") => {
