@@ -450,9 +450,6 @@ impl GenBlockTup {
                 let children = &self.0.borrow().children.clone();
                 for child in children {
                     res = child.exec(log, &res);
-                    if child.borrow().name == Some("return".into()) {
-                        break;
-                    }
                     if let Some(ret_val) = child.search_up("~return~") {
                         res = Some(ret_val);
                         break;
