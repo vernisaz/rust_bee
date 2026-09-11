@@ -204,7 +204,7 @@ impl GenBlockTup {
         self.0.borrow_mut().vars.insert(name, val)
     }
 
-    pub fn remove_var(&self, name: &String) -> Option<VarVal> {
+    pub fn remove_var(&self, name: &str) -> Option<VarVal> {
         self.0.borrow_mut().vars.remove(name)
     }
 
@@ -268,6 +268,21 @@ impl GenBlockTup {
                  None => false
              }
          }
+    }
+    
+    fn search_up_block_type(&self, block_type:BlockType) -> Option<GenBlockTup> {
+        let mut current_bl = self.clone();
+        loop {
+            let current_bare = current_bl.borrow();
+            // println!{"checking {:?} for {name}", parent_bare.block_type}
+            if current_bare.block_type == block_type {
+                break Some(current_bl.clone());
+            } else {
+                let parent = current_bare.parent.clone()?;
+                drop(current_bare);
+                current_bl = parent
+            }
+        }
     }
 
     pub fn eval_dep(&self, log: &Log, prev_res: &Option<VarVal>) -> bool {
@@ -434,8 +449,19 @@ impl GenBlockTup {
                 let mut res = prev_res.clone();
                 let children = &self.0.borrow().children.clone();
                 for child in children {
-                    res = child.exec(log, &res)
+                    res = child.exec(log, &res);
+                    if child.borrow().name == Some("return".into()) {
+                        break
+                    }
+                    if let Some(ret_val) = child.search_up("~return~") {
+                        res = Some(ret_val);
+                        break
+                    }
                 }
+                if *block_type == BlockType::Closure {
+                    self.remove_var("~return~");
+                }
+                // let var = self.borrow().vars.get(name);
                 res
             }
             BlockType::Main => {
@@ -2122,15 +2148,19 @@ impl GenBlockTup {
             "return" => {
                 // TODO store result in ~return~ and then return as result of the closure
                 if fun_block.params.len() == 1 &&  fun_block.parent.clone().unwrap().part_of(BlockType::Closure) {
-                    return if let Some(var) =
+                    let res = if let Some(var) =
                         fun_block.prev_or_search_up(&fun_block.params[0], res_prev)
                     {
-                        Some(var.clone())
+                       var.clone()
                     } else {
-                        Some(VarVal::from_string(util::insert_ctrl_char(
+                        VarVal::from_string(util::insert_ctrl_char(
                             *self.parameter(log, 0, fun_block, res_prev),
-                        )))
+                        ))
                     };
+                    if let Some(closure) = fun_block.parent.clone().unwrap().search_up_block_type(BlockType::Closure) {
+                        closure.add_var("~return~".into(), res.clone());
+                    };
+                    return Some(res)
                 } else {
                     log.error(&format!(
                             "using 'return' outside of a closure or having not only 1 parameter isn't allowed at {}:{}: ",
