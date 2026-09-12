@@ -1451,9 +1451,100 @@ impl GenBlockTup {
                 if fun_block.params.len() != 2 {
                     log.error(&format!{"Contains requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
                 } else {
-                    let p1 = *self.parameter(log, 0, fun_block, res_prev);
-                    let p2 = *self.parameter(log, 1, fun_block, res_prev);
-                    return Some(VarVal::from_bool(p1.contains(&p2)));
+                    match fun_block.prev_or_search_up(&fun_block.params[0], res_prev) {
+                        Some(in_content) => {
+                            let mut contains = false;
+                            if in_content.val_type == VarType::Array {
+                                match fun_block.prev_or_search_up(&fun_block.params[1], res_prev) {
+                                    Some(what) => {
+                                        if what.val_type == VarType::Array {
+                                            for el in what.values {
+                                                for in_el in &in_content.values {
+                                                    if *in_el == el {
+                                                        contains = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if !contains {
+                                                    break;
+                                                }
+                                            }
+                                        } else {
+                                            // scalar
+                                            let p2 = what.value;
+                                            for in_el in in_content.values {
+                                                if in_el == p2 {
+                                                    contains = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        return Some(VarVal::from_bool(contains));
+                                    }
+                                    None => {
+                                        let p2 = *self.parameter(log, 1, fun_block, res_prev);
+                                        for in_el in in_content.values {
+                                            if in_el == p2 {
+                                                contains = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                return Some(VarVal::from_bool(contains));
+                            } else {
+                                // found and scalar
+                                match fun_block.prev_or_search_up(&fun_block.params[1], res_prev) {
+                                    Some(what) => {
+                                        if what.val_type == VarType::Array {
+                                            contains = true;
+                                            for el in what.values {
+                                                if !in_content.value.contains(&el) {
+                                                    contains = false;
+                                                    break;
+                                                }
+                                            }
+                                            return Some(VarVal::from_bool(contains));
+                                        } else {
+                                            let p1 = in_content.value;
+                                            let p2 = what.value;
+                                            return Some(VarVal::from_bool(p1.contains(&p2)));
+                                        }
+                                    }
+                                    None => {
+                                        let p1 = *self.parameter(log, 0, fun_block, res_prev);
+                                        let p2 = *self.parameter(log, 1, fun_block, res_prev);
+                                        return Some(VarVal::from_bool(p1.contains(&p2)));
+                                    }
+                                }
+                            }
+                        }
+                        None => {
+                            let p1 = *self.parameter(log, 0, fun_block, res_prev);
+                            match fun_block.prev_or_search_up(&fun_block.params[1], res_prev) {
+                                Some(what) => {
+                                    if what.val_type == VarType::Array {
+                                        let mut contains = true;
+                                        for el in what.values {
+                                            if !p1.contains(&el) {
+                                                contains = false;
+                                                break;
+                                            }
+                                        }
+                                        return Some(VarVal::from_bool(contains));
+                                    } else {
+                                        let p2 = *self.parameter(log, 1, fun_block, res_prev);
+                                        return Some(VarVal::from_bool(p1.contains(&p2)));
+                                    }
+                                }
+                                None => {
+                                    let p1 = *self.parameter(log, 0, fun_block, res_prev);
+                                    let p2 = *self.parameter(log, 1, fun_block, res_prev);
+                                    return Some(VarVal::from_bool(p1.contains(&p2)));
+                                }
+                            }
+                        }
+                    }
                 }
             }
             "as_url" => {
