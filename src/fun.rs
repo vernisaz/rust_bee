@@ -447,16 +447,16 @@ impl GenBlockTup {
             | BlockType::Choice
             | BlockType::Closure => {
                 let mut res = prev_res.clone();
+                let top_closure = self.search_up_block_type(BlockType::Closure);
                 let children = &self.0.borrow().children.clone();
                 for child in children {
                     res = child.exec(log, &res);
-                    if let Some(ret_val) = child.search_up("~return~") {
-                        res = Some(ret_val);
+                    if let Some(ref closure) = top_closure && closure.borrow().vars.contains_key("~return~") {
                         break;
                     }
                 }
-                if *block_type == BlockType::Closure {
-                    self.remove_var("~return~");
+                if *block_type == BlockType::Closure && let Some(result) = self.remove_var("~return~") {
+                    res = Some(result);
                 }
                 // let var = self.borrow().vars.get(name);
                 res
@@ -592,6 +592,7 @@ impl GenBlockTup {
                         range.push(var_el.to_string())
                     }
                 }
+                let top_closure = self.search_up_block_type(BlockType::Closure);
                 let children = &naked_block.children.clone();
                 drop(naked_block);
                 'for_loop: for (index, element) in range.iter().enumerate() {
@@ -613,8 +614,7 @@ impl GenBlockTup {
 
                     for child in children {
                         res = child.exec(log, &res);
-                        if let Some(ret_val) = child.search_up("~return~") {
-                            res = Some(ret_val);
+                        if let Some(ref closure) = top_closure && closure.borrow().vars.contains_key("~return~") {
                             break 'for_loop;
                         }
                     }
@@ -741,13 +741,12 @@ impl GenBlockTup {
                     return None;
                 }
                 let children = naked_block.children.clone();
-                //drop(naked_block);
+                let top_closure = self.search_up_block_type(BlockType::Closure);
                 let mut val = control_var.unwrap().is_true();
                 'while_loop: while val {
                     for child in &children {
                         res = child.exec(log, &res);
-                        if let Some(ret_val) = child.search_up("~return~") {
-                            res = Some(ret_val);
+                        if let Some(ref closure) = top_closure && closure.borrow().vars.contains_key("~return~") {
                             break 'while_loop;
                         }
                     }
