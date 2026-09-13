@@ -458,7 +458,6 @@ impl GenBlockTup {
                 if *block_type == BlockType::Closure && let Some(result) = self.remove_var("~return~") {
                     res = Some(result);
                 }
-                // let var = self.borrow().vars.get(name);
                 res
             }
             BlockType::Main => {
@@ -1726,6 +1725,22 @@ impl GenBlockTup {
                     return res; // get/set
                 } else {
                     log.error(&format!{"Specified argument {} isn't an array at {}:{}: ",  name, fun_block.script_path(), fun_block.script_line});
+                }
+            }
+            "mask" => {
+                if fun_block.params.len() != 2 {
+                    log.error(&format!{"Set environment requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
+                } else {
+                    let value = *self.parameter(log, 0, fun_block, res_prev);
+                    let mask = *self.parameter(log, 1, fun_block, res_prev);
+                    if let Some((left,right)) = mask.split_once('*') {
+                        if let Some(cut) = value.strip_prefix(left) && let Some(cut) = cut.strip_prefix(right) {
+                             return Some(VarVal::from_string(cut))
+                        }
+                    } else if value == mask {
+                         return Some(VarVal::from_string(String::new()))
+                    }
+                    return Some(VarVal::from_string(value))
                 }
             }
             "set_env" => {

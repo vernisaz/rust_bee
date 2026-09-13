@@ -178,6 +178,7 @@ in the function result
 - **gt** , first argument is greater than second one
 - **include**, includes a file content pointed by a parameter as a part of the script 
 - **lt** , first argument is less than second one
+- **mask**, remove a part of a value specified by first parameter, matching a mask specified by second one, and returns the result. If no mask matching, it returns the first parameter  
 - **mkd**, creates directories from the list of parameters. It returns an array of successfully created directories. Directories get created from current work directory unless a fully qualified name is specified
 - **mv**, similar to cp, but does a move
 - **newerthan**, compares a timestamp of files specified with the pattern `path/.ext` with a timestamp of files specified using the `path/.ext` and
@@ -190,7 +191,7 @@ to recompile all files using the constants. The function can't discover such dep
 - **or**, considers parameters as boolean values and returns true of first true parameter,
 otherwise returns false
 - *panic*, a parameter specifies a panic message, and stops the script execution
-- **range**, returns a range of first parameter specified by a start by second parameter and an end specified by third parameter, when presented
+- **range** | **slice**, returns a range of first parameter specified by a start by second parameter and an end specified by third parameter, when presented
 - **read**, reads a file content specified by a parameter
 - **rm**, removes files defined in parameters
 - **rmdir**, **rmdira** removes an empty directory (rmdir), or a directory with all content (rmdira) specified in parameters
