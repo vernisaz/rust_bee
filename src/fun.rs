@@ -1622,7 +1622,7 @@ impl GenBlockTup {
                             if !param.is_empty() {
                                 res.push(param)
                             } else {
-                                log.error(&format!{"An empty parameter {} is ignored at {}:{}: ", i, fun_block.script_path(), fun_block.script_line})
+                                log.warning(&format!{"An empty parameter {} is ignored at {}:{}: ", i, fun_block.script_path(), fun_block.script_line})
                             }
                         }
                     }
