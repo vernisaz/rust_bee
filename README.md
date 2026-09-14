@@ -34,8 +34,11 @@ and
 Since the product supports a colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
 
 ## Version
-The current version is **1.17.01**.
+The current version is **1.18.01**.
 
 ## Scripting examples
 
-Some examples of using **RustBee** can be found [here](https://gitlab.com/tools6772135/rusthub/-/tree/master/src/script). 
+Some examples of using **RustBee** can be found [here](https://gitlab.com/tools6772135/rusthub/-/tree/master/src/script).
+
+## AI
+People use Python for AI development, however the scripting language is also useful for the purpose.
