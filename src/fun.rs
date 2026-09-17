@@ -1734,7 +1734,7 @@ impl GenBlockTup {
                     let value = *self.parameter(log, 0, fun_block, res_prev);
                     let mask = *self.parameter(log, 1, fun_block, res_prev);
                     if let Some((left,right)) = mask.split_once('*') {
-                        if let Some(cut) = value.strip_prefix(left) && let Some(cut) = cut.strip_prefix(right) {
+                        if let Some(cut) = value.strip_prefix(left) && let Some(cut) = cut.strip_suffix(right) {
                              return Some(VarVal::from_string(cut))
                         }
                     } else if value == mask {
