@@ -451,11 +451,15 @@ impl GenBlockTup {
                 let children = &self.0.borrow().children.clone();
                 for child in children {
                     res = child.exec(log, &res);
-                    if let Some(ref closure) = top_closure && closure.borrow().vars.contains_key("~return~") {
+                    if let Some(ref closure) = top_closure
+                        && closure.borrow().vars.contains_key("~return~")
+                    {
                         break;
                     }
                 }
-                if *block_type == BlockType::Closure && let Some(result) = self.remove_var("~return~") {
+                if *block_type == BlockType::Closure
+                    && let Some(result) = self.remove_var("~return~")
+                {
                     res = Some(result);
                 }
                 res
@@ -613,7 +617,9 @@ impl GenBlockTup {
 
                     for child in children {
                         res = child.exec(log, &res);
-                        if let Some(ref closure) = top_closure && closure.borrow().vars.contains_key("~return~") {
+                        if let Some(ref closure) = top_closure
+                            && closure.borrow().vars.contains_key("~return~")
+                        {
                             break 'for_loop;
                         }
                     }
@@ -745,7 +751,9 @@ impl GenBlockTup {
                 'while_loop: while val {
                     for child in &children {
                         res = child.exec(log, &res);
-                        if let Some(ref closure) = top_closure && closure.borrow().vars.contains_key("~return~") {
+                        if let Some(ref closure) = top_closure
+                            && closure.borrow().vars.contains_key("~return~")
+                        {
                             break 'while_loop;
                         }
                     }
@@ -928,7 +936,7 @@ impl GenBlockTup {
                 }
             }
             "assign" => return self.exec_assign(log, fun_block, res_prev),
-            "neq" => {
+            "neq" | "≠" => {
                 log.debug(&format!(
                     "comparing neq {:?} and {:?}",
                     self.parameter(log, 0, fun_block, res_prev),
@@ -940,7 +948,7 @@ impl GenBlockTup {
                         != self.parameter(log, 1, fun_block, res_prev),
                 ));
             }
-            "eq" => {
+            "eq" | "=" => {
                 // TODO reuse common code with neq
                 log.debug(&format!(
                     "comparing eq {:?} and {:?}",
@@ -1639,8 +1647,9 @@ impl GenBlockTup {
                 };
                 return Some(VarVal::from_iter(val.split(sep)));
             }
-            "file_filter" | "filter" => {
+            "file_filter" => {
                 // remove from an array parameter all matching parameters 1..n
+                // considering that they are files
                 let param = self.prev_or_search_up(&fun_block.params[0], res_prev);
                 if let Some(param) = param
                     && param.val_type == VarType::Array
@@ -1676,6 +1685,27 @@ impl GenBlockTup {
                         })
                         .collect();
                     return Some(VarVal::from_vec(vec));
+                } else {
+                    log.error(&format!{"Variable {} not found or not an array at {}:{}: ", fun_block.params[0], fun_block.script_path(), fun_block.script_line})
+                }
+            }
+            "filter" => {
+                // remove from an array parameter all matching parameters 1..n
+                let param = self.prev_or_search_up(&fun_block.params[0], res_prev);
+                if let Some(param) = param
+                    && param.val_type == VarType::Array
+                {
+                    let filter_vals = fun_block.params[1..]
+                        .iter()
+                        .map(|filter| *process_template_value(log, filter, fun_block, res_prev))
+                        .collect::<Vec<_>>();
+                    return Some(VarVal::from_vec(
+                        param
+                            .values
+                            .into_iter()
+                            .filter(|val| !filter_vals.contains(val))
+                            .collect(),
+                    ));
                 } else {
                     log.error(&format!{"Variable {} not found or not an array at {}:{}: ", fun_block.params[0], fun_block.script_path(), fun_block.script_line})
                 }
@@ -1733,14 +1763,16 @@ impl GenBlockTup {
                 } else {
                     let value = *self.parameter(log, 0, fun_block, res_prev);
                     let mask = *self.parameter(log, 1, fun_block, res_prev);
-                    if let Some((left,right)) = mask.split_once('*') {
-                        if let Some(cut) = value.strip_prefix(left) && let Some(cut) = cut.strip_suffix(right) {
-                             return Some(VarVal::from_string(cut))
+                    if let Some((left, right)) = mask.split_once('*') {
+                        if let Some(cut) = value.strip_prefix(left)
+                            && let Some(cut) = cut.strip_suffix(right)
+                        {
+                            return Some(VarVal::from_string(cut));
                         }
                     } else if value == mask {
-                         return Some(VarVal::from_string(String::new()))
+                        return Some(VarVal::from_string(String::new()));
                     }
-                    return Some(VarVal::from_string(value))
+                    return Some(VarVal::from_string(value));
                 }
             }
             "set_env" => {

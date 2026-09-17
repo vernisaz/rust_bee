@@ -174,7 +174,8 @@ specified after a process name separated by ':', otherwise stdout will appear on
 in the function result
 - **filename**, returns a filename of a parameter, no extension. The name is taken after last slash and before the last dot after the slash. 
 - **files**, return an array of file paths matching patterns specified by parameters, if a pattern ends with a separator character, then it traverses files inside directories
-- **file_filter** | **filter** , shrink an array specified my first parameters by filter values specified by extra parameters
+- **file_filter**, shrinks an array specified my first parameters by filter values specified by extra parameters considering that all arguments are existing files
+- **filter**, shrinks an array specified my first parameters by filter values specified by extra parameters
 - **gt** , first argument is greater than second one
 - **include**, includes a file content pointed by a parameter as a part of the script 
 - **lt** , first argument is less than second one
