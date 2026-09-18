@@ -1698,7 +1698,7 @@ impl GenBlockTup {
                     let filter_vals = fun_block.params[1..]
                         .iter()
                         .flat_map(|filter| {
-                            let filter_element = self.prev_or_search_up(&filter, res_prev);
+                            let filter_element = self.prev_or_search_up(filter, res_prev);
                             if let Some(element) = filter_element {
                                 if element.val_type == VarType::Array {
                                     element.values //should interpolate every element?
