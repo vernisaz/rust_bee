@@ -1649,7 +1649,7 @@ impl GenBlockTup {
             }
             "file_filter" => {
                 // remove from an array parameter all matching parameters 1..n
-                // considering that they are files
+                // considering that they are existing files
                 let param = self.prev_or_search_up(&fun_block.params[0], res_prev);
                 if let Some(param) = param
                     && param.val_type == VarType::Array
@@ -1657,7 +1657,12 @@ impl GenBlockTup {
                     // TODO think if filtering should be case insesible on Windows
                     let filter_vals = fun_block.params[1..]
                         .iter()
-                        .map(|filter| process_template_value(log, filter, fun_block, res_prev))
+                        .flat_map(|filter| match self.prev_or_search_up(filter, res_prev) {
+                            Some(val) if val.val_type == VarType::Array => val.values,
+                            Some(val) => vec![val.value],
+                            None => vec![filter.clone()],
+                        })
+                        .map(|filter| process_template_value(log, &filter, fun_block, res_prev))
                         .collect::<Vec<_>>();
                     let files = param.values;
                     let cwd = fun_block
@@ -1701,7 +1706,13 @@ impl GenBlockTup {
                             let filter_element = self.prev_or_search_up(filter, res_prev);
                             if let Some(element) = filter_element {
                                 if element.val_type == VarType::Array {
-                                    element.values //should interpolate every element?
+                                    element
+                                        .values
+                                        .into_iter()
+                                        .map(|el| {
+                                            *process_template_value(log, &el, fun_block, res_prev)
+                                        })
+                                        .collect()
                                 } else {
                                     vec![*process_template_value(
                                         log,
@@ -1719,7 +1730,14 @@ impl GenBlockTup {
                         param
                             .values
                             .into_iter()
-                            .filter(|val| !filter_vals.contains(val))
+                            .filter(|val| {
+                                for filter in &filter_vals {
+                                    if matches(val, &filter) {
+                                        return false;
+                                    }
+                                }
+                                true
+                            })
                             .collect(),
                     ));
                 } else {
