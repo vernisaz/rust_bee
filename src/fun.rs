@@ -1697,7 +1697,23 @@ impl GenBlockTup {
                 {
                     let filter_vals = fun_block.params[1..]
                         .iter()
-                        .map(|filter| *process_template_value(log, filter, fun_block, res_prev))
+                        .flat_map(|filter| {
+                            let filter_element = self.prev_or_search_up(&filter, res_prev);
+                            if let Some(element) = filter_element {
+                                if element.val_type == VarType::Array {
+                                    element.values //should interpolate every element?
+                                } else {
+                                    vec![*process_template_value(
+                                        log,
+                                        &element.value,
+                                        fun_block,
+                                        res_prev,
+                                    )]
+                                }
+                            } else {
+                                vec![*process_template_value(log, filter, fun_block, res_prev)]
+                            }
+                        })
                         .collect::<Vec<_>>();
                     return Some(VarVal::from_vec(
                         param
