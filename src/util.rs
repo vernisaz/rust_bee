@@ -312,3 +312,19 @@ pub fn capitalize_first(s: &str) -> String {
         Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
     }
 }
+
+pub fn is_capitalized(s: &str) -> bool {
+    let mut chars = s.chars();
+
+    // Get the first character, if any
+    if let Some(first) = chars.next() {
+        // First char must be uppercase, rest must be lowercase
+        first.is_uppercase() && chars.all(|c| c.is_lowercase())
+    } else {
+        false // Empty string is not considered capitalized
+    }
+}
+
+pub fn is_uppercase(s: &str) -> bool {
+    s.chars().all(|c| c.is_uppercase())
+}
