@@ -201,6 +201,9 @@ otherwise returns false
 - **split**, splits the first parameter value by a specified separator by the second parameter or tab, a result of the function is an array
 - **timestamp**, returns a timestamp of a file specified by first parameter, 
 and optionally sets timestamp of the file to the value specified by second parameter in ISO 8601
+- **to_capitalized**, converts the specified parameter value to capitalized case
+- **to_lower**, converts the specified parameter value to lower case
+- **to_upper**, converts the specified parameter value to upper case
 - **value**, returns a value of a variable which name is a parameter value
 - **write**, writes to the file specified by first parameter, content of the rest parameters
 - **writea**, writes to the file specified by first parameter, content of the rest parameters. It doesn't create a new file if it already exists,

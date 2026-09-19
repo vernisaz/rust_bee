@@ -2353,6 +2353,45 @@ impl GenBlockTup {
                         ));
                 }
             }
+            fun @ "to_upper" => {
+                if fun_block.params.len() == 1 {
+                    return Some(VarVal::from_string(
+                        self.parameter(log, 0, fun_block, res_prev).to_uppercase(),
+                    ));
+                } else {
+                    log.error(&format!(
+                        "the function '{fun}' takes only 1 parameter at {}:{}: ",
+                        fun_block.script_path(),
+                        &fun_block.script_line
+                    ));
+                }
+            }
+            fun @ "to_lower" => {
+                if fun_block.params.len() == 1 {
+                    return Some(VarVal::from_string(
+                        &self.parameter(log, 0, fun_block, res_prev).to_lowercase(),
+                    ));
+                } else {
+                    log.error(&format!(
+                        "the function '{fun}' takes only 1 parameter at {}:{}: ",
+                        fun_block.script_path(),
+                        &fun_block.script_line
+                    ));
+                }
+            }
+            fun @ "to_capitalized" => {
+                if fun_block.params.len() == 1 {
+                    return Some(VarVal::from_string(util::capitalize_first(
+                        &self.parameter(log, 0, fun_block, res_prev),
+                    )));
+                } else {
+                    log.error(&format!(
+                        "the function '{fun}' takes only 1 parameter at {}:{}: ",
+                        fun_block.script_path(),
+                        &fun_block.script_line
+                    ));
+                }
+            }
             _ if name.ends_with("!") => {
                 if let Some(closure_name) = name.strip_suffix("!") {
                     // search the closure
