@@ -1731,12 +1731,9 @@ impl GenBlockTup {
                             .values
                             .into_iter()
                             .filter(|val| {
-                                for filter in &filter_vals {
-                                    if matches(val, &filter) {
-                                        return false;
-                                    }
-                                }
-                                true
+                                !filter_vals
+                                    .iter()
+                                    .any(|filter_val| matches(val, filter_val))
                             })
                             .collect(),
                     ));
