@@ -178,6 +178,8 @@ in the function result
 - **filter**, shrinks an array specified my first parameters by filter values specified by extra parameters
 - **gt** , first argument is greater than second one
 - **include**, includes a file content pointed by a parameter as a part of the script 
+- **is_capitalized**, returns true if the parameter is a capitalized string
+- **is_upper**, returns true if the parameter is a string in upper case
 - **lt** , first argument is less than second one
 - **mask**, remove a part of a value specified by first parameter, matching a mask specified by second one, and returns the result. If no mask matching, it returns the first parameter  
 - **mkd**, creates directories from the list of parameters. It returns an array of successfully created directories. Directories get created from current work directory unless a fully qualified name is specified
