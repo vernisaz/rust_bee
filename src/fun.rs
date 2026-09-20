@@ -2349,7 +2349,7 @@ impl GenBlockTup {
                     log.error(&format!(
                             "using 'return' outside of a closure or having not only 1 parameter isn't allowed at {}:{}: ",
                             fun_block.script_path(),
-                            &fun_block.script_line
+                            fun_block.script_line
                         ));
                 }
             }
@@ -2362,20 +2362,20 @@ impl GenBlockTup {
                     log.error(&format!(
                         "the function '{fun}' takes only 1 parameter at {}:{}: ",
                         fun_block.script_path(),
-                        &fun_block.script_line
+                        fun_block.script_line
                     ));
                 }
             }
             fun @ "to_lower" => {
                 if fun_block.params.len() == 1 {
                     return Some(VarVal::from_string(
-                        &self.parameter(log, 0, fun_block, res_prev).to_lowercase(),
+                        self.parameter(log, 0, fun_block, res_prev).to_lowercase(),
                     ));
                 } else {
                     log.error(&format!(
                         "the function '{fun}' takes only 1 parameter at {}:{}: ",
                         fun_block.script_path(),
-                        &fun_block.script_line
+                        fun_block.script_line
                     ));
                 }
             }
@@ -2388,7 +2388,7 @@ impl GenBlockTup {
                     log.error(&format!(
                         "the function '{fun}' takes only 1 parameter at {}:{}: ",
                         fun_block.script_path(),
-                        &fun_block.script_line
+                        fun_block.script_line
                     ));
                 }
             }
@@ -2401,7 +2401,7 @@ impl GenBlockTup {
                     log.error(&format!(
                         "the function '{fun}' takes only 1 parameter at {}:{}: ",
                         fun_block.script_path(),
-                        &fun_block.script_line
+                        fun_block.script_line
                     ));
                 }
             }
@@ -2414,7 +2414,7 @@ impl GenBlockTup {
                     log.error(&format!(
                         "the function '{fun}' takes only 1 parameter at {}:{}: ",
                         fun_block.script_path(),
-                        &fun_block.script_line
+                        fun_block.script_line
                     ));
                 }
             }
@@ -2450,7 +2450,7 @@ impl GenBlockTup {
                             "no closure {} found at {}:{}: ",
                             closure_name.bold(),
                             fun_block.script_path(),
-                            &fun_block.script_line
+                            fun_block.script_line
                         ));
                     }
                 }
@@ -2476,7 +2476,7 @@ impl GenBlockTup {
             log.error(&format!(
                 "a variable name can't start with the reserved character at {}:{}: ",
                 fun_block.script_path(),
-                &fun_block.script_line
+                fun_block.script_line
             ));
             return None;
         }
