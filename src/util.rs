@@ -304,6 +304,66 @@ pub fn normalize_path(path: &Path) -> PathBuf {
 
     normalized
 }
+// TODO move to a common crate or include
+#[derive(Debug, Clone, PartialEq, Default)]
+enum CmdState {
+    #[default]
+    StartArg,
+    InArg,
+    Esc,
+    QEsc,
+}
+pub fn split_at_star(line: impl AsRef<str>) -> Option<(String, String)> {
+    let char_indices = line.as_ref().char_indices();
+    let mut state = Default::default();
+    let mut current = String::new();
+    let mut before = None;
+    for (_, c) in char_indices {
+        match c {
+            '\\' => match state {
+                CmdState::Esc | CmdState::QEsc => current.push(c),
+                CmdState::StartArg => state = CmdState::Esc,
+                CmdState::InArg => state = CmdState::QEsc,
+            },
+            '*' => match state {
+                CmdState::Esc => {
+                    current.push(c);
+                    state = CmdState::StartArg
+                }
+                CmdState::StartArg => {
+                    state = CmdState::InArg;
+                    before = Some(current.clone());
+                    current.clear()
+                }
+                CmdState::InArg | CmdState::QEsc => {
+                    state = CmdState::InArg;
+                    current.push(c)
+                }
+            },
+            _ => match state {
+                CmdState::Esc => {
+                    state = CmdState::StartArg;
+                    current.push('\\');
+                    current.push(c)
+                }
+                CmdState::QEsc => {
+                    state = CmdState::InArg;
+                    current.push('\\');
+                    current.push(c)
+                }
+                CmdState::StartArg | CmdState::InArg => current.push(c),
+            },
+        }
+    }
+    match state {
+        CmdState::InArg => Some((before.unwrap(), current)),
+        CmdState::StartArg | CmdState::Esc => None,
+        CmdState::QEsc => {
+            current.push('\\');
+            Some((before.unwrap(), current))
+        }
+    }
+}
 
 pub fn capitalize_first(s: &str) -> String {
     let mut c = s.chars();

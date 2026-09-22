@@ -766,8 +766,8 @@ impl GenBlockTup {
                 let mut res = prev_res.clone();
 
                 let naked_block = self.borrow();
-                let control = naked_block.name.as_ref().unwrap().to_owned();
-                if let Some(var) = self.search_up(&control) {
+                let control = naked_block.name.as_ref().unwrap();
+                if let Some(var) = self.prev_or_search_up(control, prev_res) {
                     let children = &naked_block.children.clone();
                     let mut chosen = false;
                     let var = match var.val_type {
@@ -782,6 +782,7 @@ impl GenBlockTup {
                                 var.value
                             }
                         }
+                        VarType::Array => var.values.join("\t"),
                         _ => var.value,
                     };
                     for child in children {
@@ -795,10 +796,10 @@ impl GenBlockTup {
                         }
                         let choice = <Option<String> as Clone>::clone(&child.borrow().name)
                             .unwrap_or("".into());
-                        let patterns = choice.split("|");
+                        let patterns = choice.split("|"); // TODO decide on escaping |
                         for pattern in patterns {
                             let trimmed = pattern.trim();
-                            if var == trimmed {
+                            if matches(&var, trimmed) { // TODO decide if all matching branches need processing
                                 chosen = true;
                                 res = child.exec(log, &res);
                                 break;
@@ -3332,22 +3333,10 @@ pub fn last_modified(file: &str) -> Option<SystemTime> {
 }
 
 fn matches(name: &str, filter: &str) -> bool {
-    /*! - the function checks if a name matches to the filter with a possible wild card */
-    let star_pos = filter.find('*');
-    match star_pos {
-        None => name == filter,
-        Some(pos) => {
-            let len = name.len();
-            match pos {
-                0 => name.ends_with(&filter[1..]),
-                last if last == len - 1 => name.starts_with(&filter[0..last]),
-                _ => {
-                    let start = &filter[0..pos];
-                    let end = &filter[pos + 1..];
-                    name.starts_with(start) && name.ends_with(&end)
-                }
-            }
-        }
+    if let Some((before,after)) = util::split_at_star(filter) {
+        name.len() >= before.len()+after.len() && name.starts_with(&before) && name.ends_with(&after)
+    } else {
+        name == filter
     }
 }
 
