@@ -306,63 +306,96 @@ pub fn normalize_path(path: &Path) -> PathBuf {
 }
 // TODO move to a common crate or include
 #[derive(Debug, Clone, PartialEq, Default)]
-enum CmdState {
+enum DblState {
     #[default]
-    StartArg,
-    InArg,
-    Esc,
-    QEsc,
+    Usual,
+    Expect,
 }
 pub fn split_at_star(line: impl AsRef<str>) -> Option<(String, String)> {
     let char_indices = line.as_ref().char_indices();
     let mut state = Default::default();
-    let mut current = String::new();
+    let mut current = String::with_capacity(128);
     let mut before = None;
     for (_, c) in char_indices {
         match c {
-            '\\' => match state {
-                CmdState::Esc | CmdState::QEsc => current.push(c),
-                CmdState::StartArg => state = CmdState::Esc,
-                CmdState::InArg => state = CmdState::QEsc,
-            },
             '*' => match state {
-                CmdState::Esc => {
+                DblState::Usual => state = DblState::Expect,
+                DblState::Expect => {
                     current.push(c);
-                    state = CmdState::StartArg
-                }
-                CmdState::StartArg => {
-                    state = CmdState::InArg;
-                    before = Some(current.clone());
-                    current.clear()
-                }
-                CmdState::InArg | CmdState::QEsc => {
-                    state = CmdState::InArg;
-                    current.push(c)
+                    state = DblState::Usual
                 }
             },
             _ => match state {
-                CmdState::Esc => {
-                    state = CmdState::StartArg;
-                    current.push('\\');
-                    current.push(c)
+                DblState::Usual => current.push(c),
+                DblState::Expect => {
+                    if before.is_some() {
+                        current.push(c);
+                    } else {
+                        before = Some(current.clone());
+                        current.clear();
+                        current.push(c);
+                    }
+                    state = DblState::Usual
                 }
-                CmdState::QEsc => {
-                    state = CmdState::InArg;
-                    current.push('\\');
-                    current.push(c)
-                }
-                CmdState::StartArg | CmdState::InArg => current.push(c),
             },
         }
     }
     match state {
-        CmdState::InArg => Some((before.unwrap(), current)),
-        CmdState::StartArg | CmdState::Esc => None,
-        CmdState::QEsc => {
-            current.push('\\');
-            Some((before.unwrap(), current))
+        DblState::Expect => {
+            if before.is_none() {
+                before = Some(current.clone());
+                current.clear()
+            }
+        }
+        _ => (),
+    }
+    if let Some(before) = before {
+        Some((before, current))
+    } else {
+        None
+    }
+}
+
+pub fn split_at_pipe(line: &str) -> Vec<String> {
+    // can't do in place in some circumstances
+    let char_indices = line.char_indices();
+    let mut state = Default::default();
+    let mut current = String::with_capacity(256);
+    let mut res = vec![];
+    for (_, c) in char_indices {
+        match c {
+            '|' => match state {
+                DblState::Usual => state = DblState::Expect,
+                DblState::Expect => {
+                    current.push(c);
+                    state = DblState::Usual
+                }
+            },
+            ' ' => match state {
+                // use for trim blanks in future
+                DblState::Usual => current.push(c),
+                DblState::Expect => {
+                    res.push(current.clone());
+                    current.clear();
+                    state = DblState::Usual
+                }
+            },
+            _ => match state {
+                DblState::Usual => current.push(c),
+                DblState::Expect => {
+                    res.push(current.clone());
+                    current.clear();
+                    current.push(c);
+                    state = DblState::Usual
+                }
+            },
         }
     }
+    if !current.is_empty() {
+        res.push(current.clone());
+    }
+
+    res
 }
 
 pub fn capitalize_first(s: &str) -> String {

@@ -796,7 +796,7 @@ impl GenBlockTup {
                         }
                         let choice = <Option<String> as Clone>::clone(&child.borrow().name)
                             .unwrap_or("".into());
-                        let patterns = choice.split("|"); // TODO decide on escaping |
+                        let patterns = util::split_at_pipe(&choice); // TODO decide on escaping |
                         for pattern in patterns {
                             let trimmed = pattern.trim();
                             if matches(&var, trimmed) { // TODO decide if all matching branches need processing
