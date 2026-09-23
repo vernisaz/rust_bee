@@ -496,7 +496,11 @@ impl GenBlockTup {
                     let mut res = children[0].exec(log, prev_res);
                     log.debug(&format!("if cond evaluated as {:?}", res));
 
-                    if res.as_ref().unwrap_or(&VarVal::from_bool(false)).is_true() {
+                    if let Some(num) = if res
+                        .as_ref()
+                        .unwrap_or(&VarVal::from_bool(false))
+                        .is_true()
+                    {
                         let mut then = if children[1].borrow().block_type == BlockType::Then {
                             Some(1)
                         } else {
@@ -514,9 +518,7 @@ impl GenBlockTup {
                                 ));
                             }
                         }
-                        if let Some(num) = then {
-                            res = children[num].exec(log, prev_res)
-                        }
+                        then
                     } else {
                         let else_bl = if children.len() == 3
                             && children[2].borrow().block_type == BlockType::Else
@@ -534,9 +536,9 @@ impl GenBlockTup {
                         } else {
                             None
                         };
-                        if let Some(num) = else_bl {
-                            res = children[num].exec(log, prev_res)
-                        }
+                        else_bl
+                    } {
+                        res = children[num].exec(log, prev_res)
                     }
 
                     res
