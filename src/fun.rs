@@ -484,28 +484,63 @@ impl GenBlockTup {
             BlockType::If => {
                 let naked_block = self.borrow();
                 let children = &naked_block.children;
-                let mut res = children[0].exec(log, prev_res);
-                log.debug(&format!("if cond evaluated as {:?}", res));
-                if res.as_ref().unwrap_or(&VarVal::from_bool(false)).is_true() {
-                    if children[1].borrow().block_type == BlockType::Then {
-                        res = children[1].exec(log, prev_res)
-                    }
-                } else if children.len() == 2 && children[1].borrow().block_type == BlockType::Else
-                {
-                    res = children[1].exec(log, prev_res)
-                } else if children.len() == 3 && children[2].borrow().block_type == BlockType::Else
-                {
-                    res = children[2].exec(log, prev_res)
-                }
-                if children.len() > 3 {
+                if children.len() > 3 || children.len() < 2 {
                     log.error(&format!(
                         "Unexpected block(s) {} at {}:{}: ",
                         children.len(),
                         naked_block.script_path(),
                         naked_block.script_line
-                    ))
+                    ));
+                    None
+                } else {
+                    let mut res = children[0].exec(log, prev_res);
+                    log.debug(&format!("if cond evaluated as {:?}", res));
+
+                    if res.as_ref().unwrap_or(&VarVal::from_bool(false)).is_true() {
+                        let mut then = if children[1].borrow().block_type == BlockType::Then {
+                            Some(1)
+                        } else {
+                            None
+                        };
+                        if children.len() == 3 && children[2].borrow().block_type == BlockType::Then
+                        {
+                            if then.is_none() {
+                                then = Some(2)
+                            } else {
+                                log.warning(&format!(
+                                    "A duplicated block 'then' ignored at {}:{}: ",
+                                    naked_block.script_path(),
+                                    naked_block.script_line
+                                ));
+                            }
+                        }
+                        if let Some(num) = then {
+                            res = children[num].exec(log, prev_res)
+                        }
+                    } else {
+                        let else_bl = if children.len() == 3
+                            && children[2].borrow().block_type == BlockType::Else
+                        {
+                            if children[1].borrow().block_type == BlockType::Else {
+                                log.warning(&format!(
+                                    "The first block 'else' probably meant as 'then' and ignored at {}:{}: ",
+                                    naked_block.script_path(),
+                                    naked_block.script_line
+                                ))
+                            }
+                            Some(2)
+                        } else if children[1].borrow().block_type == BlockType::Else {
+                            Some(1)
+                        } else {
+                            None
+                        };
+                        if let Some(num) = else_bl {
+                            res = children[num].exec(log, prev_res)
+                        }
+                    }
+
+                    res
                 }
-                res
             }
             BlockType::Function => {
                 let naked_block = self.borrow();
@@ -799,7 +834,8 @@ impl GenBlockTup {
                         let patterns = util::split_at_pipe(&choice); // TODO decide on escaping |
                         for pattern in patterns {
                             let trimmed = pattern.trim();
-                            if matches(&var, trimmed) { // TODO decide if all matching branches need processing
+                            if matches(&var, trimmed) {
+                                // TODO decide if all matching branches need processing
                                 chosen = true;
                                 res = child.exec(log, &res);
                                 break;
@@ -3333,8 +3369,10 @@ pub fn last_modified(file: &str) -> Option<SystemTime> {
 }
 
 fn matches(name: &str, filter: &str) -> bool {
-    if let Some((before,after)) = util::split_at_star(filter) {
-        name.len() >= before.len()+after.len() && name.starts_with(&before) && name.ends_with(&after)
+    if let Some((before, after)) = util::split_at_star(filter) {
+        name.len() >= before.len() + after.len()
+            && name.starts_with(&before)
+            && name.ends_with(&after)
     } else {
         name == filter
     }
