@@ -340,20 +340,11 @@ pub fn split_at_star(line: impl AsRef<str>) -> Option<(String, String)> {
             },
         }
     }
-    match state {
-        DblState::Expect => {
-            if before.is_none() {
-                before = Some(current.clone());
-                current.clear()
-            }
-        }
-        _ => (),
+    if state == DblState::Expect && before.is_none() {
+        before = Some(current.clone());
+        current.clear()
     }
-    if let Some(before) = before {
-        Some((before, current))
-    } else {
-        None
-    }
+    before.map(|before| (before, current))
 }
 
 pub fn split_at_pipe(line: &str) -> Vec<String> {
