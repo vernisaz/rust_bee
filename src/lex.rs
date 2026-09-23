@@ -1,17 +1,19 @@
 // lex analizer
-use std::{fs::File,
-          io::{self, Read},
-          collections::HashMap,
-          env, path::{PathBuf,Path},
-          cell::RefCell,
-          rc::Rc,
-          error::Error,
-    };
-use crate::log::Log;
-use crate::fun::{GenBlock, BlockType, GenBlockTup};
 use crate::fun::PREV_VAL;
+use crate::fun::{BlockType, GenBlock, GenBlockTup};
 use crate::get_property;
-use crate::util::{vec_to_str};
+use crate::log::Log;
+use crate::util::vec_to_str;
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    env,
+    error::Error,
+    fs::File,
+    io::{self, Read},
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
 const BUF_SIZE: usize = 256;
 
@@ -35,14 +37,14 @@ pub enum VarType {
     Function,
     Url,
     RepositoryMaven,
-    RepositoryRust
+    RepositoryRust,
 }
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug)]
 pub enum Lexem {
-    Variable(String), 
-    Value(String), 
+    Variable(String),
+    Value(String),
     Comment(String),
     Type(String),
     Range(usize, usize),
@@ -51,7 +53,7 @@ pub enum Lexem {
     BlockHdr(String),
     BlockEnd(Option<String>),
     #[allow(clippy::upper_case_acronyms)]
-    EOF
+    EOF,
 }
 
 #[allow(dead_code)]
@@ -84,20 +86,20 @@ enum LexState {
     BlockStart,
     BlockEnd,
     EscapeParam,
-    EscapeQtParam, 
+    EscapeQtParam,
     EndQtParam,
     InBreak,
     InArrayVal,
     EscapeEndArray,
     End,
-    UnrecoverableErr
+    UnrecoverableErr,
 }
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug, Copy, Clone)]
 enum TemplateState {
     InVal,
-    VarStart,  // $
+    VarStart, // $
     LeftBrack,
     RightBrack,
     InVar,
@@ -106,7 +108,7 @@ enum TemplateState {
 #[derive(PartialEq, Debug, Copy, Clone)]
 enum HdrState {
     InType,
-    NameStart,  // $
+    NameStart, // $
     WorkDiv,
     PathDiv,
     InName,
@@ -119,16 +121,16 @@ enum HdrState {
     InPathQt,
     InWorkQt,
 }
- 
+
 #[derive(Debug, Clone)]
 pub struct VarVal {
     pub val_type: VarType,
-    pub value: String, // TODO make it enum based on type
+    pub value: String,       // TODO make it enum based on type
     pub values: Vec<String>, // TODO make it Option<Vec<String>>
 }
 
 pub struct Reader {
-    buf: [u8;BUF_SIZE],
+    buf: [u8; BUF_SIZE],
     pos: usize,
     end: usize,
     line: u32,
@@ -139,44 +141,74 @@ pub struct Reader {
 
 impl VarVal {
     pub fn from_string(str: impl Into<String>) -> VarVal {
-        VarVal{val_type: VarType::Generic, value: str.into(), values: Vec::new()}  
+        VarVal {
+            val_type: VarType::Generic,
+            value: str.into(),
+            values: Vec::new(),
+        }
     }
-    
+
     pub fn from_path(path: &Path) -> VarVal {
-        VarVal{val_type: VarType::Generic, value: path.display().to_string(), values: Vec::new()}  
+        VarVal {
+            val_type: VarType::Generic,
+            value: path.display().to_string(),
+            values: Vec::new(),
+        }
     }
 
     pub fn from_bool(boole: bool) -> VarVal {
-        VarVal{val_type: VarType::Bool, value: if boole {"true".to_string()} else {"false".to_string()}, values: Vec::new()}  
+        VarVal {
+            val_type: VarType::Bool,
+            value: if boole {
+                "true".to_string()
+            } else {
+                "false".to_string()
+            },
+            values: Vec::new(),
+        }
     }
 
     pub fn from_i32(number: i32) -> VarVal {
-        VarVal{val_type: VarType::Number, value: format!{"{}", number}, values: Vec::new()}  // 
+        VarVal {
+            val_type: VarType::Number,
+            value: format! {"{}", number},
+            values: Vec::new(),
+        } // 
     }
 
     pub fn from_f64(number: f64) -> VarVal {
-        VarVal{val_type: VarType::Number, value: format!{"{number}"}, values: Vec::new()}  // 
+        VarVal {
+            val_type: VarType::Number,
+            value: format! {"{number}"},
+            values: Vec::new(),
+        } // 
     }
 
     pub fn from_vec(vec: Vec<String>) -> VarVal {
-        VarVal{val_type: VarType::Array, value: String::new(), values: vec}  
+        VarVal {
+            val_type: VarType::Array,
+            value: String::new(),
+            values: vec,
+        }
     }
-    
+
     pub fn from_iter<'a>(iter: impl Iterator<Item = &'a str>) -> VarVal {
         let mut vec = vec![];
         for el in iter {
             vec.push(el.to_string())
         }
-        VarVal{val_type: VarType::Array, value: String::new(), values: vec}  
+        VarVal {
+            val_type: VarType::Array,
+            value: String::new(),
+            values: vec,
+        }
     }
 
-    pub fn is_true(& self) -> bool {
+    pub fn is_true(&self) -> bool {
         match self.val_type {
-            VarType::Environment  => {
-                match env::var(&self.value) {
-                    Ok(val) => val == "true",
-                    Err(_e) => self.value == "true"
-                }
+            VarType::Environment => match env::var(&self.value) {
+                Ok(val) => val == "true",
+                Err(_e) => self.value == "true",
             },
             VarType::Property => {
                 if let Some(val) = get_property(&self.value) {
@@ -184,11 +216,13 @@ impl VarVal {
                 } else {
                     self.value == "true"
                 }
-            },
+            }
             VarType::Array => self.values.iter().any(|current| !current.is_empty()),
-            VarType::Number => !self.value.is_empty() && self.value.parse::<i64>().unwrap_or_default() != 0,
+            VarType::Number => {
+                !self.value.is_empty() && self.value.parse::<i64>().unwrap_or_default() != 0
+            }
             VarType::Bool => self.value == "true",
-            _ => !self.value.is_empty() &&  self.value != "false" // consider adding interpolation
+            _ => !self.value.is_empty() && self.value != "false", // consider adding interpolation
         }
     }
 }
@@ -200,154 +234,164 @@ impl Default for VarVal {
 }
 
 impl Reader {
-// can use fs:read_to_string to get an entire file in a string, can be simpler
+    // can use fs:read_to_string to get an entire file in a string, can be simpler
     fn next(&mut self) -> Option<char> {
         self.pos += 1;
         if self.pos >= self.end {
             self.end = self.reader.read(&mut self.buf).unwrap();
-            if self.end == 0 { return None }
+            if self.end == 0 {
+                return None;
+            }
             self.pos = 0;
         }
         self.line_offset += 1;
         // check if it can be UTF8
-        let mut byte : u32 = self.buf[self.pos] as u32;
-        if (byte & 0b1000_0000) != 0 { // UTF8
-            let mut num_byte = 
-                if (byte & 0b1111_0000) == 0b1111_0000 {
-                    byte &= 0b0000_0111; 3
-                } else if (byte & 0b1110_0000) == 0b1110_0000 {
-                    byte &= 0b0000_1111; 2
-                } else if (byte & 0b1100_0000) == 0b1100_0000 {
-                    byte &= 0b0001_1111; 1
-                } else {0};
+        let mut byte: u32 = self.buf[self.pos] as u32;
+        if (byte & 0b1000_0000) != 0 {
+            // UTF8
+            let mut num_byte = if (byte & 0b1111_0000) == 0b1111_0000 {
+                byte &= 0b0000_0111;
+                3
+            } else if (byte & 0b1110_0000) == 0b1110_0000 {
+                byte &= 0b0000_1111;
+                2
+            } else if (byte & 0b1100_0000) == 0b1100_0000 {
+                byte &= 0b0001_1111;
+                1
+            } else {
+                0
+            };
 
-            let mut c32 : u32 = byte;
+            let mut c32: u32 = byte;
             while num_byte > 0 {
                 self.pos += 1;
                 if self.pos >= self.end {
                     self.end = self.reader.read(&mut self.buf).unwrap();
                     if self.end == 0 {
-                        return None
+                        return None;
                     }
                     self.pos = 0;
                 }
                 //println!("b-{:x}", c32);
-                c32 =  (c32 << 6) | ((self.buf[self.pos] as u32) & 0b0011_1111);
+                c32 = (c32 << 6) | ((self.buf[self.pos] as u32) & 0b0011_1111);
                 num_byte -= 1
             }
             //println!("{:x}", c32);
-            return Some(std::char::from_u32(c32).unwrap_or(std::char::REPLACEMENT_CHARACTER))
+            return Some(std::char::from_u32(c32).unwrap_or(std::char::REPLACEMENT_CHARACTER));
         }
         Some(char::from(self.buf[self.pos]))
     }
 }
 
 fn open(file_path: &PathBuf) -> io::Result<Reader> {
-
     Ok(Reader {
-        reader : File::open(file_path)?,
-        line : 1,
-        buf : [0; 256],
-        pos : 0,
-        end : 0,
-        line_offset : 0,
+        reader: File::open(file_path)?,
+        line: 1,
+        buf: [0; 256],
+        pos: 0,
+        end: 0,
+        line_offset: 0,
         file_path: file_path.to_string_lossy().to_string(),
     })
 }
 
 fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexState, u32) {
-    let mut buffer : [char; MAX_LEX_LEN] = [' '; MAX_LEX_LEN];
-    
-   // let mut buffer = String::with_capacity(MAX_LEX_LEN);
+    let mut buffer: [char; MAX_LEX_LEN] = [' '; MAX_LEX_LEN];
+
+    // let mut buffer = String::with_capacity(MAX_LEX_LEN);
     let mut buf_fill: usize = 0;
     let mut last_nb = 0;
     let mut c1 = reader.next();
     let mut prev_state = LexState::Begin;
-    let mut prev_buffer : [char; MAX_LEX_LEN] = [' '; MAX_LEX_LEN];
-   // let mut prev_buffer = String::with_capacity(MAX_LEX_LEN);
-    let mut buf_prev_fill : usize = 0;
+    let mut prev_buffer: [char; MAX_LEX_LEN] = [' '; MAX_LEX_LEN];
+    // let mut prev_buffer = String::with_capacity(MAX_LEX_LEN);
+    let mut buf_prev_fill: usize = 0;
     while let Some(c) = c1 {
         match c {
-            '"' => {
-                match state {
-                    LexState::Begin => state = LexState::QuotedStart,
-                    LexState::InLex | LexState::InParam | LexState::InArrayVal => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::InQtLex => {
-                        last_nb = buf_fill;
-                        state = LexState::IgnoredBlankToEnd;
-                    },
-                    LexState::InQtValue => {
-                        state = LexState::InValue;
-                        last_nb = buf_fill;
-                    },
-                    LexState::EscapeQt => {
-                        state = LexState::InQtLex ;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::Escape => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InLex
-                    }
-                    LexState::EscapeValue => {
-                        state = LexState::InValue ;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    }
-                    LexState::EscapeQtValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtValue;
-                    }
-                    LexState::EscapeParam | LexState::InParamBlank => {
-                        state = LexState::InParam ;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::InQtParam => {
-                        state = LexState::InParam;
-                    }
-                    LexState::StartParam => {
-                        state = LexState::InQtParam;
-                    },
-                    LexState::StartValue => {
-                        state = LexState::InQtValue;
-                    },
-                    LexState::Comment | LexState::BlankOrEnd | LexState::InValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::EscapeBreakValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeEndArray => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InArrayVal
-                    },
-
-                    LexState::InBreak | LexState::BlankInValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1; 
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeQtParam => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1; 
-                        state = LexState::InQtParam;
-                    }
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+            '"' => match state {
+                LexState::Begin => state = LexState::QuotedStart,
+                LexState::InLex | LexState::InParam | LexState::InArrayVal => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
                 }
+                LexState::InQtLex => {
+                    last_nb = buf_fill;
+                    state = LexState::IgnoredBlankToEnd;
+                }
+                LexState::InQtValue => {
+                    state = LexState::InValue;
+                    last_nb = buf_fill;
+                }
+                LexState::EscapeQt => {
+                    state = LexState::InQtLex;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::Escape => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InLex
+                }
+                LexState::EscapeValue => {
+                    state = LexState::InValue;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::EscapeQtValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtValue;
+                }
+                LexState::EscapeParam | LexState::InParamBlank => {
+                    state = LexState::InParam;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::InQtParam => {
+                    state = LexState::InParam;
+                }
+                LexState::StartParam => {
+                    state = LexState::InQtParam;
+                }
+                LexState::StartValue => {
+                    state = LexState::InQtValue;
+                }
+                LexState::Comment | LexState::BlankOrEnd | LexState::InValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::EscapeBreakValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InArrayVal
+                }
+
+                LexState::InBreak | LexState::BlankInValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeQtParam => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtParam;
+                }
+                _ => todo!(
+                    "state: {:?} in processing {c} at {}:{}:{}",
+                    state,
+                    reader.file_path,
+                    reader.line,
+                    reader.line_offset
+                ),
             },
             ' ' | '\t' => {
                 match state {
@@ -356,18 +400,18 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtLex;
-                    },
+                    }
                     LexState::InLex => {
                         state = LexState::BlankOrEnd;
                         last_nb = buf_fill;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::Escape => {
                         state = LexState::InLex;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeQt => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -375,31 +419,41 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InQtLex
                     }
-                    LexState::InParamBlank | LexState::InQtParam | LexState::InQtValue | LexState::InArrayVal |
-                     LexState::BlankOrEnd | LexState::Comment | LexState::BlankInValue => {
+                    LexState::InParamBlank
+                    | LexState::InQtParam
+                    | LexState::InQtValue
+                    | LexState::InArrayVal
+                    | LexState::BlankOrEnd
+                    | LexState::Comment
+                    | LexState::BlankInValue => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::InParam => {
                         state = LexState::InParamBlank;
                         last_nb = buf_fill;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::InType => {
                         state = LexState::Begin;
-                        return (Lexem::Type(buffer[0..buf_fill].iter().collect()), state, reader.line); // TODO add offset
-                    },
+                        return (
+                            Lexem::Type(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        ); // TODO add offset
+                    }
                     LexState::EndFunction => state = LexState::Begin,
-                    LexState::StartValue | LexState::BlockEnd | LexState::IgnoredBlankToEnd | LexState::StartParam => {
-
-                    },
+                    LexState::StartValue
+                    | LexState::BlockEnd
+                    | LexState::IgnoredBlankToEnd
+                    | LexState::StartParam => {}
                     LexState::InValue => {
                         state = LexState::BlankInValue;
                         last_nb = buf_fill;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeParam => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
@@ -409,21 +463,21 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InValue;
-                    },
+                    }
                     LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InQtValue;
-                    },
+                    }
                     LexState::EscapeQtParam => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InParam;
-                    },
+                    }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -431,114 +485,133 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::BlankInValue;
-                    },
+                    }
                     LexState::InBreak => {
                         buffer[buf_fill] = c;
-                        buf_fill += 1; 
+                        buf_fill += 1;
                         state = LexState::InValue;
-                    },
+                    }
                     LexState::EscapeEndArray => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                    }
+                    _ => todo!(
+                        "state: {:?} in processing {c} at {}:{}:{}",
+                        state,
+                        reader.file_path,
+                        reader.line,
+                        reader.line_offset
+                    ),
                 }
-            },
-            '\\' => {
-                match state {
-                    LexState::InQtLex | LexState::QuotedStart => state = LexState::EscapeQt,
-                    LexState::InParam => state = LexState::EscapeParam,
-                    LexState::InQtValue => state = LexState::EscapeQtValue,
-                    LexState::InQtParam => state = LexState::EscapeQtParam,
-                    LexState::Escape => {
-                        state = LexState::InLex;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::EscapeQt => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtLex
-                    }
-                    LexState::InLex | LexState::Begin => {
-                        state = LexState::Escape
-                    }
-                    LexState::BlankOrEnd => {
-                        state = LexState::InLex;
-                    },
-                    LexState::StartParam | LexState::InParamBlank => {
-                        state = LexState::EscapeParam;
-                    }
-                    LexState::Comment => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::EscapeValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeQtValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtValue;
-                    }
-                    LexState::EscapeParam => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InParam;
-                    },
-                    LexState::EscapeQtParam => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtParam;
-                    },
-                    LexState::InValue  | LexState::BlankInValue | LexState::StartValue => {
-                        state = LexState::EscapeBreakValue;
-                    },
-                    LexState::EscapeBreakValue | LexState::EscapeEndArray => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                    },
-                    LexState::InBreak => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1; 
-                        state = LexState::InValue;
-                    },
-                    LexState::InArrayVal => {
-                        state = LexState::EscapeEndArray
-                    },
-                    LexState::End => break,
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+            }
+            '\\' => match state {
+                LexState::InQtLex | LexState::QuotedStart => state = LexState::EscapeQt,
+                LexState::InParam => state = LexState::EscapeParam,
+                LexState::InQtValue => state = LexState::EscapeQtValue,
+                LexState::InQtParam => state = LexState::EscapeQtParam,
+                LexState::Escape => {
+                    state = LexState::InLex;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
                 }
+                LexState::EscapeQt => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtLex
+                }
+                LexState::InLex | LexState::Begin => state = LexState::Escape,
+                LexState::BlankOrEnd => {
+                    state = LexState::InLex;
+                }
+                LexState::StartParam | LexState::InParamBlank => {
+                    state = LexState::EscapeParam;
+                }
+                LexState::Comment => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::EscapeValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeQtValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtValue;
+                }
+                LexState::EscapeParam => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InParam;
+                }
+                LexState::EscapeQtParam => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtParam;
+                }
+                LexState::InValue | LexState::BlankInValue | LexState::StartValue => {
+                    state = LexState::EscapeBreakValue;
+                }
+                LexState::EscapeBreakValue | LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                }
+                LexState::InBreak => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::InArrayVal => state = LexState::EscapeEndArray,
+                LexState::End => break,
+                _ => todo!(
+                    "state: {:?} in processing {c} at {}:{}:{}",
+                    state,
+                    reader.file_path,
+                    reader.line,
+                    reader.line_offset
+                ),
             },
             '#' => {
                 match state {
-                    LexState::Begin | LexState::EndFunction | LexState::Comment 
-                        | LexState::BlockStart | LexState::BlockEnd => {
+                    LexState::Begin
+                    | LexState::EndFunction
+                    | LexState::Comment
+                    | LexState::BlockStart
+                    | LexState::BlockEnd => {
                         state = LexState::Comment;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
-                    LexState::InValue | LexState::StartValue => { // separate in value since # has to be collected toward to comment
+                    }
+                    LexState::InValue | LexState::StartValue => {
+                        // separate in value since # has to be collected toward to comment
                         state = LexState::Comment;
-                        return (Lexem::Value(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
-                    LexState::BlankInValue | LexState::InBreak | LexState::BlankOrEnd => { // separate in value since # has to be collected toward to comment
+                        return (
+                            Lexem::Value(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
+                    LexState::BlankInValue | LexState::InBreak | LexState::BlankOrEnd => {
+                        // separate in value since # has to be collected toward to comment
                         state = LexState::Comment;
-                        return (Lexem::Value(buffer[0..last_nb].iter().collect()), state, reader.line);
-                    },
+                        return (
+                            Lexem::Value(buffer[0..last_nb].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
                     LexState::InQtValue | LexState::InQtParam | LexState::InQtLex => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -555,26 +628,36 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         state = LexState::Comment;
-                        return (Lexem::Value(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
+                        return (
+                            Lexem::Value(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
                     LexState::InArrayVal | LexState::StartParam | LexState::InParam => {
-                        prev_state = state ;
-                        prev_buffer [0..buf_fill].clone_from_slice(&buffer[0..buf_fill]);
+                        prev_state = state;
+                        prev_buffer[0..buf_fill].clone_from_slice(&buffer[0..buf_fill]);
                         buf_prev_fill = buf_fill;
                         buf_fill = 0;
                         state = LexState::Comment;
                         buffer[buf_fill] = c;
                         buf_fill += 1; // here is no current val return and then no comment return
                         // probaby improve in future to collect and return comments
-                    },
+                    }
                     LexState::EscapeEndArray => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                    }
+                    _ => todo!(
+                        "state: {:?} in processing {c} at {}:{}:{}",
+                        state,
+                        reader.file_path,
+                        reader.line,
+                        reader.line_offset
+                    ),
                 }
-            },
+            }
             '\n' | '\r' => {
                 if c == '\n' {
                     reader.line += 1;
@@ -582,38 +665,63 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                 }
                 match state {
                     LexState::Comment => {
-                        state = prev_state; prev_state = LexState::Begin;
+                        state = prev_state;
+                        prev_state = LexState::Begin;
                         if state != LexState::InArrayVal {
-                            return (Lexem::Comment(buffer[0..buf_fill].iter().collect()), state, reader.line);
+                            return (
+                                Lexem::Comment(buffer[0..buf_fill].iter().collect()),
+                                state,
+                                reader.line,
+                            );
                         } else {
-                            let comment : String = buffer[0..buf_fill].iter().collect();
-                            log.debug(&format!("Commentary: {}, line: {}/{}", comment, reader.line, reader.line_offset));
+                            let comment: String = buffer[0..buf_fill].iter().collect();
+                            log.debug(&format!(
+                                "Commentary: {}, line: {}/{}",
+                                comment, reader.line, reader.line_offset
+                            ));
                         }
                         // perhaps just accumulate all the array comments here
-                        buffer [0..buf_prev_fill].clone_from_slice(&prev_buffer[0..buf_prev_fill]);
+                        buffer[0..buf_prev_fill].clone_from_slice(&prev_buffer[0..buf_prev_fill]);
                         buf_fill = buf_prev_fill;
-                    },
-                    LexState::Begin | LexState::BlockStart | LexState::StartParam | LexState::RangeStart => {
-                    },
+                    }
+                    LexState::Begin
+                    | LexState::BlockStart
+                    | LexState::StartParam
+                    | LexState::RangeStart => {}
                     LexState::InValue | LexState::StartValue => {
                         state = LexState::Begin;
-                        return (Lexem::Value(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
+                        return (
+                            Lexem::Value(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
                     LexState::BlankInValue => {
                         state = LexState::Begin;
-                        return (Lexem::Value(buffer[0..last_nb].iter().collect()), state, reader.line);
-                    },
+                        return (
+                            Lexem::Value(buffer[0..last_nb].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
                     LexState::EndFunction | LexState::BlockEnd => {
-                        state = LexState::Begin; 
-                    },
+                        state = LexState::Begin;
+                    }
                     LexState::InType => {
                         state = LexState::Begin;
-                        return (Lexem::Type(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
-                   LexState::InQtParam | LexState::InParamBlank | LexState::InQtValue  | LexState::InArrayVal => {
+                        return (
+                            Lexem::Type(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
+                    LexState::InQtParam
+                    | LexState::InParamBlank
+                    | LexState::InQtValue
+                    | LexState::InArrayVal => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeValue => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
@@ -631,45 +739,57 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         last_nb = buf_fill;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeEndArray => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InArrayVal
-                    },
+                    }
                     LexState::InLex | LexState::BlankOrEnd => {
                         state = LexState::BlankOrEnd;
-                    },
+                    }
                     LexState::EscapeBreakValue | LexState::InBreak => {
                         state = LexState::InBreak;
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                    }
+                    _ => todo!(
+                        "state: {:?} in processing {c} at {}:{}:{}",
+                        state,
+                        reader.file_path,
+                        reader.line,
+                        reader.line_offset
+                    ),
                 }
-            },
+            }
             '[' => {
                 match state {
                     LexState::BlankOrEnd => state = LexState::RangeStart,
-                    LexState::InQtLex | LexState::InQtValue | LexState::InQtParam | 
-                    LexState::InArrayVal  => {
+                    LexState::InQtLex
+                    | LexState::InQtValue
+                    | LexState::InQtParam
+                    | LexState::InArrayVal => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::InLex => {
                         state = LexState::RangeStart;
                         //let lexstr: String = buffer[0..buf_fill].iter().collect();
-                        return (Lexem::Variable(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
+                        return (
+                            Lexem::Variable(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
                     LexState::Comment | LexState::InValue | LexState::InParam => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
-                    LexState::InParamBlank | LexState::EndFunction | LexState::StartParam=> {
+                    }
+                    LexState::InParamBlank | LexState::EndFunction | LexState::StartParam => {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -690,22 +810,22 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InParam;
-                    },
+                    }
                     LexState::StartValue => {
                         state = LexState::InArrayVal;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InValue;
-                    },
+                    }
                     LexState::InBreak | LexState::BlankInValue => {
                         buffer[buf_fill] = c;
-                        buf_fill += 1; 
+                        buf_fill += 1;
                         state = LexState::InValue;
                     }
                     LexState::EscapeEndArray => {
@@ -715,36 +835,45 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InArrayVal
                     }
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                    _ => todo!(
+                        "state: {:?} in processing {c} at {}:{}:{}",
+                        state,
+                        reader.file_path,
+                        reader.line,
+                        reader.line_offset
+                    ),
                 }
-            },
+            }
             ']' => {
                 match state {
-                    LexState::Comment | LexState::InValue | LexState::InParam |
-                    LexState::InQtLex | LexState::InQtValue | LexState::InQtParam 
-                     => {
+                    LexState::Comment
+                    | LexState::InValue
+                    | LexState::InParam
+                    | LexState::InQtLex
+                    | LexState::InQtValue
+                    | LexState::InQtParam => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::StartValue | LexState::InBreak | LexState::BlankInValue => {
                         state = LexState::InValue;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InValue;
-                    },
+                    }
                     LexState::EscapeParam => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InParam;
-                    },
+                    }
                     LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -763,129 +892,160 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         state = LexState::InArrayVal;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::InArrayVal => {
                         state = LexState::Begin;
                         buffer[buf_fill] = c;
-                        buf_fill += 1; 
+                        buf_fill += 1;
                         // probably add type the array value and call process_array_value here first
-                        return (Lexem::Value(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
+                        return (
+                            Lexem::Value(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
                     LexState::InType => {
                         // syntax error
                         log.error(&format!{"Unexpected symbol ']' in type at {}:{}:{}", reader.file_path, reader.line, reader.line_offset});
                         state = LexState::UnrecoverableErr;
                         return (Lexem::EOF, state, reader.line);
-                    },
+                    }
                     LexState::InParamBlank | LexState::StartParam => {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                    }
+                    _ => todo!(
+                        "state: {:?} in processing {c} at {}:{}:{}",
+                        state,
+                        reader.file_path,
+                        reader.line,
+                        reader.line_offset
+                    ),
                 }
-            },
-            '{' => {
-                match state {
-                    LexState::InValue | LexState::InQtParam | LexState::InQtLex | LexState::InParam |
-                       LexState::Comment | LexState::InQtValue | LexState::InArrayVal => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::InLex | LexState::BlankOrEnd => {
-                        state = LexState::BlockStart;
-                        return (Lexem::BlockHdr(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
-                    LexState::BlockEnd | LexState::Begin => {
-                        state = LexState::BlockStart;
-                        return (Lexem::BlockHdr("".to_string()), state, reader.line);
-                    },
-                    LexState::InParamBlank | LexState::StartParam => {
-                        state = LexState::InParam;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::BlockStart => {
-                        return (Lexem::BlockHdr("".to_string()), state, reader.line);
-                    },
-                    LexState::EscapeQt => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtLex
-                    }
-                    LexState::Escape => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InLex
-                    }
-                    LexState::EscapeQtValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtValue
-                    }
-                    LexState::EscapeValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue
-                    }
-                    LexState::EscapeBreakValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeParam => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InParam
-                    }
-                    LexState::InBreak | LexState::StartValue | LexState::BlankInValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1; 
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeEndArray => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+            }
+            '{' => match state {
+                LexState::InValue
+                | LexState::InQtParam
+                | LexState::InQtLex
+                | LexState::InParam
+                | LexState::Comment
+                | LexState::InQtValue
+                | LexState::InArrayVal => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
                 }
+                LexState::InLex | LexState::BlankOrEnd => {
+                    state = LexState::BlockStart;
+                    return (
+                        Lexem::BlockHdr(buffer[0..buf_fill].iter().collect()),
+                        state,
+                        reader.line,
+                    );
+                }
+                LexState::BlockEnd | LexState::Begin => {
+                    state = LexState::BlockStart;
+                    return (Lexem::BlockHdr("".to_string()), state, reader.line);
+                }
+                LexState::InParamBlank | LexState::StartParam => {
+                    state = LexState::InParam;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::BlockStart => {
+                    return (Lexem::BlockHdr("".to_string()), state, reader.line);
+                }
+                LexState::EscapeQt => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtLex
+                }
+                LexState::Escape => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InLex
+                }
+                LexState::EscapeQtValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtValue
+                }
+                LexState::EscapeValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue
+                }
+                LexState::EscapeBreakValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeParam => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InParam
+                }
+                LexState::InBreak | LexState::StartValue | LexState::BlankInValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InArrayVal
+                }
+                _ => todo!(
+                    "state: {:?} in processing {c} at {}:{}:{}",
+                    state,
+                    reader.file_path,
+                    reader.line,
+                    reader.line_offset
+                ),
             },
             '}' => {
                 match state {
                     LexState::Begin | LexState::BlockStart | LexState::BlockEnd => {
                         state = LexState::BlockEnd;
-                    
+
                         return (Lexem::BlockEnd(None), state, reader.line);
-                    },
-                    LexState::InParam | LexState::InValue | LexState::InQtParam | LexState::Comment |
-                    LexState::InQtValue | LexState::InArrayVal => {
+                    }
+                    LexState::InParam
+                    | LexState::InValue
+                    | LexState::InQtParam
+                    | LexState::Comment
+                    | LexState::InQtValue
+                    | LexState::InArrayVal => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::StartParam | LexState::InParamBlank => {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::InLex | LexState::BlankOrEnd | LexState::EndFunction => {
                         state = LexState::BlockEnd;
-                    // decide what to do with lex value ????
-                        
-                        return (Lexem::BlockEnd(Some(buffer[0..buf_fill].iter().collect())), state, reader.line);
-                    },
+                        // decide what to do with lex value ????
+
+                        return (
+                            Lexem::BlockEnd(Some(buffer[0..buf_fill].iter().collect())),
+                            state,
+                            reader.line,
+                        );
+                    }
                     LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -906,261 +1066,347 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InValue;
-                    },
+                    }
                     LexState::InBreak => {
                         buffer[buf_fill] = c;
-                        buf_fill += 1; 
+                        buf_fill += 1;
                         state = LexState::InValue;
-                    },
+                    }
                     LexState::EscapeEndArray => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                    }
+                    _ => todo!(
+                        "state: {:?} in processing {c} at {}:{}:{}",
+                        state,
+                        reader.file_path,
+                        reader.line,
+                        reader.line_offset
+                    ),
                 }
+            }
+            ';' => match state {
+                LexState::EndFunction | LexState::BlockEnd | LexState::Begin => {
+                    state = LexState::Begin;
+                }
+                LexState::Comment
+                | LexState::InParam
+                | LexState::InQtParam
+                | LexState::InQtValue
+                | LexState::InQtLex
+                | LexState::InArrayVal => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::Escape => {
+                    state = LexState::InLex;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::StartParam | LexState::InParamBlank | LexState::EscapeParam => {
+                    state = LexState::InParam;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::EscapeQtValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtValue
+                }
+                LexState::EscapeValue | LexState::EscapeBreakValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue
+                }
+                LexState::InValue | LexState::InBreak | LexState::InLex => {
+                    state = LexState::Begin;
+                    return (
+                        Lexem::Value(buffer[0..buf_fill].iter().collect()),
+                        state,
+                        reader.line,
+                    );
+                }
+                LexState::BlankInValue => {
+                    state = LexState::Begin;
+                    return (
+                        Lexem::Value(buffer[0..last_nb].iter().collect()),
+                        state,
+                        reader.line,
+                    );
+                }
+                LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InArrayVal
+                }
+                _ => todo!(
+                    "state: {:?} in processing {c} at {}:{}:{}",
+                    state,
+                    reader.file_path,
+                    reader.line,
+                    reader.line_offset
+                ),
             },
-            ';' => {
-                match state {
-                    LexState::EndFunction | LexState::BlockEnd | LexState::Begin => {
-                        state = LexState::Begin; 
-                    }, 
-                    LexState::Comment | LexState::InParam | LexState::InQtParam |
-                    LexState::InQtValue | LexState::InQtLex | LexState::InArrayVal => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    } ,
-                    LexState::Escape => {
-                        state = LexState::InLex;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    }
-                    LexState::StartParam | LexState::InParamBlank | LexState::EscapeParam => {
-                        state = LexState::InParam;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    }
-                    LexState::EscapeQtValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtValue
-                    }
-                    LexState::EscapeValue | LexState::EscapeBreakValue=> {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue
-                    }
-                    LexState::InValue | LexState::InBreak | LexState::InLex => {
-                        state = LexState::Begin;
-                        return (Lexem::Value(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
-                    LexState::BlankInValue => {
-                        state = LexState::Begin;
-                        return (Lexem::Value(buffer[0..last_nb].iter().collect()), state, reader.line);
-                    }
-                    LexState::EscapeEndArray => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+            ':' => match state {
+                LexState::BlankOrEnd | LexState::Begin => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InLex;
                 }
+                LexState::InValue | LexState::BlankInValue => {
+                    state = LexState::InType;
+                    last_nb = buf_fill;
+                    return (
+                        Lexem::Value(buffer[0..last_nb].iter().collect()),
+                        state,
+                        reader.line,
+                    );
+                }
+                LexState::InParam
+                | LexState::InLex
+                | LexState::Comment
+                | LexState::InQtParam
+                | LexState::InQtValue
+                | LexState::InQtLex
+                | LexState::InArrayVal => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::StartParam | LexState::InParamBlank => {
+                    state = LexState::InParam;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::EscapeQtValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtValue
+                }
+                LexState::EscapeValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue
+                }
+                LexState::EscapeBreakValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::InBreak => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InArrayVal
+                }
+                _ => todo!(
+                    "state: {:?} in processing {c} at {}:{}:{}",
+                    state,
+                    reader.file_path,
+                    reader.line,
+                    reader.line_offset
+                ),
             },
-            ':' => {
-                match state {
-                    LexState::BlankOrEnd | LexState::Begin => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InLex;
-                    },
-                    LexState::InValue | LexState::BlankInValue => {
-                        state = LexState::InType;
-                        last_nb = buf_fill;
-                        return (Lexem::Value(buffer[0..last_nb].iter().collect()), state, reader.line);
-                    },
-                    LexState::InParam | LexState::InLex | LexState::Comment | LexState::InQtParam |
-                    LexState::InQtValue | LexState::InQtLex | LexState::InArrayVal => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::StartParam | LexState::InParamBlank => {
-                        state = LexState::InParam;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::EscapeQtValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtValue
-                    }
-                    LexState::EscapeValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue
-                    }
-                    LexState::EscapeBreakValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue;
-                    },
-                    LexState::InBreak => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1; 
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeEndArray => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+            '=' => match state {
+                LexState::BlankOrEnd | LexState::IgnoredBlankToEnd => {
+                    state = LexState::StartValue;
+                    return (
+                        Lexem::Variable(buffer[0..last_nb].iter().collect()),
+                        state,
+                        reader.line,
+                    );
                 }
+                LexState::InLex => {
+                    state = LexState::StartValue;
+                    return (
+                        Lexem::Variable(buffer[0..buf_fill].iter().collect()),
+                        state,
+                        reader.line,
+                    );
+                }
+                LexState::Comment
+                | LexState::InParam
+                | LexState::InQtParam
+                | LexState::InQtValue
+                | LexState::InQtLex
+                | LexState::InArrayVal
+                | LexState::InValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::Escape => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InLex
+                }
+                LexState::InParamBlank | LexState::StartParam => {
+                    state = LexState::InParam;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::EscapeQtValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtValue
+                }
+                LexState::EscapeValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue
+                }
+                LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InArrayVal
+                }
+                _ => todo!(
+                    "state: {:?} in processing {c} at {}:{}:{}",
+                    state,
+                    reader.file_path,
+                    reader.line,
+                    reader.line_offset
+                ),
             },
-            '=' => {
-                match state {
-                    LexState::BlankOrEnd | LexState::IgnoredBlankToEnd => {
-                        state = LexState::StartValue; 
-                        return (Lexem::Variable(buffer[0..last_nb].iter().collect()), state, reader.line);
-                    },
-                    LexState::InLex => {
-                        state = LexState::StartValue; 
-                        return (Lexem::Variable(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
-                    LexState::Comment | LexState::InParam | LexState::InQtParam |
-                    LexState::InQtValue | LexState::InQtLex | LexState::InArrayVal |
-                    LexState::InValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    } ,
-                    LexState::Escape => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InLex
-                    }
-                    LexState::InParamBlank | LexState::StartParam => {
-                        state = LexState::InParam;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::EscapeQtValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtValue
-                    }
-                    LexState::EscapeValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue
-                    }
-                    LexState::EscapeEndArray => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+            '(' => match state {
+                LexState::InLex => {
+                    state = LexState::StartParam;
+                    return (
+                        Lexem::Function(buffer[0..buf_fill].iter().collect()),
+                        state,
+                        reader.line,
+                    );
                 }
-            },
-            '(' => { 
-                match state {
-                    LexState::InLex => {
-                        state = LexState::StartParam; 
-                        return (Lexem::Function(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
-                    LexState::BlankOrEnd => {
-                        state = LexState::StartParam; 
-                        return (Lexem::Function(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
-                    LexState::InValue | LexState::InParam | LexState::InQtParam | LexState::Comment | 
-                    LexState::InQtValue | LexState::InQtLex | LexState::InArrayVal | LexState::InParamBlank => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::StartParam => {
-                        state= LexState::InParam;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::Begin => {
-                        state = LexState::InLex;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                     LexState::Escape => {
-                        state = LexState::InLex;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    }
-                    LexState::EscapeBreakValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue;
-                    },
-                   LexState::EscapeQtValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtValue
-                    }
-                    LexState::EscapeValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue
-                    }
-                    LexState::InBreak | LexState::BlankInValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1; 
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeEndArray => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                LexState::BlankOrEnd => {
+                    state = LexState::StartParam;
+                    return (
+                        Lexem::Function(buffer[0..buf_fill].iter().collect()),
+                        state,
+                        reader.line,
+                    );
                 }
+                LexState::InValue
+                | LexState::InParam
+                | LexState::InQtParam
+                | LexState::Comment
+                | LexState::InQtValue
+                | LexState::InQtLex
+                | LexState::InArrayVal
+                | LexState::InParamBlank => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::StartParam => {
+                    state = LexState::InParam;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::Begin => {
+                    state = LexState::InLex;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::Escape => {
+                    state = LexState::InLex;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::EscapeBreakValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeQtValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtValue
+                }
+                LexState::EscapeValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue
+                }
+                LexState::InBreak | LexState::BlankInValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InArrayVal
+                }
+                _ => todo!(
+                    "state: {:?} in processing {c} at {}:{}:{}",
+                    state,
+                    reader.file_path,
+                    reader.line,
+                    reader.line_offset
+                ),
             },
             ')' => {
                 match state {
-                    LexState::InParam  => {
-                        state = LexState::EndFunction; 
-                        return (Lexem::Parameter(buffer[0..buf_fill].iter().collect()), state, reader.line)
+                    LexState::InParam => {
+                        state = LexState::EndFunction;
+                        return (
+                            Lexem::Parameter(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
                     }
-                    LexState::InParamBlank  => {
-                        state = LexState::EndFunction; 
-                        return (Lexem::Parameter(buffer[0..last_nb].iter().collect()), state, reader.line)
+                    LexState::InParamBlank => {
+                        state = LexState::EndFunction;
+                        return (
+                            Lexem::Parameter(buffer[0..last_nb].iter().collect()),
+                            state,
+                            reader.line,
+                        );
                     }
                     LexState::StartParam => {
-                        state = LexState::EndFunction; 
-                        return (Lexem::Parameter(buffer[0..buf_fill].iter().collect()), state, reader.line)
+                        state = LexState::EndFunction;
+                        return (
+                            Lexem::Parameter(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
                     }
-                    LexState::InValue | LexState::InQtParam | LexState::Comment |
-                    LexState::InQtValue | LexState::InQtLex | LexState::InArrayVal 
-                    | LexState::InLex => { // using ) has to be prohibited in lex
+                    LexState::InValue
+                    | LexState::InQtParam
+                    | LexState::Comment
+                    | LexState::InQtValue
+                    | LexState::InQtLex
+                    | LexState::InArrayVal
+                    | LexState::InLex => {
+                        // using ) has to be prohibited in lex
                         buffer[buf_fill] = c;
                         buf_fill += 1
                     }
@@ -1202,7 +1448,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     }
                     LexState::InBreak | LexState::BlankInValue => {
                         buffer[buf_fill] = c;
-                        buf_fill += 1; 
+                        buf_fill += 1;
                         state = LexState::InValue
                     }
                     LexState::EscapeEndArray => {
@@ -1211,123 +1457,155 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                    }
+                    _ => todo!(
+                        "state: {:?} in processing {c} at {}:{}:{}",
+                        state,
+                        reader.file_path,
+                        reader.line,
+                        reader.line_offset
+                    ),
                 }
-            },
-            dig @ '0' ..= '9' => {
-                match state {
-                 LexState::InParam |LexState::InValue | LexState::Comment | LexState::InLex | LexState::InQtParam |
-                    LexState::InQtValue | LexState::InQtLex | LexState::InArrayVal => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::StartParam | LexState::InParamBlank => {
-                        state = LexState::InParam;
-                        buffer[buf_fill] = dig;
-                        buf_fill += 1;
-                    },
-                    LexState::StartValue | LexState::InBreak | LexState::BlankInValue => {
-                        state = LexState::InValue;
-                        buffer[buf_fill] = dig;
-                        buf_fill += 1;
-                    },
-                    LexState::Begin | LexState::BlankOrEnd=> {
-                        state = LexState::InLex;
-                        buffer[buf_fill] = dig;
-                        buf_fill += 1;
-                    },
-                    LexState::EscapeBreakValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeQtValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtValue
-                    }
-                    LexState::EscapeValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue
-                    }
-                    LexState::EscapeQt => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtLex
-                    }
-                    LexState::Escape => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InLex
-                    }
-                    LexState::EscapeQtParam => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtParam
-                    }
-                    LexState::EscapeEndArray => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InArrayVal
-                    },
-                    LexState::EscapeParam => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InParam
-                    }
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+            }
+            dig @ '0'..='9' => match state {
+                LexState::InParam
+                | LexState::InValue
+                | LexState::Comment
+                | LexState::InLex
+                | LexState::InQtParam
+                | LexState::InQtValue
+                | LexState::InQtLex
+                | LexState::InArrayVal => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
                 }
+                LexState::StartParam | LexState::InParamBlank => {
+                    state = LexState::InParam;
+                    buffer[buf_fill] = dig;
+                    buf_fill += 1;
+                }
+                LexState::StartValue | LexState::InBreak | LexState::BlankInValue => {
+                    state = LexState::InValue;
+                    buffer[buf_fill] = dig;
+                    buf_fill += 1;
+                }
+                LexState::Begin | LexState::BlankOrEnd => {
+                    state = LexState::InLex;
+                    buffer[buf_fill] = dig;
+                    buf_fill += 1;
+                }
+                LexState::EscapeBreakValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeQtValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtValue
+                }
+                LexState::EscapeValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue
+                }
+                LexState::EscapeQt => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtLex
+                }
+                LexState::Escape => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InLex
+                }
+                LexState::EscapeQtParam => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtParam
+                }
+                LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InArrayVal
+                }
+                LexState::EscapeParam => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InParam
+                }
+                _ => todo!(
+                    "state: {:?} in processing {c} at {}:{}:{}",
+                    state,
+                    reader.file_path,
+                    reader.line,
+                    reader.line_offset
+                ),
             },
             ',' => {
                 match state {
-                    LexState::InParam => {                    
-                        state = LexState::StartParam; 
-                        return (Lexem::Parameter(buffer[0..buf_fill].iter().collect()), state, reader.line);
-                    },
-                    LexState::InParamBlank => {                    
-                        state = LexState::StartParam; 
-                        return (Lexem::Parameter(buffer[0..last_nb].iter().collect()), state, reader.line);
-                    },
+                    LexState::InParam => {
+                        state = LexState::StartParam;
+                        return (
+                            Lexem::Parameter(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
+                    LexState::InParamBlank => {
+                        state = LexState::StartParam;
+                        return (
+                            Lexem::Parameter(buffer[0..last_nb].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
                     LexState::StartParam => {
-                        state = LexState::StartParam; 
-                        return (Lexem::Parameter("".to_string() /* EMPTY */), state, reader.line);
-                    },
-                    LexState::InValue | LexState::InQtParam | LexState::Comment |
-                    LexState::InQtValue | LexState::InQtLex | LexState::InArrayVal |
-                    LexState::InLex => {
+                        state = LexState::StartParam;
+                        return (
+                            Lexem::Parameter("".to_string() /* EMPTY */),
+                            state,
+                            reader.line,
+                        );
+                    }
+                    LexState::InValue
+                    | LexState::InQtParam
+                    | LexState::Comment
+                    | LexState::InQtValue
+                    | LexState::InQtLex
+                    | LexState::InArrayVal
+                    | LexState::InLex => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::Begin => {
                         state = LexState::InLex;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InValue;
-                    },
+                    }
                     LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -1361,49 +1639,61 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     }
                     LexState::InBreak | LexState::StartValue | LexState::BlankInValue => {
                         buffer[buf_fill] = c;
-                        buf_fill += 1; 
+                        buf_fill += 1;
                         state = LexState::InValue;
-                    },
+                    }
                     LexState::EscapeEndArray => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                    }
+                    _ => todo!(
+                        "state: {:?} in processing {c} at {}:{}:{}",
+                        state,
+                        reader.file_path,
+                        reader.line,
+                        reader.line_offset
+                    ),
                 }
-            },
+            }
             '.' => {
                 //println!("{:?}", state);
                 match state {
-                    LexState::InValue | LexState::InLex | LexState::InParam | LexState::Comment | LexState::InQtParam |
-                    LexState::InQtValue | LexState::InQtLex | LexState::InArrayVal  => {
+                    LexState::InValue
+                    | LexState::InLex
+                    | LexState::InParam
+                    | LexState::Comment
+                    | LexState::InQtParam
+                    | LexState::InQtValue
+                    | LexState::InQtLex
+                    | LexState::InArrayVal => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::BlankOrEnd | LexState::Begin => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InLex;
-                    },
+                    }
                     LexState::StartValue | LexState::InBreak | LexState::BlankInValue => {
                         state = LexState::InValue;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
-                    LexState::StartParam | LexState::InParamBlank=> {
+                    }
+                    LexState::StartParam | LexState::InParamBlank => {
                         state = LexState::InParam;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
-                    },
+                    }
                     LexState::EscapeBreakValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InValue;
-                    },
+                    }
                     LexState::EscapeQtValue => {
                         buffer[buf_fill] = '\\';
                         buf_fill += 1;
@@ -1443,101 +1733,119 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InArrayVal
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
-                }
-
-            },
-            _ => {
-                match state {
-                    LexState::InQtLex | LexState::InQtParam |
-                    LexState::InQtValue | LexState::InArrayVal | LexState::InLex |
-                    LexState::InValue | LexState::InParam | LexState::InType | LexState::Comment => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::Begin | LexState::BlockStart | LexState::BlankOrEnd | LexState::BlockEnd => {
-                        state = LexState::InLex;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::QuotedStart => {
-                        state = LexState::InQtLex;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                    },
-                    LexState::StartParam | LexState::InParamBlank => {
-                        state = LexState::InParam;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
                     }
-                    LexState::BlankInValue |  LexState::InBreak | LexState::StartValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeParam => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1; 
-                        buffer[buf_fill] = c;
-                        buf_fill += 1; 
-                        state = LexState::InParam;
-                    },
-                    LexState::EscapeQtValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtValue
-                    }
-                    LexState::EscapeValue => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue
-                    }
-                    LexState::EscapeQt => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InQtLex
-                    }
-                    LexState::Escape => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InLex
-                    }
-                    LexState::EscapeQtParam => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1; 
-                        buffer[buf_fill] = c;
-                        buf_fill += 1; 
-                        state = LexState::InQtParam;
-                    },
-                    LexState::EscapeBreakValue => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue;
-                    },
-                    LexState::EscapeEndArray => {
-                        buffer[buf_fill] = '\\';
-                        buf_fill += 1;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InArrayVal
-                    },
-                    LexState::EndFunction  => {
-                        state = LexState::Begin; 
-                        log.error(&format!{"Expected ';' or a new line at  {}:{}:{}", reader.file_path, reader.line, reader.line_offset});
-                        return (Lexem::EOF, state, reader.line)
-                    },
-                    _ => todo!("state: {:?} at {}", state, reader.line)
+                    _ => todo!(
+                        "state: {:?} in processing {c} at {}:{}:{}",
+                        state,
+                        reader.file_path,
+                        reader.line,
+                        reader.line_offset
+                    ),
                 }
             }
+            _ => match state {
+                LexState::InQtLex
+                | LexState::InQtParam
+                | LexState::InQtValue
+                | LexState::InArrayVal
+                | LexState::InLex
+                | LexState::InValue
+                | LexState::InParam
+                | LexState::InType
+                | LexState::Comment => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::Begin
+                | LexState::BlockStart
+                | LexState::BlankOrEnd
+                | LexState::BlockEnd => {
+                    state = LexState::InLex;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::QuotedStart => {
+                    state = LexState::InQtLex;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::StartParam | LexState::InParamBlank => {
+                    state = LexState::InParam;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                }
+                LexState::BlankInValue | LexState::InBreak | LexState::StartValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeParam => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InParam;
+                }
+                LexState::EscapeQtValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtValue
+                }
+                LexState::EscapeValue => {
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue
+                }
+                LexState::EscapeQt => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtLex
+                }
+                LexState::Escape => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InLex
+                }
+                LexState::EscapeQtParam => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InQtParam;
+                }
+                LexState::EscapeBreakValue => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InValue;
+                }
+                LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    state = LexState::InArrayVal
+                }
+                LexState::EndFunction => {
+                    state = LexState::Begin;
+                    log.error(&format!{"Expected ';' or a new line at  {}:{}:{}", reader.file_path, reader.line, reader.line_offset});
+                    return (Lexem::EOF, state, reader.line);
+                }
+                _ => todo!(
+                    "state: {:?} in processing {c} at {}:{}:{}",
+                    state,
+                    reader.file_path,
+                    reader.line,
+                    reader.line_offset
+                ),
+            },
         }
         c1 = reader.next()
     }
@@ -1545,44 +1853,62 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
         LexState::InQtLex => {
             log.error(&format!{"Unexpected ending of the script file in quoted token at  {}:{}:{}", reader.file_path, reader.line, reader.line_offset});
             return (Lexem::EOF, state, reader.line);
-        },
+        }
         LexState::EndFunction | LexState::InParam => {
-            //state = 
+            //state =
             return (Lexem::EOF, state, reader.line);
-        },
-        LexState::InLex => {
-            
-        },
-        LexState::InValue  => {
+        }
+        LexState::InLex => {}
+        LexState::InValue => {
             state = LexState::Begin;
-            return (Lexem::Value(buffer[0..buf_fill].iter().collect()), state, reader.line); 
-        }, 
+            return (
+                Lexem::Value(buffer[0..buf_fill].iter().collect()),
+                state,
+                reader.line,
+            );
+        }
         LexState::Begin | LexState::End | LexState::BlockEnd => {
             return (Lexem::EOF, state, reader.line);
-        },
+        }
         LexState::InType => {
             state = LexState::End;
-            return (Lexem::Type(buffer[0..buf_fill].iter().collect()), state, reader.line);
-        },
+            return (
+                Lexem::Type(buffer[0..buf_fill].iter().collect()),
+                state,
+                reader.line,
+            );
+        }
         LexState::Comment => {
             state = LexState::End;
-            return (Lexem::Comment(buffer[0..buf_fill].iter().collect()), state, reader.line);
-        },
-        _ => todo!("state: {:?} at {}", state, reader.line)
+            return (
+                Lexem::Comment(buffer[0..buf_fill].iter().collect()),
+                state,
+                reader.line,
+            );
+        }
+        _ => todo!("state: {:?} at {}", state, reader.line),
     }
-    (Lexem::Variable(buffer[0..buf_fill].iter().collect()), state, reader.line)
+    (
+        Lexem::Variable(buffer[0..buf_fill].iter().collect()),
+        state,
+        reader.line,
+    )
 }
 
-fn process_lex_header(_log: &Log, value : &str, _vars: &HashMap<String, VarVal>) -> Box<(String, String, String, String)> {
+fn process_lex_header(
+    _log: &Log,
+    value: &str,
+    _vars: &HashMap<String, VarVal>,
+) -> Box<(String, String, String, String)> {
     let mut buf = Vec::with_capacity(4096);
 
     let chars = value.chars();
     let mut state = HdrState::InType;
     let mut last_blank = 0;
-    let mut name : String = "".to_string();
-    let mut lex_type : String = "".to_string();
-    let mut work_dir : String = "".to_string();
-    let mut path : String = "".to_string();
+    let mut name: String = "".to_string();
+    let mut lex_type: String = "".to_string();
+    let mut work_dir: String = "".to_string();
+    let mut path: String = "".to_string();
     for c in chars {
         match c {
             ' ' | '\t' => {
@@ -1591,132 +1917,122 @@ fn process_lex_header(_log: &Log, value : &str, _vars: &HashMap<String, VarVal>)
                         state = HdrState::NameStart;
                         lex_type = buf.clone().into_iter().collect();
                         buf.clear();
-                    },
-                    HdrState::PathDiv | HdrState::WorkDiv => {
-                    },
+                    }
+                    HdrState::PathDiv | HdrState::WorkDiv => {}
                     HdrState::NameStart => (),
                     HdrState::InName => {
                         state = HdrState::InNameBlank;
                         last_blank = buf.len();
                         buf.push(c)
-                    },
+                    }
                     HdrState::InNameBlank | HdrState::InWorkBlank | HdrState::InPathBlank => {
                         buf.push(c)
-                    },
-                   // HdrState::WorkDiv | HdrState::PathDiv => {},
+                    }
+                    // HdrState::WorkDiv | HdrState::PathDiv => {},
                     HdrState::InWork => {
                         state = HdrState::InWorkBlank;
                         last_blank = buf.len();
                         buf.push(c)
-                    },
+                    }
                     HdrState::InPath => {
                         state = HdrState::InPathBlank;
                         last_blank = buf.len();
                         buf.push(c)
-                    },
-                     HdrState::InNameQt 
-                    | HdrState::InPathQt | HdrState::InWorkQt => {
-                        buf.push(c)
-                    },
-                   // _ => todo!("state: {:?}", state)
-                }
-
-            },
-            ':' => {
-                match state {
-                    HdrState::InType => {
-                        state = HdrState::WorkDiv;
-                        lex_type = buf.clone().into_iter().collect();
-                        buf.clear();
-                    },
-                    HdrState::WorkDiv => {
-                        state = HdrState::PathDiv;
-                    },
-                    HdrState::NameStart => {
-                        state = HdrState::WorkDiv;
-                    },
-                    HdrState::InName => {
-                        state = HdrState::WorkDiv;
-                        name = buf.clone().into_iter().collect();
-                        buf.clear();
-                    },
-                    HdrState::InWork => {
-                        state = HdrState::PathDiv;
-                        work_dir = buf.clone().into_iter().collect();
-                        buf.clear();
-                    },
-                    HdrState::InNameBlank => {
-                        name = buf[0..last_blank].iter().collect();
-                        buf.clear();
-                        state = HdrState::WorkDiv;
-                    },
-                    HdrState::InNameQt | HdrState::InPathQt | HdrState::InWorkQt => {
-                        buf.push(c)
-                    },
-                    _ => todo!("state: {:?}", state)
-                }
-
-            },
-            '"' => {
-                match state {
-                    HdrState::NameStart => {
-                        state = HdrState::InNameQt;
-                    },
-                    HdrState::InNameQt => {
-                        state = HdrState::InName;
-                    },
-                    HdrState::InNameBlank => {
-                        state = HdrState::InNameQt;
-                    },
-                    HdrState::WorkDiv => {
-                        state = HdrState::InWorkQt;
-                    },
-                    HdrState::InWorkQt => {
-                        state = HdrState::InWork;
                     }
-                    HdrState::PathDiv => {
-                        state = HdrState::InPathQt;
-                    },
-                    HdrState::InPathQt => {
-                        state = HdrState::InPath;
-                    },
-                    HdrState::InName => {
-                        state = HdrState::InNameQt;
-                    }
-                    _ => todo!("header state: {:?}", state)
+                    HdrState::InNameQt | HdrState::InPathQt | HdrState::InWorkQt => buf.push(c),
+                    // _ => todo!("state: {:?}", state)
                 }
+            }
+            ':' => match state {
+                HdrState::InType => {
+                    state = HdrState::WorkDiv;
+                    lex_type = buf.clone().into_iter().collect();
+                    buf.clear();
+                }
+                HdrState::WorkDiv => {
+                    state = HdrState::PathDiv;
+                }
+                HdrState::NameStart => {
+                    state = HdrState::WorkDiv;
+                }
+                HdrState::InName => {
+                    state = HdrState::WorkDiv;
+                    name = buf.clone().into_iter().collect();
+                    buf.clear();
+                }
+                HdrState::InWork => {
+                    state = HdrState::PathDiv;
+                    work_dir = buf.clone().into_iter().collect();
+                    buf.clear();
+                }
+                HdrState::InNameBlank => {
+                    name = buf[0..last_blank].iter().collect();
+                    buf.clear();
+                    state = HdrState::WorkDiv;
+                }
+                HdrState::InNameQt | HdrState::InPathQt | HdrState::InWorkQt => buf.push(c),
+                _ => todo!("state: {:?}", state),
+            },
+            '"' => match state {
+                HdrState::NameStart => {
+                    state = HdrState::InNameQt;
+                }
+                HdrState::InNameQt => {
+                    state = HdrState::InName;
+                }
+                HdrState::InNameBlank => {
+                    state = HdrState::InNameQt;
+                }
+                HdrState::WorkDiv => {
+                    state = HdrState::InWorkQt;
+                }
+                HdrState::InWorkQt => {
+                    state = HdrState::InWork;
+                }
+                HdrState::PathDiv => {
+                    state = HdrState::InPathQt;
+                }
+                HdrState::InPathQt => {
+                    state = HdrState::InPath;
+                }
+                HdrState::InName => {
+                    state = HdrState::InNameQt;
+                }
+                _ => todo!("header state: {:?}", state),
             },
             _ => {
                 match state {
                     HdrState::WorkDiv => {
                         state = HdrState::InWork;
                         buf.push(c)
-                    },
+                    }
                     HdrState::PathDiv => {
                         state = HdrState::InPath;
                         buf.push(c)
-                    },
+                    }
                     HdrState::NameStart | HdrState::InName => {
                         state = HdrState::InName;
                         buf.push(c)
-                    },
-                    
+                    }
+
                     HdrState::InNameBlank => {
                         state = HdrState::InName;
                         buf.push(c)
-                    },
+                    }
                     HdrState::InWorkBlank => {
                         state = HdrState::InWork;
                         buf.push(c)
-                    },
+                    }
                     HdrState::InPathBlank => {
                         state = HdrState::InPath;
                         buf.push(c)
-                    },
-                    HdrState::InWork | HdrState::InPath | HdrState::InNameQt | HdrState::InType 
-                    | HdrState::InPathQt | HdrState::InWorkQt => {
-                        buf.push(c)
-                    },
+                    }
+                    HdrState::InWork
+                    | HdrState::InPath
+                    | HdrState::InNameQt
+                    | HdrState::InType
+                    | HdrState::InPathQt
+                    | HdrState::InWorkQt => buf.push(c),
                     //_ => todo!("state: {:?}", state)
                 }
             }
@@ -1725,33 +2041,43 @@ fn process_lex_header(_log: &Log, value : &str, _vars: &HashMap<String, VarVal>)
     match state {
         HdrState::InType => {
             lex_type = buf.iter().collect();
-        },
+        }
         HdrState::InName => {
             name = buf.iter().collect();
-        },
+        }
         HdrState::InNameBlank => {
             name = buf[0..last_blank].iter().collect();
-        },
+        }
         HdrState::InWork => {
             work_dir = buf.iter().collect();
-        },
+        }
         HdrState::InWorkBlank => {
             work_dir = buf[0..last_blank].iter().collect();
-        },
+        }
         HdrState::InPath => {
             path = buf.into_iter().collect();
-        },
-        HdrState::InPathBlank=> {
+        }
+        HdrState::InPathBlank => {
             path = buf[0..last_blank].iter().collect();
-        },
-        HdrState::NameStart | HdrState::WorkDiv | HdrState::PathDiv=> (),
-        _ => todo!("state: {:?}", state)
+        }
+        HdrState::NameStart | HdrState::WorkDiv | HdrState::PathDiv => (),
+        _ => todo!("state: {:?}", state),
     }
     //println!{"=>{lex_type} {name} '{work_dir}' '{path}'"};
-    Box::new((lex_type.to_string(), name.to_string(), work_dir.to_string(), path.to_string()))
+    Box::new((
+        lex_type.to_string(),
+        name.to_string(),
+        work_dir.to_string(),
+        path.to_string(),
+    ))
 }
 
-pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev: &Option<VarVal>) -> Box<String> {
+pub fn process_template_value(
+    log: &Log,
+    value: &str,
+    vars: &GenBlock,
+    res_prev: &Option<VarVal>,
+) -> Box<String> {
     // String interpolation
     let mut buf = Vec::with_capacity(4096);
     let mut buf_var = Vec::with_capacity(256); // buf for var name
@@ -1760,25 +2086,21 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
     let mut was_replacement = false;
     for c in chars {
         match c {
-            '$' => {
-                match state {
-                    TemplateState::InVal  => state = TemplateState::VarStart,
-                    TemplateState::VarStart => {
-                        buf.push(c);
-                    },
-                    TemplateState::InVar => {buf_var.push(c)},
-                    _ => todo!()
+            '$' => match state {
+                TemplateState::InVal => state = TemplateState::VarStart,
+                TemplateState::VarStart => {
+                    buf.push(c);
                 }
+                TemplateState::InVar => buf_var.push(c),
+                _ => todo!(),
             },
-            '{' => {
-                match state {
-                    TemplateState::VarStart => state = TemplateState::InVar,
-                    TemplateState::InVal  => {
-                        buf.push(c);
-                    },
-                    TemplateState::InVar => buf_var.push(c),
-                    _ => todo!()
+            '{' => match state {
+                TemplateState::VarStart => state = TemplateState::InVar,
+                TemplateState::InVal => {
+                    buf.push(c);
                 }
+                TemplateState::InVar => buf_var.push(c),
+                _ => todo!(),
             },
             '}' => {
                 match state {
@@ -1786,44 +2108,46 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
                         state = TemplateState::InVal;
                         buf.push('$');
                         buf.push(c);
-                    },
-                    TemplateState::InVal  => {
+                    }
+                    TemplateState::InVal => {
                         buf.push(c);
-                    },
+                    }
                     TemplateState::InVar => {
                         state = TemplateState::InVal;
-                        let var : String = buf_var.clone().into_iter().collect();
-                       // println!("looking {:?}", buf_var);
+                        let var: String = buf_var.clone().into_iter().collect();
+                        // println!("looking {:?}", buf_var);
                         // check name for ~~ and then use global thread local
                         let res = if var == PREV_VAL {
                             res_prev
-                        } else {&vars.search_up( &var)};
+                        } else {
+                            &vars.search_up(&var)
+                        };
                         match res {
                             Some(var) => {
-                               // println!("found {:?}", var);
-                               // TODO avoid replacement in an infinitive loop
-                               match var.val_type {
-                                    VarType::Environment  => {
-                                      //  println!("looking for {} in env", var.value);
+                                // println!("found {:?}", var);
+                                // TODO avoid replacement in an infinitive loop
+                                match var.val_type {
+                                    VarType::Environment => {
+                                        //  println!("looking for {} in env", var.value);
                                         match env::var(&var.value) {
-                                             Ok(val) => {
-                                                 for vc in val.chars() {
-                                                     buf.push(vc);
-                                                 }
-                                             },
-                                             Err(_e) => {
-                                                 for vc in var.value.chars() {
-                                                     buf.push(vc);
-                                                 } 
-                                             },
+                                            Ok(val) => {
+                                                for vc in val.chars() {
+                                                    buf.push(vc);
+                                                }
+                                            }
+                                            Err(_e) => {
+                                                for vc in var.value.chars() {
+                                                    buf.push(vc);
+                                                }
+                                            }
                                         };
-                                    },
+                                    }
                                     VarType::Array => {
                                         let chars = vec_to_str(&var.values);
                                         for vc in chars.chars() {
                                             buf.push(vc);
                                         }
-                                    },
+                                    }
                                     VarType::Property => {
                                         if let Some(val) = get_property(&var.value) {
                                             for vc in val.chars() {
@@ -1834,17 +2158,17 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
                                                 buf.push(vc);
                                             }
                                         }
-                                    },
+                                    }
                                     _ => {
                                         for vc in var.value.chars() {
                                             buf.push(vc);
                                         }
                                     }
-                               }
-                               was_replacement = true;
-                            },
+                                }
+                                was_replacement = true;
+                            }
                             None => {
-                               // println!("restoring {:?}", buf_var);
+                                // println!("restoring {:?}", buf_var);
                                 buf.push('$');
                                 buf.push('{');
                                 buf.append(&mut buf_var);
@@ -1852,41 +2176,39 @@ pub fn process_template_value(log: &Log, value : &str, vars: &GenBlock, res_prev
                             }
                         }
                         buf_var.clear();
-                    },
-                    _ => todo!()
-                }
-            },
-            _ => {
-                match state {
-                    TemplateState::InVal => {
-                        buf.push(c);
-                    },
-                    TemplateState::InVar => buf_var.push(c),
-                    TemplateState::VarStart => {
-                        buf.push('$');
-                        buf.push(c);
-                        state = TemplateState::InVal;
-                    },
-                    _ => todo!()
+                    }
+                    _ => todo!(),
                 }
             }
+            _ => match state {
+                TemplateState::InVal => {
+                    buf.push(c);
+                }
+                TemplateState::InVar => buf_var.push(c),
+                TemplateState::VarStart => {
+                    buf.push('$');
+                    buf.push(c);
+                    state = TemplateState::InVal;
+                }
+                _ => todo!(),
+            },
         }
     }
     // temporay hack (no loop detection )
-    let expanded_val:String = buf.into_iter().collect();
+    let expanded_val: String = buf.into_iter().collect();
     if was_replacement {
-        log.debug(&format!{"expanding {}", expanded_val});
+        log.debug(&format! {"expanding {}", expanded_val});
         process_template_value(log, &expanded_val, vars, res_prev)
     } else {
         Box::new(expanded_val)
     }
 }
 
-fn process_array_value(_log: &Log, value : &str) -> Result<Vec<String>, String> {
-    let mut buf = vec![' ';value.len()];
+fn process_array_value(_log: &Log, value: &str) -> Result<Vec<String>, String> {
+    let mut buf = vec![' '; value.len()];
     let mut state: LexState = LexState::Begin;
     let chars = value.chars();
-    let mut res : Vec<_> = Vec::new();
+    let mut res: Vec<_> = Vec::new();
     let mut blank_pos = 0;
     let mut pos = 0;
     let mut array_line = 1;
@@ -1894,192 +2216,188 @@ fn process_array_value(_log: &Log, value : &str) -> Result<Vec<String>, String> 
     for c in chars {
         array_pos += 1;
         match c {
-            '[' => {
-                match state {
-                    LexState::Begin  => state = LexState::RangeStart,
-                    LexState::InParam | LexState::InQtParam | LexState::RangeStart => {
-                        buf[pos] = c;
-                        pos += 1;
-                    },
-                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state)
+            '[' => match state {
+                LexState::Begin => state = LexState::RangeStart,
+                LexState::InParam | LexState::InQtParam | LexState::RangeStart => {
+                    buf[pos] = c;
+                    pos += 1;
                 }
+                _ => todo!("state: {:?} at {array_line}:{array_pos}", state),
             },
-            ']' => {
-                match state {
-                    LexState::InQtParam  => {
-                        buf[pos] = c;
-                        pos += 1;
-                    },
-                    LexState::InParam => {
-                        let param = buf[0..pos].iter().collect();
-                        res.push(param);
-                        return Ok(res)
-                    },
-                    LexState::BlankOrEnd => {
-                        let param = buf[0..blank_pos].iter().collect();
-                        res.push(param);
-                        return Ok(res)
-                    },
-                    LexState::EndQtParam => {
-                        return Ok(res)
-                    } ,
-                    LexState::RangeStart => {
-                        return Ok(res)
-                    },
-                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state)
+            ']' => match state {
+                LexState::InQtParam => {
+                    buf[pos] = c;
+                    pos += 1;
                 }
+                LexState::InParam => {
+                    let param = buf[0..pos].iter().collect();
+                    res.push(param);
+                    return Ok(res);
+                }
+                LexState::BlankOrEnd => {
+                    let param = buf[0..blank_pos].iter().collect();
+                    res.push(param);
+                    return Ok(res);
+                }
+                LexState::EndQtParam => return Ok(res),
+                LexState::RangeStart => return Ok(res),
+                _ => todo!("state: {:?} at {array_line}:{array_pos}", state),
             },
-            '"' => {
-                match state {
-                    LexState::RangeStart => {
-                        state = LexState::InQtParam;
-                    },
-                    LexState::InParam   => {
-                        buf[pos] = c;
-                        pos += 1;
-                    },
-                    LexState::StartParam => {  buf[pos] = c;
-                        pos += 1; state = LexState::InParam }
-                    LexState::InQtParam => {
-                        state = LexState::EndQtParam;
-                        let param = buf[0..pos].iter().collect();
-                        res.push(param);
-                        pos = 0;
-                    },
-                    LexState::EscapeParam => {
-                        buf[pos] = c;
-                        pos += 1;
-                        state = LexState::InQtParam;
-                    },
-                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state)
+            '"' => match state {
+                LexState::RangeStart => {
+                    state = LexState::InQtParam;
                 }
+                LexState::InParam => {
+                    buf[pos] = c;
+                    pos += 1;
+                }
+                LexState::StartParam => {
+                    buf[pos] = c;
+                    pos += 1;
+                    state = LexState::InParam
+                }
+                LexState::InQtParam => {
+                    state = LexState::EndQtParam;
+                    let param = buf[0..pos].iter().collect();
+                    res.push(param);
+                    pos = 0;
+                }
+                LexState::EscapeParam => {
+                    buf[pos] = c;
+                    pos += 1;
+                    state = LexState::InQtParam;
+                }
+                _ => todo!("state: {:?} at {array_line}:{array_pos}", state),
             },
             '\\' => {
-                if state == LexState::StartParam { state = LexState::InParam }
+                if state == LexState::StartParam {
+                    state = LexState::InParam
+                }
 
                 match state {
-                    LexState::InParam  => {
+                    LexState::InParam => {
                         buf[pos] = c;
                         pos += 1;
-                    },
-                    LexState::InQtParam  => {
+                    }
+                    LexState::InQtParam => {
                         state = LexState::EscapeParam;
-                    },
-                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state)
+                    }
+                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state),
                 }
-            },
+            }
             ',' => {
                 match state {
-                    LexState::InParam  => {
+                    LexState::InParam => {
                         let param = buf[0..pos].iter().collect();
-                       // log.log(&format!{"param: {}", &param});
+                        // log.log(&format!{"param: {}", &param});
                         res.push(param);
                         pos = 0;
-                        state = LexState:: StartParam;
-                    },
-                    LexState::StartParam  => {
+                        state = LexState::StartParam;
+                    }
+                    LexState::StartParam => {
                         res.push(String::new());
                         pos = 0;
-                    },
+                    }
                     LexState::BlankOrEnd => {
                         let param = buf[0..blank_pos].iter().collect();
                         res.push(param);
                         pos = 0;
-                        state = LexState:: StartParam;
-                    },
-                    LexState::InQtParam  => {
+                        state = LexState::StartParam;
+                    }
+                    LexState::InQtParam => {
                         buf[pos] = c;
                         pos += 1;
-                    },
+                    }
                     LexState::EndQtParam => {
-                        state = LexState:: StartParam;
-                    }, 
-                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state)
+                        state = LexState::StartParam;
+                    }
+                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state),
                 }
-            },
+            }
             ' ' | '\t' | '\n' | '\r' => {
                 if c == '\n' {
                     array_pos = 0;
                     array_line += 1
                 }
                 match state {
-                    LexState::InQtParam  => {
+                    LexState::InQtParam => {
                         buf[pos] = c;
                         pos += 1;
-                    },
-                    LexState::InParam  => {
+                    }
+                    LexState::InParam => {
                         blank_pos = pos;
                         buf[pos] = c;
                         pos += 1;
                         state = LexState::BlankOrEnd;
-                    },
-                    LexState::BlankOrEnd => { 
-                        buf[pos] = c;
-                        pos += 1;
-                    },
-                    LexState::EndQtParam => { },
-                    LexState::RangeStart | LexState:: StartParam => {
-
-                    },
-                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state)
-                }
-            },
-            //':' =>
-            _ => {
-                match state {
-                    LexState::InParam | LexState::InQtParam  => {
-                        buf[pos] = c;
-                        pos += 1;
-                    },
-                    LexState::EscapeParam => {
-                        buf[pos] = '\\';
-                        pos += 1;
-                        buf[pos] = c;
-                        pos += 1;
-                    },
+                    }
                     LexState::BlankOrEnd => {
                         buf[pos] = c;
                         pos += 1;
-                        state = LexState::InParam;
-                    },
-                    LexState::RangeStart | LexState::StartParam => {
-                        state = LexState::InParam;
-                        buf[pos] = c;
-                        pos += 1;
-                    },
-                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state)
+                    }
+                    LexState::EndQtParam => {}
+                    LexState::RangeStart | LexState::StartParam => {}
+                    _ => todo!("state: {:?} at {array_line}:{array_pos}", state),
                 }
             }
+            //':' =>
+            _ => match state {
+                LexState::InParam | LexState::InQtParam => {
+                    buf[pos] = c;
+                    pos += 1;
+                }
+                LexState::EscapeParam => {
+                    buf[pos] = '\\';
+                    pos += 1;
+                    buf[pos] = c;
+                    pos += 1;
+                }
+                LexState::BlankOrEnd => {
+                    buf[pos] = c;
+                    pos += 1;
+                    state = LexState::InParam;
+                }
+                LexState::RangeStart | LexState::StartParam => {
+                    state = LexState::InParam;
+                    buf[pos] = c;
+                    pos += 1;
+                }
+                _ => todo!("state: {:?} at {array_line}:{array_pos}", state),
+            },
         }
     }
     Err(value.to_string())
 }
 
-pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box<dyn Error>> {
-    let current_script_path = block.add_var(String::from("~script_path~"), VarVal::from_string(file.parent().unwrap().display().to_string()));
+pub fn process(log: &Log, file: &PathBuf, block: GenBlockTup) -> Result<(), Box<dyn Error>> {
+    let current_script_path = block.add_var(
+        String::from("~script_path~"),
+        VarVal::from_string(file.parent().unwrap().display().to_string()),
+    );
     let mut all_chars = open(file)?;
-    
+
     //let mut func_stack = Vec::new();
     //let mut block_stack : Vec<&mut GenBlock> = Vec::new();
     let mut state = LexState::Begin;
     // current block
-    let mut scoped_block = block; 
+    let mut scoped_block = block;
     let mut current_name = "".to_string();
     while state != LexState::End {
         // consider returning a partial lexem for example, interrupted by a comment
-        let ( lex, mut state2, line) = read_lex(log, &mut all_chars, state);
-        log.debug(&format!("Lex: {:?}, line: {}/{}, state: {:?}", lex, all_chars.line, all_chars.line_offset, state2));
+        let (lex, mut state2, line) = read_lex(log, &mut all_chars, state);
+        log.debug(&format!(
+            "Lex: {:?}, line: {}/{}, state: {:?}",
+            lex, all_chars.line, all_chars.line_offset, state2
+        ));
         match lex {
             Lexem::EOF => {
                 state2 = LexState::End;
-            },
+            }
             Lexem::Variable(name) => {
                 current_name = name.to_string();
-            },
+            }
             Lexem::Value(value) => {
-               // consider it can be an array in form [v1,v2,...vn]
-               let c_b = 
-                if value.starts_with("[") && value.ends_with("]") {
+                // consider it can be an array in form [v1,v2,...vn]
+                let c_b = if value.starts_with("[") && value.ends_with("]") {
                     let res = process_array_value(log, &value);
                     if let Ok(res) = res {
                         VarVal::from_vec(res)
@@ -2087,78 +2405,110 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                         log.error(&format!{"The array isn't well defined: {} at  {}:{}:{}", value, file.to_string_lossy(), all_chars.line, all_chars.line_offset});
                         VarVal::from_string(&value)
                     }
-                } else {VarVal::from_string(&value)}
-                ;
+                } else {
+                    VarVal::from_string(&value)
+                };
                 if current_name.is_empty() {
                     let mut scoped_block = scoped_block.borrow_mut();
                     scoped_block.out = Some(value);
                     log.warning(&format!{"The value {c_b:?} can't be set to no name at  {}:{}:{}", file.to_string_lossy(), all_chars.line, all_chars.line_offset} )
                 } else {
-                    scoped_block.borrow_mut().vars.insert(current_name.to_owned(), c_b);
+                    scoped_block
+                        .borrow_mut()
+                        .vars
+                        .insert(current_name.to_owned(), c_b);
                 }
-            },
+            }
             Lexem::Function(name) => {
                 // name can be function + main argument
-                let (type_hdr,name,work,path) = *process_lex_header(log, &name, &scoped_block.0.as_ref().borrow_mut().vars) ;
+                let (type_hdr, name, work, path) =
+                    *process_lex_header(log, &name, &scoped_block.0.as_ref().borrow_mut().vars);
                 let mut func = GenBlock::new(BlockType::Function);
                 //fun::GenBlockTup(Rc::new(RefCell::new(GenBlock::new(BlockType::Function))));
                 func.name = Some(type_hdr);
-                func.flex = if name.is_empty() {None} else { Some(name)};
-                func.dir = if work.is_empty() {None} else { Some(work)};
-                func.out = if path.is_empty() {None} else { Some(path)};
+                func.flex = if name.is_empty() { None } else { Some(name) };
+                func.dir = if work.is_empty() { None } else { Some(work) };
+                func.out = if path.is_empty() { None } else { Some(path) };
 
                 func.script_line = line;
                 scoped_block = scoped_block.add(GenBlockTup(Rc::new(RefCell::new(func))));
-            },
+            }
             Lexem::Type(var_type) => {
                 let mut bl = scoped_block.borrow_mut();
                 //log.debug(&format!("type {} in block {:?}", &current_name, bl.block_type));
                 #[allow(clippy::single_match)]
                 match bl.vars.get(&current_name.to_string()) {
-                    Some(var) => { 
+                    Some(var) => {
                         match var_type.as_str() {
                             "file" => {
-                                let c_b = VarVal{val_type:VarType::File, value:var.value.clone(), values: Vec::new()};
+                                let c_b = VarVal {
+                                    val_type: VarType::File,
+                                    value: var.value.clone(),
+                                    values: Vec::new(),
+                                };
                                 bl.vars.insert(current_name.to_string(), c_b);
-                            },
+                            }
                             "prop" => {
                                 //  println!("prop {} in {:?}", var.value, bl.block_type);
-                                  let c_b = VarVal{val_type:VarType::Property, value:var.value.clone(), values: Vec::new()};
-                                  bl.vars.insert(current_name.to_string(), c_b);
-                              },
-                            "env" => {
-                              //  println!("env {} in {:?}", var.value, bl.block_type);
-                                let c_b = VarVal{val_type:VarType::Environment, value:var.value.clone(), values: Vec::new()};
+                                let c_b = VarVal {
+                                    val_type: VarType::Property,
+                                    value: var.value.clone(),
+                                    values: Vec::new(),
+                                };
                                 bl.vars.insert(current_name.to_string(), c_b);
-                            },
-                            "rep-rust" | "rep-crate"=> {
-                                //let at_pos = 
+                            }
+                            "env" => {
                                 //  println!("env {} in {:?}", var.value, bl.block_type);
-                                  let c_b = VarVal{val_type:VarType::RepositoryRust, value:var.value.clone(), values: Vec::new()};
-                                  bl.vars.insert(current_name.to_string(), c_b);
-                              },
+                                let c_b = VarVal {
+                                    val_type: VarType::Environment,
+                                    value: var.value.clone(),
+                                    values: Vec::new(),
+                                };
+                                bl.vars.insert(current_name.to_string(), c_b);
+                            }
+                            "rep-rust" | "rep-crate" => {
+                                //let at_pos =
+                                //  println!("env {} in {:?}", var.value, bl.block_type);
+                                let c_b = VarVal {
+                                    val_type: VarType::RepositoryRust,
+                                    value: var.value.clone(),
+                                    values: Vec::new(),
+                                };
+                                bl.vars.insert(current_name.to_string(), c_b);
+                            }
                             "rep-maven" => {
-                                //let at_pos = 
+                                //let at_pos =
                                 //  println!("env {} in {:?}", var.value, bl.block_type);
-                                  let c_b = VarVal{val_type:VarType::RepositoryMaven, value:var.value.clone(), values: Vec::new()};
-                                  bl.vars.insert(current_name.to_string(), c_b);
-                              },
-                            _ => log.error(&format!("Unknown type '{}' ignored at  {}:{}:{}", var_type, bl.script_path(), all_chars.line, all_chars.line_offset))
+                                let c_b = VarVal {
+                                    val_type: VarType::RepositoryMaven,
+                                    value: var.value.clone(),
+                                    values: Vec::new(),
+                                };
+                                bl.vars.insert(current_name.to_string(), c_b);
+                            }
+                            _ => log.error(&format!(
+                                "Unknown type '{}' ignored at  {}:{}:{}",
+                                var_type,
+                                bl.script_path(),
+                                all_chars.line,
+                                all_chars.line_offset
+                            )),
                         }
-                        
-                    },
-                    _ => ()
+                    }
+                    _ => (),
                 }
-            },
-            Lexem::Parameter(value) => { // collect all parameters and then process function call
+            }
+            Lexem::Parameter(value) => {
+                // collect all parameters and then process function call
                 let name = {
-                   let mut rl_block = scoped_block.borrow_mut();
-                   if !rl_block.params.is_empty() || !value.is_empty () { // this check makes redundant other checks for no parameters
-                       rl_block.params.push(value.to_owned());
-                   }
-                   rl_block.name.to_owned()
+                    let mut rl_block = scoped_block.borrow_mut();
+                    if !rl_block.params.is_empty() || !value.is_empty() {
+                        // this check makes redundant other checks for no parameters
+                        rl_block.params.push(value.to_owned());
+                    }
+                    rl_block.name.to_owned()
                 };
-               
+
                 if state2 == LexState::EndFunction {
                     log.debug(&format!("end func for {:?}", name));
                     if let Some(name) = name {
@@ -2168,7 +2518,7 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                 //println!{"search {:?}", &value};
                                 match scoped_block.search_up(&value) {
                                     Some(var) => {
-                                      // println!("found {:?}", var);
+                                        // println!("found {:?}", var);
                                         match var.val_type {
                                             VarType::File => {
                                                 let var_val = *process_template_value(log, &var.value, &scoped_block.0.as_ref().borrow_mut(), &None);
@@ -2194,53 +2544,69 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                                             },
                                             _ => log.error(&format!("The include location variable {} isn't type file , the include is ignored at  {}:{}: ", value, scoped_block.0.borrow().script_path(), all_chars.line)),
                                         }
-                                    },
+                                    }
                                     None => {
-                                        let temp_expand = *process_template_value(log, &value, &scoped_block.0.as_ref().borrow_mut(), &None);
+                                        let temp_expand = *process_template_value(
+                                            log,
+                                            &value,
+                                            &scoped_block.0.as_ref().borrow_mut(),
+                                            &None,
+                                        );
                                         log.debug(&format!{"Expand the include template {}", temp_expand});
                                         let parent_scoped_block = scoped_block.parent();
                                         if let Some(block) = parent_scoped_block {
                                             let mut include_path = PathBuf::from(temp_expand);
                                             if !include_path.has_root() {
-                                                match scoped_block.search_up(&String::from("~script_path~")) {
-                                                    Some(var) => include_path = PathBuf::from(var.value).join(include_path),
+                                                match scoped_block
+                                                    .search_up(&String::from("~script_path~"))
+                                                {
+                                                    Some(var) => {
+                                                        include_path = PathBuf::from(var.value)
+                                                            .join(include_path)
+                                                    }
                                                     _ => {
-                                                        let cwd = scoped_block.search_up(crate::CWD);
+                                                        let cwd =
+                                                            scoped_block.search_up(crate::CWD);
                                                         if let Some(cwd) = cwd {
-                                                            include_path = PathBuf::from(cwd.value).join(include_path)
+                                                            include_path = PathBuf::from(cwd.value)
+                                                                .join(include_path)
                                                         }
                                                     }
                                                 }
                                             }
-                                            if let Err(e) = 
-                                                process(log, &include_path, block.clone()) {
-                                                    log.error(&format!("Can't process an include script {include_path:?} at {}:{}, problem: {}", scoped_block.0.borrow().script_path(), all_chars.line, e));
-                                                    return Err(e)
-                                                }
+                                            if let Err(e) =
+                                                process(log, &include_path, block.clone())
+                                            {
+                                                log.error(&format!("Can't process an include script {include_path:?} at {}:{}, problem: {}", scoped_block.0.borrow().script_path(), all_chars.line, e));
+                                                return Err(e);
+                                            }
                                         }
                                     }
                                 }
-                            },
-                            _ => ()
+                            }
+                            _ => (),
                         }
-                    } 
+                    }
                     scoped_block = scoped_block.parent().clone().unwrap();
                 }
- 
-            },
-            Lexem::BlockHdr(value) => { 
+            }
+            Lexem::BlockHdr(value) => {
                 // parse header and push in block stack
-               // let mut test_block = GenBlock::new(BlockType::Target);
+                // let mut test_block = GenBlock::new(BlockType::Target);
                 let parent_type = scoped_block.borrow().block_type.clone();
-                 /*  if let Some(parent) = &scoped_block.borrow().parent {
-                       let parent_type = Rc::clone(&parent).borrow().block_type.clone();
-                       parent_type
-                   } else {
-                       BlockType::Main
-                   };*/
+                /*  if let Some(parent) = &scoped_block.borrow().parent {
+                    let parent_type = Rc::clone(&parent).borrow().block_type.clone();
+                    parent_type
+                } else {
+                    BlockType::Main
+                };*/
                 current_name.clear();
-                let (type_hdr,name,work,path) = *process_lex_header(log, &value, &scoped_block.0.as_ref().borrow_mut().vars) ;
-                log.debug(&format!("Type: {}, name: {}, work dir: '{}', path; '{}'", type_hdr,name,work,path));
+                let (type_hdr, name, work, path) =
+                    *process_lex_header(log, &value, &scoped_block.0.as_ref().borrow_mut().vars);
+                log.debug(&format!(
+                    "Type: {}, name: {}, work dir: '{}', path; '{}'",
+                    type_hdr, name, work, path
+                ));
                 match type_hdr.as_str() {
                     "target" => {
                         // check if a target with the name exists
@@ -2252,103 +2618,140 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                             inner_block.flex = Some(path);
                             inner_block.script_line = all_chars.line;
                             //println!{"name {:?} dir {:?} flex {:?}", inner_block.name, inner_block.dir, inner_block.flex}
-                            scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                            scoped_block =
+                                scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
                         } else {
-                            log.error(&format!("Target {} is already exists at  {}:{}: ", name, scoped_block.0.borrow().script_path(), all_chars.line));
+                            log.error(&format!(
+                                "Target {} is already exists at  {}:{}: ",
+                                name,
+                                scoped_block.0.borrow().script_path(),
+                                all_chars.line
+                            ));
                         }
-                    },
+                    }
                     "eq" => {
                         let mut inner_block = GenBlock::new(BlockType::Eq);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "if" => {
                         let mut inner_block = GenBlock::new(BlockType::If);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "then" => {
                         let mut inner_block = GenBlock::new(BlockType::Then);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "neq" => {
                         let mut inner_block = GenBlock::new(BlockType::Neq);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "else" => {
                         let mut inner_block = GenBlock::new(BlockType::Else);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "or" => {
                         let mut inner_block = GenBlock::new(BlockType::Or);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "and" => {
                         let mut inner_block = GenBlock::new(BlockType::And);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "not" => {
                         let mut inner_block = GenBlock::new(BlockType::Not);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "for" => {
                         let mut inner_block = GenBlock::new(BlockType::For);
                         inner_block.name = Some(name);
                         inner_block.dir = Some(work);
                         inner_block.flex = Some(path);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "" => {
                         let mut inner_block = GenBlock::new(BlockType::Scope);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));// *scoped_block = GenBlock::new(BlockType::Scope);
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block)))); // *scoped_block = GenBlock::new(BlockType::Scope);
+                    }
                     "dependency" => {
                         let mut inner_block = GenBlock::new(BlockType::Dependency);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add_dep(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add_dep(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "while" => {
                         let mut inner_block = GenBlock::new(BlockType::While);
                         inner_block.name = Some(name);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "case" => {
                         let mut inner_block = GenBlock::new(BlockType::Case);
                         inner_block.name = Some(name); // var holding analyzed pattern
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "choice" if parent_type == BlockType::Case => {
                         let mut inner_block = GenBlock::new(BlockType::Choice);
-                       // println!{"added choice {type_hdr} -> {name}"};
-                        inner_block.name = Some(name); 
+                        // println!{"added choice {type_hdr} -> {name}"};
+                        inner_block.name = Some(name);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))))
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))))
+                    }
                     "closure" => {
                         let mut inner_block = GenBlock::new(BlockType::Closure);
-                        inner_block .name = Some(name.clone());
+                        inner_block.name = Some(name.clone());
                         inner_block.script_line = all_chars.line;
-                        inner_block.parent  = Some(GenBlockTup(Rc::clone(&scoped_block.0)));
+                        inner_block.parent = Some(GenBlockTup(Rc::clone(&scoped_block.0)));
                         let clos = GenBlockTup(Rc::new(RefCell::new(inner_block)));
-                        if let Some(closure) = scoped_block.borrow_mut().closures.insert(name, clos.clone()) {
-                            log.warning(&format!("closure {} is already defined at {} replaced by {}:{}:{}", closure.borrow() .name.as_ref().unwrap(), closure.borrow().script_line, scoped_block.borrow().script_path(), all_chars.line, all_chars.line_offset))
+                        if let Some(closure) = scoped_block
+                            .borrow_mut()
+                            .closures
+                            .insert(name, clos.clone())
+                        {
+                            log.warning(&format!(
+                                "closure {} is already defined at {} replaced by {}:{}:{}",
+                                closure.borrow().name.as_ref().unwrap(),
+                                closure.borrow().script_line,
+                                scoped_block.borrow().script_path(),
+                                all_chars.line,
+                                all_chars.line_offset
+                            ))
                         };
                         scoped_block = clos;
                     }
-                    _ => log.error(&format!("unknown block {} of {:?} at  {}:{}:{}", type_hdr, parent_type, scoped_block.borrow().script_path(), all_chars.line, all_chars.line_offset))
+                    _ => log.error(&format!(
+                        "unknown block {} of {:?} at  {}:{}:{}",
+                        type_hdr,
+                        parent_type,
+                        scoped_block.borrow().script_path(),
+                        all_chars.line,
+                        all_chars.line_offset
+                    )),
                 }
-                
-            },
+            }
             Lexem::BlockEnd(value) => {
                 //println!(" current {:?}", scoped_block.0.borrow_mut().block_type);
                 let mut rl_block = scoped_block.borrow_mut();
@@ -2358,20 +2761,33 @@ pub fn process(log: &Log, file: & PathBuf, block: GenBlockTup) -> Result<(), Box
                 drop(rl_block);
                 let parent = scoped_block.parent();
                 match parent {
-                    None => log.error(&format!("Unmatched block {:?} closing found at  {}:{}:{}", scoped_block.borrow().block_type, scoped_block.borrow().script_path(), all_chars.line, all_chars.line_offset)),
-                    Some(parent) => scoped_block = parent.clone()
+                    None => log.error(&format!(
+                        "Unmatched block {:?} closing found at  {}:{}:{}",
+                        scoped_block.borrow().block_type,
+                        scoped_block.borrow().script_path(),
+                        all_chars.line,
+                        all_chars.line_offset
+                    )),
+                    Some(parent) => scoped_block = parent.clone(),
                 }
-            },
+            }
             Lexem::Comment(value) => {
-                log.debug(&format!("Commentary: {}, line: {}/{}", value, all_chars.line, all_chars.line_offset));
-            },
-            _ => todo!("unprocessed lexem {:?}", lex)
+                log.debug(&format!(
+                    "Commentary: {}, line: {}/{}",
+                    value, all_chars.line, all_chars.line_offset
+                ));
+            }
+            _ => todo!("unprocessed lexem {:?}", lex),
         }
         state = state2;
     }
     match current_script_path {
-        Some(var) => {scoped_block.add_var(String::from("~script_path~"), var);},
-        _ => {scoped_block.remove_var(&String::from("~script_path~"));}
+        Some(var) => {
+            scoped_block.add_var(String::from("~script_path~"), var);
+        }
+        _ => {
+            scoped_block.remove_var(&String::from("~script_path~"));
+        }
     }
     Ok(())
 }
