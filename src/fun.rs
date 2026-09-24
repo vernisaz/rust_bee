@@ -1880,6 +1880,7 @@ impl GenBlockTup {
                 let var = parent_bare.vars.get_mut(name)?;
                 if var.val_type == VarType::Array {
                     if var.values.is_empty() || index > var.values.len() - 1 {
+                        drop(parent_bare);
                         log.error(&format!{"Specified index {} is out of bounds {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
                         return None;
                     }
@@ -1890,6 +1891,7 @@ impl GenBlockTup {
                     }
                     return res; // get/set
                 } else {
+                    drop(parent_bare);
                     log.error(&format!{"Specified argument {} isn't an array at {}:{}: ",  name, fun_block.script_path(), fun_block.script_line});
                 }
             }

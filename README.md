@@ -34,7 +34,7 @@ and
 Since the product supports a colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
 
 ## Version
-The current version is **1.18.01**.
+The current version is **1.19.00** (AI edition).
 
 ## Scripting examples
 
