@@ -2723,13 +2723,27 @@ pub fn process(log: &Log, file: &PathBuf, block: GenBlockTup) -> Result<(), Box<
                     "when" => {
                         let mut inner_block = GenBlock::new(BlockType::When);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        if !name.is_empty() {
+                            if name == "first match" {
+                                inner_block.name = Some(name);
+                            } else {
+                                log.warning(&format!(
+                                    "only 'first match' is allowed, '{name}' is ignored at {}:{}:{}",
+                                    scoped_block.borrow().script_path(),
+                                    all_chars.line,
+                                    all_chars.line_offset
+                                ))
+                            }
+                        }
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "otherwise" => {
                         let mut inner_block = GenBlock::new(BlockType::Otherwise);
                         inner_block.script_line = all_chars.line;
-                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
-                    },
+                        scoped_block =
+                            scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    }
                     "closure" => {
                         let mut inner_block = GenBlock::new(BlockType::Closure);
                         inner_block.name = Some(name.clone());

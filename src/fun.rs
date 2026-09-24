@@ -859,6 +859,7 @@ impl GenBlockTup {
                 let mut cond_on = false;
                 let top_closure = self.search_up_block_type(BlockType::Closure);
                 let mut res = prev_res.clone();
+                let first_match = self.borrow().name == Some("first match".to_string()); 
                 let children = &mut self.borrow().children.clone().into_iter();
                 while let Some(child) = children.next() {
                     log.debug(&format!(
@@ -906,6 +907,9 @@ impl GenBlockTup {
                             if let Some(ref closure) = top_closure
                                 && closure.borrow().vars.contains_key("~return~")
                             {
+                                break;
+                            }
+                            if first_match {
                                 break;
                             }
                         }
