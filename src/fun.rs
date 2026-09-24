@@ -56,6 +56,8 @@ pub enum BlockType {
     Case,
     Choice,
     Closure,
+    When,
+    Otherwise,
 }
 
 #[derive(/*Debug,*/ Default)]
@@ -445,7 +447,8 @@ impl GenBlockTup {
             | BlockType::Then
             | BlockType::Else
             | BlockType::Choice
-            | BlockType::Closure => {
+            | BlockType::Closure
+            | BlockType::Otherwise => {
                 let mut res = prev_res.clone();
                 let top_closure = self.search_up_block_type(BlockType::Closure);
                 let children = &self.0.borrow().children.clone();
@@ -493,6 +496,7 @@ impl GenBlockTup {
                     ));
                     None
                 } else {
+                    // TODO add check on block type
                     let mut res = children[0].exec(log, prev_res);
                     log.debug(&format!("if cond evaluated as {:?}", res));
 
@@ -519,24 +523,21 @@ impl GenBlockTup {
                             }
                         }
                         then
-                    } else {
-                        let else_bl = if children.len() == 3
-                            && children[2].borrow().block_type == BlockType::Else
-                        {
-                            if children[1].borrow().block_type == BlockType::Else {
-                                log.warning(&format!(
+                    } else if children.len() == 3
+                        && children[2].borrow().block_type == BlockType::Else
+                    {
+                        if children[1].borrow().block_type == BlockType::Else {
+                            log.warning(&format!(
                                     "The first block 'else' probably meant as 'then' and ignored at {}:{}: ",
                                     naked_block.script_path(),
                                     naked_block.script_line
                                 ))
-                            }
-                            Some(2)
-                        } else if children[1].borrow().block_type == BlockType::Else {
-                            Some(1)
-                        } else {
-                            None
-                        };
-                        else_bl
+                        }
+                        Some(2)
+                    } else if children[1].borrow().block_type == BlockType::Else {
+                        Some(1)
+                    } else {
+                        None
                     } {
                         res = children[num].exec(log, prev_res)
                     }
@@ -851,6 +852,71 @@ impl GenBlockTup {
                         naked_block.script_path(),
                         naked_block.script_line
                     ))
+                }
+                res
+            }
+            BlockType::When => {
+                let mut cond_on = false;
+                let top_closure = self.search_up_block_type(BlockType::Closure);
+                let mut res = prev_res.clone();
+                let children = &mut self.borrow().children.clone().into_iter();
+                while let Some(child) = children.next() {
+                    log.debug(&format!(
+                        "processing block of {:?}",
+                        child.borrow().block_type
+                    ));
+                    match &child.borrow().block_type {
+                        BlockType::Function
+                        | BlockType::Eq
+                        | BlockType::Neq
+                        | BlockType::Or
+                        | BlockType::And
+                        | BlockType::Not => {
+                            res = child.exec(log, prev_res);
+                        }
+                        BlockType::Otherwise => {
+                            if !cond_on {
+                                res = child.exec(log, prev_res);
+                            }
+                            if children.next().is_some() {
+                                log.error(&format!(
+                                    "Blocks after otherwise are ignored at {}:{}: ",
+                                    child.borrow().script_path(),
+                                    child.borrow().script_line
+                                ));
+                            }
+                            break;
+                        }
+                        _ => {
+                            log.error(&format!(
+                        "A conditional block eq/neq/or/and/not or a function allowed at {}:{}: ",
+                        child.borrow().script_path(),
+                        child.borrow().script_line
+                    ));
+                            break;
+                        }
+                    }
+                    if let Some(child) = children.next()
+                        && child.borrow().block_type == BlockType::Then
+                    {
+                        if res.as_ref().unwrap_or(&VarVal::from_bool(false)).is_true() {
+                            cond_on = true;
+                            res = child.exec(log, prev_res);
+
+                            if let Some(ref closure) = top_closure
+                                && closure.borrow().vars.contains_key("~return~")
+                            {
+                                break;
+                            }
+                        }
+                    } else {
+                        log.error(&format!(
+                            "A block then is required after a condition at {}:{}: ",
+                            child.borrow().script_path(),
+                            child.borrow().script_line
+                        ));
+                        break;
+                    }
                 }
                 res
             }

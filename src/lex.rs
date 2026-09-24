@@ -2720,6 +2720,16 @@ pub fn process(log: &Log, file: &PathBuf, block: GenBlockTup) -> Result<(), Box<
                         scoped_block =
                             scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))))
                     }
+                    "when" => {
+                        let mut inner_block = GenBlock::new(BlockType::When);
+                        inner_block.script_line = all_chars.line;
+                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    },
+                    "otherwise" => {
+                        let mut inner_block = GenBlock::new(BlockType::Otherwise);
+                        inner_block.script_line = all_chars.line;
+                        scoped_block =  scoped_block.add(GenBlockTup(Rc::new(RefCell::new(inner_block))));
+                    },
                     "closure" => {
                         let mut inner_block = GenBlock::new(BlockType::Closure);
                         inner_block.name = Some(name.clone());

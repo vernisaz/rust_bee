@@ -116,6 +116,20 @@ Currently `if`, `while`, `case`, and `for`  operators are supported. More detail
 ```
 Pattern is a particular value, or a value with a wildcard. If a value should include '|', then double it.
 
+### when
+```
+    when {
+       a condition function or a condition block
+       then {
+       }
+      [a condition function or a condition block
+       then {
+       } ] 
+      [ otherwise {
+      } ]
+    }
+```
+
 Ifs,  fors, cases, and whiles  can be nested.
 
 ### Closures
