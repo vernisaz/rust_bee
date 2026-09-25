@@ -207,22 +207,22 @@ impl VarVal {
     pub fn is_true(&self) -> bool {
         match self.val_type {
             VarType::Environment => match env::var(&self.value) {
-                Ok(val) => val == "true",
-                Err(_e) => self.value == "true",
+                Ok(val) => val.eq_ignore_ascii_case("true"),
+                Err(_e) => self.value.eq_ignore_ascii_case("true"),
             },
             VarType::Property => {
                 if let Some(val) = get_property(&self.value) {
-                    val == "true"
+                    val.eq_ignore_ascii_case("true")
                 } else {
-                    self.value == "true"
+                    self.value.eq_ignore_ascii_case("true")
                 }
             }
             VarType::Array => self.values.iter().any(|current| !current.is_empty()),
             VarType::Number => {
                 !self.value.is_empty() && self.value.parse::<i64>().unwrap_or_default() != 0
             }
-            VarType::Bool => self.value == "true",
-            _ => !self.value.is_empty() && self.value != "false", // consider adding interpolation
+            VarType::Bool => self.value.eq_ignore_ascii_case("true"),
+            _ => !self.value.is_empty() && !self.value.eq_ignore_ascii_case("false"), // consider adding interpolation
         }
     }
 }
