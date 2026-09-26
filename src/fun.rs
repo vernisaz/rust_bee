@@ -859,7 +859,7 @@ impl GenBlockTup {
                 let mut cond_on = false;
                 let top_closure = self.search_up_block_type(BlockType::Closure);
                 let mut res = prev_res.clone();
-                let first_match = self.borrow().name == Some("first match".to_string()); 
+                let first_match = self.borrow().name == Some("first match".to_string());
                 let children = &mut self.borrow().children.clone().into_iter();
                 while let Some(child) = children.next() {
                     log.debug(&format!(
@@ -2654,8 +2654,12 @@ impl GenBlockTup {
         fun_block: &GenBlock,
         res_prev: &Option<VarVal>,
     ) -> Box<String> {
-        if !fun_block.params.is_empty() && i < fun_block.params.len() {
-            self.expand_parameter(log, &fun_block.params[i], fun_block, res_prev)
+        if i < fun_block.params.len() {
+            if !fun_block.params.is_empty() {
+                self.expand_parameter(log, &fun_block.params[i], fun_block, res_prev)
+            } else {
+                Box::new(String::new())
+            }
         } else {
             log.error(&format!(
                 "Calling for non existing parameter {i} of {:?} at {}:{}: ",
