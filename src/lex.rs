@@ -49,7 +49,7 @@ pub enum Lexem {
     Type(String),
     Range(usize, usize),
     Function(String),
-    Parameter(String), // potential Option<Vec<Lexem>> can be attached as the parameter comments
+    Parameter(String, bool), // potential Option<Vec<Lexem>> can be attached as the parameter comments
     BlockHdr(String),
     BlockEnd(Option<String>),
     #[allow(clippy::upper_case_acronyms)]
@@ -1378,7 +1378,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     LexState::InParam => {
                         state = LexState::EndFunction;
                         return (
-                            Lexem::Parameter(buffer[0..buf_fill].iter().collect()),
+                            Lexem::Parameter(buffer[0..buf_fill].iter().collect(), true),
                             state,
                             reader.line,
                         );
@@ -1386,7 +1386,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     LexState::InParamBlank => {
                         state = LexState::EndFunction;
                         return (
-                            Lexem::Parameter(buffer[0..last_nb].iter().collect()),
+                            Lexem::Parameter(buffer[0..last_nb].iter().collect(), true),
                             state,
                             reader.line,
                         );
@@ -1394,7 +1394,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     LexState::StartParam => {
                         state = LexState::EndFunction;
                         return (
-                            Lexem::Parameter(buffer[0..buf_fill].iter().collect()),
+                            Lexem::Parameter(buffer[0..buf_fill].iter().collect(), true),
                             state,
                             reader.line,
                         );
@@ -1563,7 +1563,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     LexState::InParam => {
                         state = LexState::StartParam;
                         return (
-                            Lexem::Parameter(buffer[0..buf_fill].iter().collect()),
+                            Lexem::Parameter(buffer[0..buf_fill].iter().collect(), false),
                             state,
                             reader.line,
                         );
@@ -1571,7 +1571,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     LexState::InParamBlank => {
                         state = LexState::StartParam;
                         return (
-                            Lexem::Parameter(buffer[0..last_nb].iter().collect()),
+                            Lexem::Parameter(buffer[0..last_nb].iter().collect(), false),
                             state,
                             reader.line,
                         );
@@ -1579,7 +1579,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     LexState::StartParam => {
                         state = LexState::StartParam;
                         return (
-                            Lexem::Parameter("".to_string() /* EMPTY */),
+                            Lexem::Parameter("".to_string() /* EMPTY */, false),
                             state,
                             reader.line,
                         );
@@ -2498,11 +2498,11 @@ pub fn process(log: &Log, file: &PathBuf, block: GenBlockTup) -> Result<(), Box<
                     _ => (),
                 }
             }
-            Lexem::Parameter(value) => {
+            Lexem::Parameter(value, last) => {
                 // collect all parameters and then process function call
                 let name = {
                     let mut rl_block = scoped_block.borrow_mut();
-                    if !rl_block.params.is_empty() || !value.is_empty() {
+                    if !(rl_block.params.is_empty() && last && value.is_empty()) {
                         // this check makes redundant other checks for no parameters
                         rl_block.params.push(value.to_owned());
                     }

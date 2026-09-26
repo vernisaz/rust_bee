@@ -2662,7 +2662,8 @@ impl GenBlockTup {
             }
         } else {
             log.error(&format!(
-                "Calling for non existing parameter {i} of {:?} at {}:{}: ",
+                "Calling for non existing parameter {i}/{} of {:?} at {}:{}: ",
+                fun_block.params.len(),
                 fun_block.name,
                 fun_block.script_path(),
                 fun_block.script_line
