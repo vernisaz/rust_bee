@@ -970,7 +970,7 @@ impl GenBlockTup {
                 io::stdout().flush().unwrap();
                 return res_prev.clone();
             }
-            "assign" | "=:" => return self.exec_assign(log, fun_block, res_prev),
+            "assign" => return self.exec_assign(log, fun_block, res_prev),
             "neq" | "≠" => {
                 log.debug(&format!(
                     "comparing neq {:?} and {:?}",
@@ -983,7 +983,7 @@ impl GenBlockTup {
                         != self.parameter(log, 1, fun_block, res_prev),
                 ));
             }
-            "eq" | "=" => {
+            "eq" => {
                 // TODO reuse common code with neq
                 log.debug(&format!(
                     "comparing eq {:?} and {:?}",
