@@ -558,10 +558,15 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                 LexState::InValue | LexState::BlankInValue | LexState::StartValue => {
                     state = LexState::EscapeBreakValue;
                 }
-                LexState::EscapeBreakValue | LexState::EscapeEndArray => {
+                LexState::EscapeBreakValue => {
                     buffer[buf_fill] = '\\';
                     buf_fill += 1;
                     state = LexState::InValue;
+                }
+                LexState::EscapeEndArray => {
+                    buffer[buf_fill] = '\\';
+                    buf_fill += 1;
+                    state = LexState::InArrayVal;
                 }
                 LexState::InBreak => {
                     buffer[buf_fill] = c;
