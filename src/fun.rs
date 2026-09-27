@@ -970,81 +970,7 @@ impl GenBlockTup {
                 io::stdout().flush().unwrap();
                 return res_prev.clone();
             }
-            "now" => {
-                if no_parameters(fun_block) {
-                    return Some(VarVal::from_string(format_system_time(SystemTime::now())));
-                }
-                let fmt_str = *self.parameter(log, 0, fun_block, res_prev);
-                return Some(VarVal::from_string(format_time(
-                    &fmt_str,
-                    SystemTime::now(),
-                )));
-            }
-            "write" => {
-                let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname)
-                    && let Some(cwd) = fun_block.search_up(CWD)
-                {
-                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
-                }
-                let file = File::create(&fname);
-                if let Ok(mut file) = file {
-                    write_lambda(&mut file, &fname)
-                } else {
-                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line})
-                }
-            }
-            "writex" if cfg!(not(unix)) => {
-                let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname)
-                    && let Some(cwd) = fun_block.search_up(CWD)
-                {
-                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
-                }
-                let file = File::create(&fname);
-                if let Ok(mut file) = file {
-                    write_lambda(&mut file, &fname)
-                } else {
-                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line})
-                }
-            }
-            "writea" => {
-                let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname)
-                    && let Some(cwd) = fun_block.search_up(CWD)
-                {
-                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
-                }
-                if let Ok(mut file) = OpenOptions::new()
-                    .read(true)
-                    .append(true)
-                    .create(true)
-                    .open(&fname)
-                {
-                    write_lambda(&mut file, &fname)
-                } else {
-                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line})
-                }
-            }
-            #[cfg(unix)]
-            "writex" if cfg!(unix) => {
-                let mut fname = *self.parameter(log, 0, fun_block, res_prev);
-                if !has_root(&fname)
-                    && let Some(cwd) = fun_block.search_up(CWD)
-                {
-                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
-                }
-                match OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .truncate(true)
-                    .mode(0o700)
-                    .open(&fname) {
-                    Ok(mut file) => write_lambda(&mut file, &fname),
-                    Err(_) => log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line}),
-                }
-            }
-            "assign" => return self.exec_assign(log, fun_block, res_prev),
+            "assign" | "=:" => return self.exec_assign(log, fun_block, res_prev),
             "neq" | "≠" => {
                 log.debug(&format!(
                     "comparing neq {:?} and {:?}",
@@ -1248,12 +1174,12 @@ impl GenBlockTup {
                     }
                 }
             }
-            "or" => {
+            "or" | "|" => {
                 return Some(VarVal::from_bool(
                     fun_block.params.iter().any(is_true_lambda),
                 ));
             }
-            "and" => {
+            "and" | "&" => {
                 return Some(VarVal::from_bool(
                     fun_block.params.iter().all(is_true_lambda),
                 ));
@@ -1525,7 +1451,7 @@ impl GenBlockTup {
                 log.debug(&format!("anynewer parameters: {}, {}", p1, p2));
                 return Some(VarVal::from_bool(newest(&p1) > newest(&p2)));
             }
-            "gt" => {
+            "gt" | ">" => {
                 if fun_block.params.len() != 2 {
                     log.error(&format!{"Greater than requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
                 } else {
@@ -1541,7 +1467,7 @@ impl GenBlockTup {
                     return Some(VarVal::from_bool(p1 > p2));
                 }
             }
-            "lt" => {
+            "lt" | "<" => {
                 if fun_block.params.len() != 2 {
                     log.error(&format!{"Less than requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
                 } else {
@@ -1557,7 +1483,7 @@ impl GenBlockTup {
                     return Some(VarVal::from_bool(p1 < p2));
                 }
             }
-            "not" => {
+            "not" | "¬" => {
                 return Some(VarVal::from_bool(
                     !VarVal::from_string(*self.parameter(log, 0, fun_block, res_prev)).is_true(),
                 ));
@@ -1660,6 +1586,80 @@ impl GenBlockTup {
                             }
                         }
                     }
+                }
+            }
+            "now" => {
+                if no_parameters(fun_block) {
+                    return Some(VarVal::from_string(format_system_time(SystemTime::now())));
+                }
+                let fmt_str = *self.parameter(log, 0, fun_block, res_prev);
+                return Some(VarVal::from_string(format_time(
+                    &fmt_str,
+                    SystemTime::now(),
+                )));
+            }
+            "write" => {
+                let mut fname = *self.parameter(log, 0, fun_block, res_prev);
+                if !has_root(&fname)
+                    && let Some(cwd) = fun_block.search_up(CWD)
+                {
+                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
+                }
+                let file = File::create(&fname);
+                if let Ok(mut file) = file {
+                    write_lambda(&mut file, &fname)
+                } else {
+                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line})
+                }
+            }
+            "writex" if cfg!(not(unix)) => {
+                let mut fname = *self.parameter(log, 0, fun_block, res_prev);
+                if !has_root(&fname)
+                    && let Some(cwd) = fun_block.search_up(CWD)
+                {
+                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
+                }
+                let file = File::create(&fname);
+                if let Ok(mut file) = file {
+                    write_lambda(&mut file, &fname)
+                } else {
+                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line})
+                }
+            }
+            "writea" => {
+                let mut fname = *self.parameter(log, 0, fun_block, res_prev);
+                if !has_root(&fname)
+                    && let Some(cwd) = fun_block.search_up(CWD)
+                {
+                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
+                }
+                if let Ok(mut file) = OpenOptions::new()
+                    .read(true)
+                    .append(true)
+                    .create(true)
+                    .open(&fname)
+                {
+                    write_lambda(&mut file, &fname)
+                } else {
+                    log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line})
+                }
+            }
+            #[cfg(unix)]
+            "writex" if cfg!(unix) => {
+                let mut fname = *self.parameter(log, 0, fun_block, res_prev);
+                if !has_root(&fname)
+                    && let Some(cwd) = fun_block.search_up(CWD)
+                {
+                    fname = cwd.value + MAIN_SEPARATOR_STR + &fname
+                }
+                match OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .truncate(true)
+                    .mode(0o700)
+                    .open(&fname) {
+                    Ok(mut file) => write_lambda(&mut file, &fname),
+                    Err(_) => log.error(&format!{"File {} can't be opened for writing at {}:{}: ", fname, fun_block.script_path(), fun_block.script_line}),
                 }
             }
             "as_url" => {
