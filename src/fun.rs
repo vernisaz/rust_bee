@@ -2137,11 +2137,11 @@ impl GenBlockTup {
             "number" => {
                 let val = *self.parameter(log, 0, fun_block, res_prev);
                 let num = if val.is_empty() {
-                    0
+                    0f64
                 } else {
-                    val.parse::<i32>().ok()?
+                    val.parse::<f64>().ok()?
                 };
-                return Some(VarVal::from_i32(num));
+                return Some(VarVal::from_f64(num));
             }
             "zip" => {
                 // variable parameters
