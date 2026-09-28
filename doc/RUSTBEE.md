@@ -83,9 +83,11 @@ Currently `if`, `while`, `case`, and `for`  operators are supported. More detail
      if {
        a condition function or a condition block
        then {
+       # then actions
        }
-      [ else {
-      } ]
+      [else {
+       # else actions
+       } ]
      }
 ```
 ### while
@@ -108,24 +110,26 @@ Currently `if`, `while`, `case`, and `for`  operators are supported. More detail
        }
        choice "pat2" | "pat3": {
            # do something
-        }
-       [ else {
+       }
+       ...
+       [else {
            # when nothing matches
-         } ]
+        } ]
     }
 ```
 Pattern is a particular value, or a value with a wildcard. If a value should include '|', then double it.
 
 ### when
 ```
-    when {
+    when [first match]{
        a condition function or a condition block
        then {
        }
       [a condition function or a condition block
        then {
        } ] 
-      [ otherwise {
+       ...
+      [otherwise {
       } ]
     }
 ```
