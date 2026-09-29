@@ -349,7 +349,7 @@ fn main() -> Result<(), Box<dyn Error>> {
      let lex_res = lex::process(&log, &path, lex_tree.clone());
       if target_help {
           let tree = lex_tree.0.borrow();
-          log.message("Targets");
+          log.message(&format!("Targets of {}", path.display().to_string().green()));
          for child_tree in &tree.children {
                 let child = child_tree.0.borrow();
                if child .block_type == fun::BlockType::Target 
