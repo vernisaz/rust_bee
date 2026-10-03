@@ -1,9 +1,9 @@
-use simcolor::{Colorized};
+use simcolor::Colorized;
 pub struct Log {
     pub verbose: bool,
     pub debug: bool,
     pub quiet: bool,
-   // writer: Write
+    // writer: Write
 }
 
 impl Log {
@@ -12,7 +12,7 @@ impl Log {
             println!("{}", msg); // write!(&mut writer, "{}", msg);
         }
     }
-    
+
     pub fn debug(&self, msg: &str) {
         if self.debug && !self.quiet {
             println!("{}", msg);
@@ -21,13 +21,13 @@ impl Log {
 
     pub fn error(&self, msg: &str) {
         if !self.quiet {
-             eprintln!("{} {}", "Error:".bold(), msg.red());
+            eprintln!("{} {}", "Error:".bold(), msg.red());
         }
-    }   
-    
+    }
+
     pub fn warning(&self, msg: &str) {
         if self.verbose && !self.quiet {
-             println!("{} {}", "Warning:".italic(), msg.yellow());
+            println!("{} {}", "Warning:".italic(), msg.yellow());
         }
     }
 

@@ -1,40 +1,44 @@
-extern crate simtime as time;
 extern crate simcolor;
-use std::{fs::{self,File},env,
-    path::{Path,PathBuf},
-    io::{self, Write, BufRead},
-    cell::RefCell,
-    rc::{Rc},
-    time::{SystemTime},
-    sync::RwLock,
-    error::Error,
-    collections::HashMap, ops::ControlFlow};
+extern crate simtime as time;
+use simcolor::Colorized;
 #[cfg(feature = "release")]
 use std::panic;
-use simcolor::{Colorized};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    env,
+    error::Error,
+    fs::{self, File},
+    io::{self, BufRead, Write},
+    ops::ControlFlow,
+    path::{Path, PathBuf},
+    rc::Rc,
+    sync::RwLock,
+    time::SystemTime,
+};
 
-mod help;
-mod log;
-mod lex;
 mod fun;
+mod help;
+mod lex;
+mod log;
 mod util;
 
 use log::Log;
 
 #[derive(Debug, PartialEq)]
 enum CmdOption {
-     Help,
-     ScriptFile(String),
-     Version,
-     Verbose,
-     SearchUp(Option<String>),
-     PropertyFile(String),
-     Diagnostics,
-     ForceRebuild,
-     SpecifiedTargetBuild,
-     DryRun,
-     Quiet,
-     TargetHelp
+    Help,
+    ScriptFile(String),
+    Version,
+    Verbose,
+    SearchUp(Option<String>),
+    PropertyFile(String),
+    Diagnostics,
+    ForceRebuild,
+    SpecifiedTargetBuild,
+    DryRun,
+    Quiet,
+    TargetHelp,
 }
 
 include!("ver.rs");
@@ -46,125 +50,134 @@ const SCRIPT_EXT2: &str = ".rb";
 
 static SCRIPT_EXT_PURE: &str = SCRIPT_EXT.split_at(1).1;
 
-pub const CWD : &str = "~cwd~";
-pub const SCRIPT: &str ="~script~";
+pub const CWD: &str = "~cwd~";
+pub const SCRIPT: &str = "~script~";
+pub const CURRENT_SCRIPT: &str = "~script_path~";
 
 pub fn set_property(name: &String, value: &String) {
-     if SYSTEM_PROPERTIES.read().unwrap().is_none() {
-          *SYSTEM_PROPERTIES.write().unwrap() = Some(HashMap::new());
-     }
-     let mut props = SYSTEM_PROPERTIES.write().unwrap();
-     let map = props.as_mut().unwrap();
-     map.insert(name.to_string(), value.to_string());
+    if SYSTEM_PROPERTIES.read().unwrap().is_none() {
+        *SYSTEM_PROPERTIES.write().unwrap() = Some(HashMap::new());
+    }
+    let mut props = SYSTEM_PROPERTIES.write().unwrap();
+    let map = props.as_mut().unwrap();
+    map.insert(name.to_string(), value.to_string());
 }
 
 pub fn get_property(name: &String) -> Option<String> {
-     if let Some(properties) = SYSTEM_PROPERTIES.read().unwrap().as_ref() {
-          properties.get(name).map(String::to_string)
-     } else {
-         None
-     }
+    if let Some(properties) = SYSTEM_PROPERTIES.read().unwrap().as_ref() {
+        properties.get(name).map(String::to_string)
+    } else {
+        None
+    }
 }
 
-pub fn get_properties() -> impl IntoIterator <Item = (String, String)> {
+pub fn get_properties() -> impl IntoIterator<Item = (String, String)> {
     match SYSTEM_PROPERTIES.read() {
-        Ok(props) if props.is_some() => {
-            props.clone().unwrap()
-        }
+        Ok(props) if props.is_some() => props.clone().unwrap(),
         _ => HashMap::new(),
     }
 }
 
-fn parse_command<'a>(log: &'a Log, args: &'a [String]) -> (Vec<CmdOption>, Vec<&'a String>, Vec<String>) {
-     let (mut options, mut targets, mut run_args) = (Vec::new(), Vec::new(), Vec::new());
-     let mut arg_n = 0;
-     while arg_n < args.len() {
-         let arg = &args[arg_n] ;
-         let len = args.len();
-         //println!("analizing {}", arg);
-          if arg.starts_with("-h") || arg.starts_with("--h") || cfg!(windows) && arg.starts_with("/h") {
-              options.push(CmdOption::Help)
-          } else if arg == "-f" || arg.starts_with("--file") || arg.starts_with("--build") || cfg!(windows) && (arg == "/F" || arg == "/f") {
-               arg_n += 1;
-               if arg_n < len {
-                    options.push(CmdOption::ScriptFile(args[arg_n].to_string()))
-               } else {
-                    log.error("No file path specified after --file option")
-               }
-          } else if arg.starts_with("-s") || arg.starts_with("--find") {
-               arg_n += 1;
-               if arg_n < len {
-                    if args[arg_n].starts_with("-") || cfg!(windows) && arg.starts_with("/") {
-                         options.push(CmdOption::SearchUp(None));
-                         arg_n -= 1
-                    } else {
-                         options.push(CmdOption::SearchUp(Some(args[arg_n].to_string())))
-                    }
-               } else {
+fn parse_command<'a>(
+    log: &'a Log,
+    args: &'a [String],
+) -> (Vec<CmdOption>, Vec<&'a String>, Vec<String>) {
+    let (mut options, mut targets, mut run_args) = (Vec::new(), Vec::new(), Vec::new());
+    let mut arg_n = 0;
+    while arg_n < args.len() {
+        let arg = &args[arg_n];
+        let len = args.len();
+        //println!("analizing {}", arg);
+        if arg.starts_with("-h") || arg.starts_with("--h") || cfg!(windows) && arg.starts_with("/h")
+        {
+            options.push(CmdOption::Help)
+        } else if arg == "-f"
+            || arg.starts_with("--file")
+            || arg.starts_with("--build")
+            || cfg!(windows) && (arg == "/F" || arg == "/f")
+        {
+            arg_n += 1;
+            if arg_n < len {
+                options.push(CmdOption::ScriptFile(args[arg_n].to_string()))
+            } else {
+                log.error("No file path specified after --file option")
+            }
+        } else if arg.starts_with("-s") || arg.starts_with("--find") {
+            arg_n += 1;
+            if arg_n < len {
+                if args[arg_n].starts_with("-") || cfg!(windows) && arg.starts_with("/") {
                     options.push(CmdOption::SearchUp(None));
-                    break
-               }
-          } else if arg.starts_with("--version") || arg == "-V" {
-               options.push(CmdOption::Version)
-          } else if arg.starts_with("-v") || arg.starts_with("--verbose") {
-               options.push(CmdOption::Verbose)
-          } else if arg.starts_with("--dry") || arg.starts_with("-y") {
-               options.push(CmdOption::DryRun)
-          } else if arg.starts_with("-d") || arg.starts_with("--diagnostic") {
-               options.push(CmdOption::Diagnostics);
-               unsafe {env::set_var("RUST_BACKTRACE", "1") } // it's for rb itself, because there is no control as 'rb' was launched
-               set_property(&"RUST_BACKTRACE".to_string(), &"1".to_string())
-          } else if arg.starts_with("-r")  {
-               options.push(CmdOption::ForceRebuild);
-          } else if let Some(stripped) = arg.strip_prefix("-D")  {
-               if let Some((name,val)) = &stripped.split_once('=') {
-                    set_property(&name.to_string(), &val.to_string());
-                    //unsafe { env::set_var(name, val) }
-               } else {
-                    log.error(&format!("Invalid property definition: {}", arg))
-               }
-          } else if arg.starts_with("-xprop") || arg.starts_with("-prop") {
-               arg_n += 1;
-               if arg_n < len {
-                    if args[arg_n].starts_with("-") {
-                         log.error("No property file specified");
-                         arg_n -= 1;
-                         continue
-                    }
-                    options.push(CmdOption::PropertyFile(args[arg_n].to_string()))
-               } else {
-                    log.error("Property file isn't specified");
-                    break
-               }
-          } else if arg.starts_with("-q") {
-               options.push(CmdOption::Quiet)
-            } else if arg.starts_with("-c") {
-               options.push(CmdOption::SpecifiedTargetBuild)
-          } else if arg.starts_with("-t") || arg.starts_with("--targethelp") {
-               options.push(CmdOption::TargetHelp)
-          } else if arg == "--" { 
-               arg_n += 1;
-               if arg_n < len {
-                    run_args.extend_from_slice( &args[arg_n..]);
-                    break
-               }
-          } else if arg.starts_with("-")  {
-               log.error(&format!("Unknown option: {}", arg))
-          } else if arg_n > 0 {
-               targets.push(arg)
-          }
-         
-         arg_n += 1
-     }
-     if options.contains(&CmdOption::DryRun) && (!options.contains(&CmdOption::Diagnostics) &&
-           !options.contains(&CmdOption::Verbose) ) {
-               options.push(CmdOption::Verbose)
-     }
-     (options, targets, run_args)
+                    arg_n -= 1
+                } else {
+                    options.push(CmdOption::SearchUp(Some(args[arg_n].to_string())))
+                }
+            } else {
+                options.push(CmdOption::SearchUp(None));
+                break;
+            }
+        } else if arg.starts_with("--version") || arg == "-V" {
+            options.push(CmdOption::Version)
+        } else if arg.starts_with("-v") || arg.starts_with("--verbose") {
+            options.push(CmdOption::Verbose)
+        } else if arg.starts_with("--dry") || arg.starts_with("-y") {
+            options.push(CmdOption::DryRun)
+        } else if arg.starts_with("-d") || arg.starts_with("--diagnostic") {
+            options.push(CmdOption::Diagnostics);
+            unsafe { env::set_var("RUST_BACKTRACE", "1") } // it's for rb itself, because there is no control as 'rb' was launched
+            set_property(&"RUST_BACKTRACE".to_string(), &"1".to_string())
+        } else if arg.starts_with("-r") {
+            options.push(CmdOption::ForceRebuild);
+        } else if let Some(stripped) = arg.strip_prefix("-D") {
+            if let Some((name, val)) = &stripped.split_once('=') {
+                set_property(&name.to_string(), &val.to_string());
+                //unsafe { env::set_var(name, val) }
+            } else {
+                log.error(&format!("Invalid property definition: {}", arg))
+            }
+        } else if arg.starts_with("-xprop") || arg.starts_with("-prop") {
+            arg_n += 1;
+            if arg_n < len {
+                if args[arg_n].starts_with("-") {
+                    log.error("No property file specified");
+                    arg_n -= 1;
+                    continue;
+                }
+                options.push(CmdOption::PropertyFile(args[arg_n].to_string()))
+            } else {
+                log.error("Property file isn't specified");
+                break;
+            }
+        } else if arg.starts_with("-q") {
+            options.push(CmdOption::Quiet)
+        } else if arg.starts_with("-c") {
+            options.push(CmdOption::SpecifiedTargetBuild)
+        } else if arg.starts_with("-t") || arg.starts_with("--targethelp") {
+            options.push(CmdOption::TargetHelp)
+        } else if arg == "--" {
+            arg_n += 1;
+            if arg_n < len {
+                run_args.extend_from_slice(&args[arg_n..]);
+                break;
+            }
+        } else if arg.starts_with("-") {
+            log.error(&format!("Unknown option: {}", arg))
+        } else if arg_n > 0 {
+            targets.push(arg)
+        }
+
+        arg_n += 1
+    }
+    if options.contains(&CmdOption::DryRun)
+        && (!options.contains(&CmdOption::Diagnostics) && !options.contains(&CmdOption::Verbose))
+    {
+        options.push(CmdOption::Verbose)
+    }
+    (options, targets, run_args)
 }
 
 fn is_bee_scrpt(file_path: &str) -> bool {
-     file_path.starts_with("bee") && (file_path.ends_with(SCRIPT_EXT) || file_path.ends_with(SCRIPT_EXT2))
+    file_path.starts_with("bee")
+        && (file_path.ends_with(SCRIPT_EXT) || file_path.ends_with(SCRIPT_EXT2))
 }
 
 /// find script file from
@@ -172,44 +185,46 @@ fn is_bee_scrpt(file_path: &str) -> bool {
 /// and name (extension is optional)
 fn find_script(dir: &Path, name: &Option<String>) -> Option<String> {
     #[cfg(any(unix, target_os = "redox"))]
-     let mut binding = fs::canonicalize(dir).ok()?;
+    let mut binding = fs::canonicalize(dir).ok()?;
     #[cfg(target_os = "windows")]
     let mut binding = crate::util::normalize_path(dir);
     if !binding.has_root() {
-       binding = binding.join(env::current_dir().ok()?) 
+        binding = binding.join(env::current_dir().ok()?)
     }
-     let mut curr_dir = binding.as_path();
-     while curr_dir.is_dir() {
-     //println!("searching {name:?} in {curr_dir:?}");
-          match  name  {
-               None =>  for entry in fs::read_dir(curr_dir).ok()? {
-                         let path = entry.ok()?.path();
-                         if path.is_file() && is_bee_scrpt(path.file_name()?.to_str()?) {
-                              return Some(path.to_str()?.to_string())
-                         }
+    let mut curr_dir = binding.as_path();
+    while curr_dir.is_dir() {
+        //println!("searching {name:?} in {curr_dir:?}");
+        match name {
+            None => {
+                for entry in fs::read_dir(curr_dir).ok()? {
+                    let path = entry.ok()?.path();
+                    if path.is_file() && is_bee_scrpt(path.file_name()?.to_str()?) {
+                        return Some(path.to_str()?.to_string());
                     }
-               Some(name) => {
-                    let mut path_buf = curr_dir.to_path_buf();
-                    path_buf.push(name);
-                    //let script_path = path_buf.as_path();
-                    //println!{"-> {:?}", path_buf};
+                }
+            }
+            Some(name) => {
+                let mut path_buf = curr_dir.to_path_buf();
+                path_buf.push(name);
+                //let script_path = path_buf.as_path();
+                //println!{"-> {:?}", path_buf};
+                if path_buf.exists() {
+                    return Some(path_buf.display().to_string());
+                } else {
+                    path_buf.set_extension(SCRIPT_EXT_PURE);
                     if path_buf.exists() {
-                         return Some(path_buf.display().to_string())
-                    } else {
-                        path_buf.set_extension(SCRIPT_EXT_PURE);
-                        if path_buf.exists() {
-                             return Some(path_buf.display().to_string())
-                        }
-                        path_buf.set_extension(&SCRIPT_EXT2[1..]);
-                        if path_buf.exists() {
-                             return Some(path_buf.display().to_string())
-                        }
+                        return Some(path_buf.display().to_string());
                     }
-               }
-          }
-          curr_dir = curr_dir.parent()?
-     }
-     None
+                    path_buf.set_extension(&SCRIPT_EXT2[1..]);
+                    if path_buf.exists() {
+                        return Some(path_buf.display().to_string());
+                    }
+                }
+            }
+        }
+        curr_dir = curr_dir.parent()?
+    }
+    None
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -222,148 +237,232 @@ fn main() -> Result<(), Box<dyn Error>> {
         } else {
             eprintln!("Abnormal RustBee termination")
         }
-     }));
-     let mut log = Log {debug : false, verbose : false, quiet : false};
-     *SYSTEM_PROPERTIES.write().unwrap() = Some(HashMap::new());
-     let mut path: Option<String> = None;
-     let args: Vec<String> = env::args().collect();
-     let (options, targets, run_args) = parse_command( &log, &args);
+    }));
+    let mut log = Log {
+        debug: false,
+        verbose: false,
+        quiet: false,
+    };
+    *SYSTEM_PROPERTIES.write().unwrap() = Some(HashMap::new());
+    let mut path: Option<String> = None;
+    let args: Vec<String> = env::args().collect();
+    let (options, targets, run_args) = parse_command(&log, &args);
 
-     let lex_tree = fun::GenBlockTup(Rc::new(RefCell::new(fun::GenBlock::new(fun::BlockType::Main))));
-     let mut real_targets: Vec<String> = Vec::new();
-     for target in targets {
-          real_targets.push(target.to_string())
-     }
-     let _ = lex_tree.add_var(String::from("~args~"), lex::VarVal::from_vec(run_args));
-     let _ = lex_tree.add_var(String::from("~os~"),  lex::VarVal::from_string(std::env::consts::OS));
-     let _ = lex_tree.add_var(String::from("~separator~"),  lex::VarVal::from_string(std::path::MAIN_SEPARATOR_STR));
-     let _ = lex_tree.add_var(String::from("~/~"), lex::VarVal::from_string(std::path::MAIN_SEPARATOR_STR));
-     let _ = lex_tree.add_var(String::from("~path_separator~"), if std::env::consts::OS == "windows" {
-          lex::VarVal::from_string(";") } else {lex::VarVal::from_string(":")});
-     
-     let cwd = env::current_dir()?.display().to_string();
-     lex_tree.add_var(String::from(CWD),  lex::VarVal::from_string(&cwd));
-     //println!("additional ars {:?}", lex_tree.search_up(&String::from("~args~")));
-     let mut target_help = false;
-     if options.contains(&CmdOption::Quiet) {
-          log.quiet = true
-     }
-     if !log.quiet {
+    let lex_tree = fun::GenBlockTup(Rc::new(RefCell::new(fun::GenBlock::new(
+        fun::BlockType::Main,
+    ))));
+    let mut real_targets: Vec<String> = Vec::new();
+    for target in targets {
+        real_targets.push(target.to_string())
+    }
+    let _ = lex_tree.add_var(String::from("~args~"), lex::VarVal::from_vec(run_args));
+    let _ = lex_tree.add_var(
+        String::from("~os~"),
+        lex::VarVal::from_string(std::env::consts::OS),
+    );
+    let _ = lex_tree.add_var(
+        String::from("~separator~"),
+        lex::VarVal::from_string(std::path::MAIN_SEPARATOR_STR),
+    );
+    let _ = lex_tree.add_var(
+        String::from("~/~"),
+        lex::VarVal::from_string(std::path::MAIN_SEPARATOR_STR),
+    );
+    let _ = lex_tree.add_var(
+        String::from("~path_separator~"),
+        if std::env::consts::OS == "windows" {
+            lex::VarVal::from_string(";")
+        } else {
+            lex::VarVal::from_string(":")
+        },
+    );
+
+    let cwd = env::current_dir()?.display().to_string();
+    lex_tree.add_var(String::from(CWD), lex::VarVal::from_string(&cwd));
+    //println!("additional ars {:?}", lex_tree.search_up(&String::from("~args~")));
+    let mut target_help = false;
+    if options.contains(&CmdOption::Quiet) {
+        log.quiet = true
+    }
+    if !log.quiet {
         // TODO get year from time::
-          log.message(&format!("RustBee ({}) v {} © {} D. Rogatkin", "rb".bright().cyan(), version().0, util::year_now()));
-          if options.contains(&CmdOption::Version) {
-               let (ver, build, date) = version();
-               log.message(&format!("RB Version: {}/SC:{}{}{}/SZ:{}/ST:{}, build: {} on {}", ver.bold(),
-                  simcolor::VERSION[..3].red(), simcolor::VERSION[3..5].green(), simcolor::VERSION[5..].blue().bright(),
-                  simzip::VERSION.underline(), time::VERSION.dimmed(), build.reversed(), date.italic()))
-          }
-     }
-     for opt in &options {
-          //println!("{:?}", opt);
-          match opt {
-               CmdOption::Version => if real_targets.is_empty() {return Ok(())},
-               CmdOption::Help => { log.message(&help::get_help()); return Ok(())},
-               CmdOption::Verbose => log.verbose = true,
-               CmdOption::Diagnostics => log.debug = true,
-               CmdOption::Quiet => log.quiet = true,
-               CmdOption::ScriptFile(file) => {
-                    log.log(&format!("Script: {}", file));
-                    
-                    path = Some(file.to_string())
-                    // when file specified in -f then cwd isn't changed
-                    // if file specified in -s then cwd has to be set in the file.parent()
-               },
-               CmdOption::SearchUp(file) => {
-                    log.log(&format!("Search: {:?}", file));
-                    //println!("Search: {:?}", file);
-                    path = find_script(Path::new("."), file);
-                    if let Some(ref found_path) = path {
-                         let cwd = Path::new(&found_path).parent().ok_or("no parent directory")?.display().to_string();
-                         unsafe { env::set_var("PWD", &cwd) }
-                         lex_tree.add_var(String::from(CWD), lex::VarVal::from_string(cwd));
+        log.message(&format!(
+            "RustBee ({}) v {} © {} D. Rogatkin",
+            "rb".bright().cyan(),
+            version().0,
+            util::year_now()
+        ));
+        if options.contains(&CmdOption::Version) {
+            let (ver, build, date) = version();
+            log.message(&format!(
+                "RB Version: {}/SC:{}{}{}/SZ:{}/ST:{}, build: {} on {}",
+                ver.bold(),
+                simcolor::VERSION[..3].red(),
+                simcolor::VERSION[3..5].green(),
+                simcolor::VERSION[5..].blue().bright(),
+                simzip::VERSION.underline(),
+                time::VERSION.dimmed(),
+                build.reversed(),
+                date.italic()
+            ))
+        }
+    }
+    for opt in &options {
+        //println!("{:?}", opt);
+        match opt {
+            CmdOption::Version => {
+                if real_targets.is_empty() {
+                    return Ok(());
+                }
+            }
+            CmdOption::Help => {
+                log.message(&help::get_help());
+                return Ok(());
+            }
+            CmdOption::Verbose => log.verbose = true,
+            CmdOption::Diagnostics => log.debug = true,
+            CmdOption::Quiet => log.quiet = true,
+            CmdOption::ScriptFile(file) => {
+                log.log(&format!("Script: {}", file));
+
+                path = Some(file.to_string())
+                // when file specified in -f then cwd isn't changed
+                // if file specified in -s then cwd has to be set in the file.parent()
+            }
+            CmdOption::SearchUp(file) => {
+                log.log(&format!("Search: {:?}", file));
+                //println!("Search: {:?}", file);
+                path = find_script(Path::new("."), file);
+                if let Some(ref found_path) = path {
+                    let cwd = Path::new(&found_path)
+                        .parent()
+                        .ok_or("no parent directory")?
+                        .display()
+                        .to_string();
+                    unsafe { env::set_var("PWD", &cwd) }
+                    lex_tree.add_var(String::from(CWD), lex::VarVal::from_string(cwd));
+                } else {
+                    return Err(Box::new(
+                        format!(
+                            "Script {} not found",
+                            file.clone().unwrap_or("*".to_string()).bold()
+                        )
+                        .default(),
+                    ));
+                }
+            }
+            CmdOption::ForceRebuild => {
+                let fb = lex::VarVal {
+                    val_type: lex::VarType::Bool,
+                    value: String::from("true"),
+                    values: Vec::new(),
+                };
+                let _ = &lex_tree.add_var(String::from("~force-build-target~"), fb);
+            }
+            CmdOption::DryRun => {
+                let dr = lex::VarVal {
+                    val_type: lex::VarType::Bool,
+                    value: String::from("true"),
+                    values: Vec::new(),
+                };
+                let _ = &lex_tree.add_var(String::from("~dry-run~"), dr);
+            }
+            CmdOption::SpecifiedTargetBuild => {
+                let _ = &lex_tree.add_var(
+                    String::from("~build-given-target~"),
+                    lex::VarVal::from_bool(true),
+                );
+            }
+            CmdOption::PropertyFile(filename) => {
+                let file = File::open(filename)?;
+                let lines = io::BufReader::new(file).lines();
+                for prop_def in lines.map_while(Result::ok) {
+                    if prop_def.is_empty() {
+                        continue;
+                    }
+                    if let Some((name, val)) = prop_def.split_once('=') {
+                        set_property(&name.to_string(), &val.to_string());
+                        //unsafe { env::set_var(name, val) }
                     } else {
-                         return Err(Box::new(format!("Script {} not found", file.clone().unwrap_or("*".to_string()).bold()).default()))
+                        log.error(&format!(
+                            "Invalid property definition: {}",
+                            prop_def.italic()
+                        ))
                     }
-               },
-               CmdOption::ForceRebuild => {
-                    let fb = lex::VarVal{val_type:lex::VarType::Bool, value: String::from("true"), values: Vec::new()};
-                    let _ = &lex_tree.add_var(String::from("~force-build-target~"), fb);
-               },
-               CmdOption::DryRun => {
-                    let dr = lex::VarVal{val_type:lex::VarType::Bool, value: String::from("true"), values: Vec::new()};
-                    let _ = &lex_tree.add_var(String::from("~dry-run~"), dr);
-               }
-               CmdOption::SpecifiedTargetBuild => {
-                    let _ = &lex_tree.add_var(String::from("~build-given-target~"), lex::VarVal::from_bool(true));
-               },
-               CmdOption::PropertyFile(filename) => {
-                    let file = File::open(filename)?;
-                    let lines = io::BufReader::new(file).lines();
-                    for prop_def in lines.map_while(Result::ok) {
-                        if  prop_def.is_empty() { continue }
-                        if let Some((name,val)) = prop_def.split_once('=') {
-                            set_property(&name.to_string(), &val.to_string());
-                                //unsafe { env::set_var(name, val) }
-                        } else {
-                             log.error(&format!("Invalid property definition: {}", prop_def.italic()))
-                        }    
-                    }
-               }
-               CmdOption::TargetHelp => target_help = true
-          }
-     }
-     
-     if path.is_none() {
-          let mut paths = fs::read_dir("./").unwrap();
-          //let re = Regex::new(r"bee.*\.rb|.7b").unwrap(); if re.is_match(file_path)
-          let _ = paths.try_for_each(|each| {
-               if let Ok(p) = each {
-                    let p = p.path();
-                    if p.is_file() 
-                       && let Some(file_name) = p.file_name() 
-                       && let Some(file_name) = file_name.to_str()
-                       && is_bee_scrpt(file_name) {
-                        path = Some(file_name.to_string());
-                        return ControlFlow::Break(())
-                    }
-               }
-               ControlFlow::Continue(())
-          });
-     }
-     let Some(path) = path else {
-          return Err(Box::new(format!{"No script file found in {}", env::current_dir().unwrap_or_default().display().to_string().bold()}.default()))
-     };
-     let mut path = PathBuf::from(&path);
-     if !path.exists() {
-          path.set_extension(&SCRIPT_EXT[1..]);
-          if !path.is_file() {
-              return Err(Box::new(format!{"Script file {} not found", path.display().to_string().bold()}.default()))
-          }
-     } else if !path.is_file() {
-         return Err(Box::new(format!{"Script file {} isn't a regular file", path.display().to_string().bold()}.default()))
-     }
-     let _ = &lex_tree.add_var(String::from(SCRIPT), lex::VarVal::from_path(&path));
-     
-     let sys_time = SystemTime::now();
-     
-     let lex_res = lex::process(&log, &path, lex_tree.clone());
-      if target_help {
-          let tree = lex_tree.0.borrow();
-          log.message(&format!("Targets of {}", path.display().to_string().green()));
-         for child_tree in &tree.children {
-                let child = child_tree.0.borrow();
-               if child .block_type == fun::BlockType::Target 
-                    && let Some(name) = &child.name {
-                         log.message(&format!("{name} - {}", child.flex.clone().unwrap_or("".to_string()).bright().blue()))
-               }
-         }
-      } else if lex_res.is_ok() {
-         fun::run(&log, lex_tree, &mut real_targets)?
-      }
-     
-     if let Ok(elapsed) = sys_time.elapsed() {
-               log.log(&format!("Finished in {}.{:<03} sec(s)", elapsed.as_secs(), elapsed.subsec_millis()))
-     }
-     io::stdout().flush()?;
-     Ok(())
+                }
+            }
+            CmdOption::TargetHelp => target_help = true,
+        }
+    }
+
+    if path.is_none() {
+        let mut paths = fs::read_dir("./").unwrap();
+        //let re = Regex::new(r"bee.*\.rb|.7b").unwrap(); if re.is_match(file_path)
+        let _ = paths.try_for_each(|each| {
+            if let Ok(p) = each {
+                let p = p.path();
+                if p.is_file()
+                    && let Some(file_name) = p.file_name()
+                    && let Some(file_name) = file_name.to_str()
+                    && is_bee_scrpt(file_name)
+                {
+                    path = Some(file_name.to_string());
+                    return ControlFlow::Break(());
+                }
+            }
+            ControlFlow::Continue(())
+        });
+    }
+    let Some(path) = path else {
+        return Err(Box::new(format!{"No script file found in {}", env::current_dir().unwrap_or_default().display().to_string().bold()}.default()));
+    };
+    let mut path = PathBuf::from(&path);
+    if !path.exists() {
+        path.set_extension(&SCRIPT_EXT[1..]);
+        if !path.is_file() {
+            return Err(Box::new(
+                format! {"Script file {} not found", path.display().to_string().bold()}.default(),
+            ));
+        }
+    } else if !path.is_file() {
+        return Err(Box::new(
+            format! {"Script file {} isn't a regular file", path.display().to_string().bold()}
+                .default(),
+        ));
+    }
+    let _ = &lex_tree.add_var(String::from(SCRIPT), lex::VarVal::from_path(&path));
+
+    let sys_time = SystemTime::now();
+
+    let lex_res = lex::process(&log, &path, lex_tree.clone());
+    if target_help {
+        let tree = lex_tree.0.borrow();
+        log.message(&format!(
+            "Targets of {}",
+            path.display().to_string().green()
+        ));
+        for child_tree in &tree.children {
+            let child = child_tree.0.borrow();
+            if child.block_type == fun::BlockType::Target
+                && let Some(name) = &child.name
+            {
+                log.message(&format!(
+                    "{name} - {}",
+                    child.flex.clone().unwrap_or("".to_string()).bright().blue()
+                ))
+            }
+        }
+    } else if lex_res.is_ok() {
+        fun::run(&log, lex_tree, &mut real_targets)?
+    }
+
+    if let Ok(elapsed) = sys_time.elapsed() {
+        log.log(&format!(
+            "Finished in {}.{:<03} sec(s)",
+            elapsed.as_secs(),
+            elapsed.subsec_millis()
+        ))
+    }
+    io::stdout().flush()?;
+    Ok(())
 }

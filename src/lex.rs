@@ -2368,9 +2368,10 @@ fn process_array_value(_log: &Log, value: &str) -> Result<Vec<String>, String> {
 
 pub fn process(log: &Log, file: &PathBuf, block: GenBlockTup) -> Result<(), Box<dyn Error>> {
     let current_script_path = block.add_var(
-        String::from("~script_path~"),
+        String::from(crate::CURRENT_SCRIPT),
         VarVal::from_string(file.parent().unwrap().display().to_string()),
     );
+    //block.search_up_block("Main")
     let mut all_chars = open(file)?;
 
     //let mut func_stack = Vec::new();
@@ -2524,7 +2525,7 @@ pub fn process(log: &Log, file: &PathBuf, block: GenBlockTup) -> Result<(), Box<
                                                 if let Some(block) = parent_scoped_block {
                                                     let mut include_path = PathBuf::from(var_val);
                                                     if !include_path.has_root() {
-                                                        match scoped_block.search_up(&String::from("~script_path~")) {
+                                                        match scoped_block.search_up(&String::from(crate::CURRENT_SCRIPT)) {
                                                             Some(var) => include_path = PathBuf::from(var.value).join(include_path),
                                                             _ => {
                                                                 let cwd = scoped_block.search_up(crate::CWD);
@@ -2540,7 +2541,7 @@ pub fn process(log: &Log, file: &PathBuf, block: GenBlockTup) -> Result<(), Box<
                                                     }
                                                 }
                                             },
-                                            _ => log.error(&format!("The include location variable {} isn't type file , the include is ignored at  {}:{}: ", value, scoped_block.0.borrow().script_path(), all_chars.line)),
+                                            _ => log.error(&format!("The include location variable {} isn't the type file , an include is ignored at  {}:{}: ", value, scoped_block.0.borrow().script_path(), all_chars.line)),
                                         }
                                     }
                                     None => {
@@ -2556,7 +2557,7 @@ pub fn process(log: &Log, file: &PathBuf, block: GenBlockTup) -> Result<(), Box<
                                             let mut include_path = PathBuf::from(temp_expand);
                                             if !include_path.has_root() {
                                                 match scoped_block
-                                                    .search_up(&String::from("~script_path~"))
+                                                    .search_up(&String::from(crate::CURRENT_SCRIPT))
                                                 {
                                                     Some(var) => {
                                                         include_path = PathBuf::from(var.value)
@@ -2805,10 +2806,10 @@ pub fn process(log: &Log, file: &PathBuf, block: GenBlockTup) -> Result<(), Box<
     }
     match current_script_path {
         Some(var) => {
-            scoped_block.add_var(String::from("~script_path~"), var);
+            scoped_block.add_var(String::from(crate::CURRENT_SCRIPT), var);
         }
         _ => {
-            scoped_block.remove_var(&String::from("~script_path~"));
+            scoped_block.remove_var(&String::from(crate::CURRENT_SCRIPT));
         }
     }
     Ok(())

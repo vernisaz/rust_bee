@@ -1901,7 +1901,7 @@ impl GenBlockTup {
             }
             "mask" => {
                 if fun_block.params.len() != 2 {
-                    log.error(&format!{"Set environment requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
+                    log.error(&format!{"Mask requires 2 parameters, but specified {} at {}:{}: ", fun_block.params.len(), fun_block.script_path(), fun_block.script_line})
                 } else {
                     let value = *self.parameter(log, 0, fun_block, res_prev);
                     let mask = *self.parameter(log, 1, fun_block, res_prev);
