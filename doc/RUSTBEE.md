@@ -186,7 +186,8 @@ no value parameter means cleaning the variable parameter
 - **cropname**, cut a part of the name specified by fist parameter by a matching second one (\* means a variable part and can be ommited at the end) 
 and replace it with 3rd parameter when it's specified
 - **display** - display a message specified by a parameter
-- **element**, set/get an element of an array, first parameter specifies an array, second an offset of the element, and optional 3rd, when a value has to be set
+- **element**, set/get an element of an array, first parameter specifies an array, second an offset of the element, and optional 3rd, when a value has to be set.
+An element with an index the current array size plus  one, can be set
 - **eq**, compares two parameters and returns true if they are equal, only one parameter compares it with *None*
 - **exec**, executes a process on the underline OS, a name of a process separated by a blank from *exec*, 
 parameters are parameters of the process, a current directory, and a variable to keep the process stdout can be
@@ -210,7 +211,7 @@ to recompile all files using the constants. The function can't discover such dep
 - **neq**,  compares two parameters and returns true if they are not equal, only one parameter compares with *None*
 - **not** , invert boolean value of the expression of the parameter 
 - **now**, shows the current time and date in ISO 8601, or in a format specified by a parameter, the following letters are allowed in the format: W, MMM-DD-YY hh:mm:ss Z
-- **number**, converts an argument in a number and returns as the result  
+- **number**, converts an argument to a number and returns it as the result  
 - **or**, considers parameters as boolean values and returns true of first true parameter,
 otherwise returns false
 - *panic*, a parameter specifies a panic message, and stops the script execution
@@ -220,13 +221,13 @@ otherwise returns false
 - **rmdir**, **rmdira** removes an empty directory (rmdir), or a directory with all content (rmdira) specified in parameters
 - **scalar** | **join** , if a parameter is an array, then concatenates all elements using a separator specified by second parameter or TAB when no second parameter
 - **set_env**, sets the environment key specified by first parameter to the value specified by the second one
-- **split**, splits the first parameter value by a specified separator by the second parameter or tab, a result of the function is an array
+- **split**, splits the first parameter value by a specified separator by the second parameter or TAB, a result of the function is an array
 - **timestamp**, returns a timestamp of a file specified by first parameter, 
 and optionally sets timestamp of the file to the value specified by second parameter in ISO 8601
 - **to_capitalized**, converts the specified parameter value to capitalized case
 - **to_lower**, converts the specified parameter value to lower case
 - **to_upper**, converts the specified parameter value to upper case
-- **value**, returns a value of a variable which name is a parameter value
+- **value**, returns a value of a variable which name is the parameter value
 - **write**, writes to the file specified by first parameter, content of the rest parameters
 - **writea**, writes to the file specified by first parameter, content of the rest parameters. It doesn't create a new file if it already exists,
 just append content
