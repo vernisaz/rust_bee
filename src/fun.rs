@@ -1874,7 +1874,10 @@ impl GenBlockTup {
                     None => fun_block.params[1].to_owned(),
                     Some(val) => val.value.clone(),
                 };
-                let index: usize = index_param.parse().unwrap_or_default();
+                let Ok(index): Result<usize, _> = index_param.parse() else {
+                    log.error(&format!{"Specified index value - {index_param} is not a number at {}:{}: ", fun_block.script_path(), fun_block.script_line});
+                    return None
+                };
                 let val = if fun_block.params.len() > 2 {
                     Some(*self.parameter(log, 2, fun_block, res_prev))
                 } else {
@@ -1883,15 +1886,24 @@ impl GenBlockTup {
                 let mut parent_bare = var_block.0.borrow_mut();
                 let var = parent_bare.vars.get_mut(name)?;
                 if var.val_type == VarType::Array {
-                    if var.values.is_empty() || index > var.values.len() - 1 {
-                        drop(parent_bare);
-                        log.error(&format!{"Specified index {} is out of bounds {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
-                        return None;
-                    }
-                    let res = Some(VarVal::from_string(&var.values[index]));
+                    let res = if index > var.values.len() - 1 {
+                        None
+                    } else {
+                        Some(VarVal::from_string(&var.values[index]))
+                    };
                     if let Some(val) = val {
                         // set
-                        var.values[index] = val
+                        if index == var.values.len() {
+                            var.values.push(val);
+                        } else if index > var.values.len() {
+                            drop(parent_bare);
+                            log.error(&format!{"Specified index {} is out of bounds {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
+                        } else {
+                            var.values[index] = val
+                        }
+                    } else if index > var.values.len() - 1 {
+                        drop(parent_bare);
+                        log.error(&format!{"Specified index {} is out of bounds {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
                     }
                     return res; // get/set
                 } else {
