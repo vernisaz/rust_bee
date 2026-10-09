@@ -1891,24 +1891,25 @@ impl GenBlockTup {
                     } else {
                         Some(VarVal::from_string(&var.values[index]))
                     };
+                    let len = var.values.len();
                     if let Some(val) = val {
                         // set
                         if index == var.values.len() {
                             var.values.push(val);
                         } else if index > var.values.len() {
                             drop(parent_bare);
-                            log.error(&format!{"Specified index {} is out of bounds {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
+                            log.error(&format!{"Specified index {}/{len} is out of bounds of {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
                         } else {
                             var.values[index] = val
                         }
                     } else if index > var.values.len() - 1 {
                         drop(parent_bare);
-                        log.error(&format!{"Specified index {} is out of bounds {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
+                        log.warning(&format!{"Specified index {}/{len} is out of bounds {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
                     }
                     return res; // get/set
                 } else {
                     drop(parent_bare);
-                    log.error(&format!{"Specified argument {} isn't an array at {}:{}: ",  name, fun_block.script_path(), fun_block.script_line});
+                    log.warning(&format!{"Specified argument {} isn't an array at {}:{}: ",  name, fun_block.script_path(), fun_block.script_line});
                 }
             }
             "mask" => {
