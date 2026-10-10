@@ -810,18 +810,18 @@ impl GenBlockTup {
                     let mut chosen = false;
                     let var = match var.val_type {
                         VarType::Environment => match env::var(&var.value) {
-                            Ok(val) => val,
-                            Err(_e) => var.value,
+                            Ok(val) => vec![val],
+                            Err(_e) => vec![var.value],
                         },
                         VarType::Property => {
                             if let Some(val) = get_property(&var.value) {
-                                val
+                                vec![val]
                             } else {
-                                var.value
+                                vec![var.value]
                             }
                         }
-                        VarType::Array => var.values.join("\t"),
-                        _ => var.value,
+                        VarType::Array => var.values.clone(),
+                        _ => vec![var.value],
                     };
                     for child in children {
                         //println!{"case {:?} / {}", child.borrow().name, var}
@@ -835,13 +835,24 @@ impl GenBlockTup {
                         let choice = <Option<String> as Clone>::clone(&child.borrow().name)
                             .unwrap_or("".into());
                         let patterns = util::split_at_pipe(&choice); // TODO decide on escaping |
-                        for pattern in patterns {
+                        'all_patterns: for pattern in patterns {
                             let trimmed = pattern.trim();
-                            if matches(&var, trimmed) {
-                                // TODO decide if all matching branches need processing
-                                chosen = true;
-                                res = child.exec(log, &res);
-                                break;
+                            for current_var in &var {
+                                if matches(
+                                    &process_template_value(
+                                        log,
+                                        &current_var,
+                                        &naked_block,
+                                        prev_res,
+                                    ),
+                                    trimmed,
+                                ) {
+                                    // child can try to modify naked block
+                                    res = child.exec(log, &res);
+                                    // TODO decide if all matching branches need processing
+                                    chosen = true;
+                                    break 'all_patterns;
+                                }
                             }
                         }
                     }
@@ -1876,7 +1887,7 @@ impl GenBlockTup {
                 };
                 let Ok(index): Result<usize, _> = index_param.parse() else {
                     log.error(&format!{"Specified index value - {index_param} is not a number at {}:{}: ", fun_block.script_path(), fun_block.script_line});
-                    return None
+                    return None;
                 };
                 let val = if fun_block.params.len() > 2 {
                     Some(*self.parameter(log, 2, fun_block, res_prev))
