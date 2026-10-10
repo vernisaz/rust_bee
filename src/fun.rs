@@ -1886,7 +1886,7 @@ impl GenBlockTup {
                 let mut parent_bare = var_block.0.borrow_mut();
                 let var = parent_bare.vars.get_mut(name)?;
                 if var.val_type == VarType::Array {
-                    let res = if index > var.values.len() - 1 {
+                    let res = if var.values.is_empty() || index > var.values.len() - 1 {
                         None
                     } else {
                         Some(VarVal::from_string(&var.values[index]))
@@ -1902,7 +1902,7 @@ impl GenBlockTup {
                         } else {
                             var.values[index] = val
                         }
-                    } else if index > var.values.len() - 1 {
+                    } else if var.values.is_empty() || index > var.values.len() - 1 {
                         drop(parent_bare);
                         log.warning(&format!{"Specified index {}/{len} is out of bounds {} at {}:{}: ",  index, name, fun_block.script_path(), fun_block.script_line});
                     }
