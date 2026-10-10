@@ -489,14 +489,37 @@ impl GenBlockTup {
                 let children = &naked_block.children;
                 if children.len() > 3 || children.len() < 2 {
                     log.error(&format!(
-                        "Unexpected block(s) {} at {}:{}: ",
+                        "Unexpected block(s) {} in 'if' at {}:{}: ",
                         children.len(),
                         naked_block.script_path(),
                         naked_block.script_line
                     ));
                     None
                 } else {
-                    // TODO add check on block type
+                    if children.len() == 2
+                        && children[1].borrow().block_type != BlockType::Then
+                        && children[1].borrow().block_type != BlockType::Else
+                    {
+                        log.error(&format!(
+                            "Unexpected block {:?} in 'if' at {}:{}: ",
+                            children[1].borrow().block_type,
+                            naked_block.script_path(),
+                            naked_block.script_line
+                        ));
+                        return None;
+                    }
+                    if children.len() == 3
+                        && children[2].borrow().block_type != BlockType::Then
+                        && children[2].borrow().block_type != BlockType::Else
+                    {
+                        log.error(&format!(
+                            "Unexpected block {:?} in 'if' at {}:{}: ",
+                            children[2].borrow().block_type,
+                            naked_block.script_path(),
+                            naked_block.script_line
+                        ));
+                        return None;
+                    }
                     let mut res = children[0].exec(log, prev_res);
                     log.debug(&format!("if cond evaluated as {:?}", res));
 
@@ -510,17 +533,11 @@ impl GenBlockTup {
                         } else {
                             None
                         };
-                        if children.len() == 3 && children[2].borrow().block_type == BlockType::Then
+                        if then.is_none()
+                            && children.len() == 3
+                            && children[2].borrow().block_type == BlockType::Then
                         {
-                            if then.is_none() {
-                                then = Some(2)
-                            } else {
-                                log.warning(&format!(
-                                    "A duplicated block 'then' ignored at {}:{}: ",
-                                    naked_block.script_path(),
-                                    naked_block.script_line
-                                ));
-                            }
+                            then = Some(2)
                         }
                         then
                     } else if children.len() == 3
@@ -841,7 +858,7 @@ impl GenBlockTup {
                                 if matches(
                                     &process_template_value(
                                         log,
-                                        &current_var,
+                                        current_var,
                                         &naked_block,
                                         prev_res,
                                     ),
