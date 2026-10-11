@@ -1528,8 +1528,9 @@ impl GenBlockTup {
                                     Some(what) => {
                                         if what.val_type == VarType::Array {
                                             for el in what.values {
+                                                contains = false;
                                                 for in_el in &in_content.values {
-                                                    if !el.is_empty() && in_el.contains(&el) {
+                                                    if *in_el == el {
                                                         contains = true;
                                                         break;
                                                     }
@@ -1542,7 +1543,7 @@ impl GenBlockTup {
                                             // scalar
                                             let p2 = what.value;
                                             for in_el in in_content.values {
-                                                if !p2.is_empty() && in_el.contains(&p2) {
+                                                if in_el == p2 {
                                                     contains = true;
                                                     break;
                                                 }
@@ -1553,7 +1554,7 @@ impl GenBlockTup {
                                     None => {
                                         let p2 = *self.parameter(log, 1, fun_block, res_prev);
                                         for in_el in in_content.values {
-                                            if !p2.is_empty() && in_el.contains(&p2) {
+                                            if in_el == p2 {
                                                 contains = true;
                                                 break;
                                             }
