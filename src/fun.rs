@@ -1529,7 +1529,7 @@ impl GenBlockTup {
                                         if what.val_type == VarType::Array {
                                             for el in what.values {
                                                 for in_el in &in_content.values {
-                                                    if in_el.contains(&el) {
+                                                    if !el.is_empty() && in_el.contains(&el) {
                                                         contains = true;
                                                         break;
                                                     }
@@ -1542,7 +1542,7 @@ impl GenBlockTup {
                                             // scalar
                                             let p2 = what.value;
                                             for in_el in in_content.values {
-                                                if in_el.contains(&p2) {
+                                                if !p2.is_empty() && in_el.contains(&p2) {
                                                     contains = true;
                                                     break;
                                                 }
@@ -1553,7 +1553,7 @@ impl GenBlockTup {
                                     None => {
                                         let p2 = *self.parameter(log, 1, fun_block, res_prev);
                                         for in_el in in_content.values {
-                                            if in_el.contains(&p2) {
+                                            if !p2.is_empty() && in_el.contains(&p2) {
                                                 contains = true;
                                                 break;
                                             }
@@ -1577,13 +1577,13 @@ impl GenBlockTup {
                                         } else {
                                             let p1 = in_content.value;
                                             let p2 = what.value;
-                                            return Some(VarVal::from_bool(p1.contains(&p2)));
+                                            return Some(VarVal::from_bool(!p2.is_empty() && p1.contains(&p2)));
                                         }
                                     }
                                     None => {
                                         let p1 = *self.parameter(log, 0, fun_block, res_prev);
                                         let p2 = *self.parameter(log, 1, fun_block, res_prev);
-                                        return Some(VarVal::from_bool(p1.contains(&p2)));
+                                        return Some(VarVal::from_bool(!p2.is_empty() && p1.contains(&p2)));
                                     }
                                 }
                             }
@@ -1603,13 +1603,13 @@ impl GenBlockTup {
                                         return Some(VarVal::from_bool(contains));
                                     } else {
                                         let p2 = *self.parameter(log, 1, fun_block, res_prev);
-                                        return Some(VarVal::from_bool(p1.contains(&p2)));
+                                        return Some(VarVal::from_bool(!p2.is_empty() && p1.contains(&p2)));
                                     }
                                 }
                                 None => {
                                     let p1 = *self.parameter(log, 0, fun_block, res_prev);
                                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
-                                    return Some(VarVal::from_bool(p1.contains(&p2)));
+                                    return Some(VarVal::from_bool(!p2.is_empty() && p1.contains(&p2)));
                                 }
                             }
                         }
