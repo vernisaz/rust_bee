@@ -30,11 +30,51 @@ Their repositories need to be checked out before building the **RustBee**.
 and
 - [Common shared modules](https://github.com/vernisaz/simincmod) (the repository should be just checked out on Windows)
 
+if HTTP get is enabled, then the following crates need to be built prior:
+- [unicase](https://github.com/seanmonstar/unicase)
+- [http_req](https://github.com/jayjamesjay/http_req)
+
+If RustBee used for building them, then the build scripts are:
+```
+# from https://github.com/jayjamesjay/http_req
+# the repository location - workspace/side/http_req
+crate  =http_req
+crate main=lib
+crate_src=src
+dep_crates=[]
+comp opts=[--extern,unicase]
+test file=examples/get
+#all paths are relative assuming that the crate resides in workspace/side/http_req
+common =..${~/~}..${~/~}simscript${~/~}comm-crate.7b:file
+common_test =..${~/~}..${~/~}simscript${~/~}comm-test.7b:file
+crate_dir=..${~/~}..${~/~}crates 
+
+include(common);
+
+include(common_test)
+```
+and
+```
+# from https://github.com/seanmonstar/unicase
+# the repository location - workspace/side/unicase
+crate  =unicase
+crate main=lib
+crate_src=src
+dep_crates=[]
+comp opts=[]
+test file=test
+common =..${~/~}..${~/~}simscript${~/~}comm-crate.7b:file
+common_test =..${~/~}..${~/~}simscript${~/~}comm-test.7b:file
+crate_dir=..${~/~}..${~/~}crates
+
+include(common);
+```
+
 ### Color
 Since the product supports a colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
 
 ## Version
-The current version is **1.19.01** (SI edition).
+The current version is **1.19.03** (SI edition).
 
 ## Scripting examples
 

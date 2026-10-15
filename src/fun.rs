@@ -26,6 +26,8 @@ use crate::CWD;
 use crate::get_property;
 use crate::util::{self, format_time, has_root};
 use crate::version;
+#[cfg(feature = "http_get")]
+use http_req::request;
 
 pub const PREV_VAL: &str = "~~";
 
@@ -1578,13 +1580,17 @@ impl GenBlockTup {
                                         } else {
                                             let p1 = in_content.value;
                                             let p2 = what.value;
-                                            return Some(VarVal::from_bool(!p2.is_empty() && p1.contains(&p2)));
+                                            return Some(VarVal::from_bool(
+                                                !p2.is_empty() && p1.contains(&p2),
+                                            ));
                                         }
                                     }
                                     None => {
                                         let p1 = *self.parameter(log, 0, fun_block, res_prev);
                                         let p2 = *self.parameter(log, 1, fun_block, res_prev);
-                                        return Some(VarVal::from_bool(!p2.is_empty() && p1.contains(&p2)));
+                                        return Some(VarVal::from_bool(
+                                            !p2.is_empty() && p1.contains(&p2),
+                                        ));
                                     }
                                 }
                             }
@@ -1604,13 +1610,17 @@ impl GenBlockTup {
                                         return Some(VarVal::from_bool(contains));
                                     } else {
                                         let p2 = *self.parameter(log, 1, fun_block, res_prev);
-                                        return Some(VarVal::from_bool(!p2.is_empty() && p1.contains(&p2)));
+                                        return Some(VarVal::from_bool(
+                                            !p2.is_empty() && p1.contains(&p2),
+                                        ));
                                     }
                                 }
                                 None => {
                                     let p1 = *self.parameter(log, 0, fun_block, res_prev);
                                     let p2 = *self.parameter(log, 1, fun_block, res_prev);
-                                    return Some(VarVal::from_bool(!p2.is_empty() && p1.contains(&p2)));
+                                    return Some(VarVal::from_bool(
+                                        !p2.is_empty() && p1.contains(&p2),
+                                    ));
                                 }
                             }
                         }
@@ -2569,6 +2579,21 @@ impl GenBlockTup {
                         fun_block.script_path(),
                         fun_block.script_line
                     ));
+                }
+            }
+            #[cfg(feature = "http_get")]
+            "wget" => {
+                let mut body = Vec::new();
+                // Sends a HTTP GET request and processes the response. Saves body of the response to `body` variable.
+                if !fun_block.params.is_empty()
+                    && let Ok(_res) =
+                        request::get(*self.parameter(log, 0, fun_block, res_prev), &mut body)
+                {
+                    if fun_block.params.len() > 1 {
+                        fs::write(*self.parameter(log, 0, fun_block, res_prev), body).ok()?
+                    } else {
+                        return Some(VarVal::from_string(String::from_utf8_lossy(&body)));
+                    }
                 }
             }
             _ if name.ends_with("!") => {

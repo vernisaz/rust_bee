@@ -9,8 +9,9 @@ common =..${~/~}simscript${~/~}comm-build.7b:file
 crate_dir=..${~/~}crates
 doc_dir=..${~/~}docs
 comp opts=[--extern,simzip]
-version=1.19.01
-build=217
+use_http_get=true
+version=1.19.03
+build=218
 
 include(env.7b);
 
@@ -19,6 +20,13 @@ if {
 		array(comp opts, -C,opt-level=3,--cfg, feature="release")
 		assign(comp opts, ~~)
 		display(${GREEN}Release build${NO_COLOR})
+	}
+}
+
+if {
+	or(use_http_get);then {
+		array(comp opts, --cfg, feature="http_get", --extern, http_req)
+		assign(comp opts, ~~)
 	}
 }
 
