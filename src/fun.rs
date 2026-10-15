@@ -2590,7 +2590,9 @@ impl GenBlockTup {
                         request::get(*self.parameter(log, 0, fun_block, res_prev), &mut body)
                 {
                     if fun_block.params.len() > 1 {
-                        fs::write(*self.parameter(log, 0, fun_block, res_prev), body).ok()?
+                        // TODO currently no streaming
+                        fs::write(*self.parameter(log, 0, fun_block, res_prev), &body).ok()?;
+                        return Some(VarVal::from_i32(body.len() as i32))
                     } else {
                         return Some(VarVal::from_string(String::from_utf8_lossy(&body)));
                     }
