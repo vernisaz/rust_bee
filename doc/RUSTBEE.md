@@ -228,7 +228,7 @@ and optionally sets timestamp of the file to the value specified by second param
 - **to_lower**, converts the specified parameter value to lower case
 - **to_upper**, converts the specified parameter value to upper case
 - **value**, returns a value of a variable which name is the parameter value
-- **wget**, parameter is URL, and GET result is the result of the function. Optional second parameter is a file name to store result in binary form.
+- **wget**, parameter is URL, and GET result is the result of the function. Optional second parameter is a file name to store result in a binary form. Result in this case - stored size.
 - **write**, writes to the file specified by first parameter, content of the rest parameters
 - **writea**, writes to the file specified by first parameter, content of the rest parameters. It doesn't create a new file if it already exists,
 just append content
