@@ -102,6 +102,7 @@ Currently `if`, `while`, `case`, and `for`  operators are supported. More detail
       # loop actions
     }
 ```
+Using a separater in the construction is similar to `split` function with 3rd parameter true.
 ### case
 ```
     case var {
@@ -221,14 +222,15 @@ otherwise returns false
 - **rmdir**, **rmdira** removes an empty directory (rmdir), or a directory with all content (rmdira) specified in parameters
 - **scalar** | **join** , if a parameter is an array, then concatenates all elements using a separator specified by second parameter or TAB when no second parameter
 - **set_env**, sets the environment key specified by first parameter to the value specified by the second one
-- **split**, splits the first parameter value by a specified separator by the second parameter or TAB, a result of the function is an array
+- **split**, splits the first parameter value by a specified separator by the second parameter or TAB, a result of the function is an array. If third parameters specified and true,
+empty elements get filtered out
 - **timestamp**, returns a timestamp of a file specified by first parameter, 
 and optionally sets timestamp of the file to the value specified by second parameter in ISO 8601
 - **to_capitalized**, converts the specified parameter value to capitalized case
 - **to_lower**, converts the specified parameter value to lower case
 - **to_upper**, converts the specified parameter value to upper case
 - **value**, returns a value of a variable which name is the parameter value
-- **wget**, parameter is URL, and GET result is the result of the function. Optional second parameter is a file name to store result in a binary form. Result in this case - stored size.
+- **wget**, parameter is URL, and GET result is the result of the function. Optional second parameter is a file name to store result in a binary form. Result in this case - a stored size.
 - **write**, writes to the file specified by first parameter, content of the rest parameters
 - **writea**, writes to the file specified by first parameter, content of the rest parameters. It doesn't create a new file if it already exists,
 just append content

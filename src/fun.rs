@@ -1789,14 +1789,13 @@ impl GenBlockTup {
             }
             "split" => {
                 let val = *self.parameter(log, 0, fun_block, res_prev);
-                let sep = if fun_block.params.len() == 2 {
+                let sep = if fun_block.params.len() >= 2 {
                     &*self.parameter(log, 1, fun_block, res_prev)
                 } else {
                     "\t"
                 };
                 let no_empty = fun_block.params.len() == 3
                     && *self.parameter(log, 2, fun_block, res_prev) == "true";
-                    //eprintln!("{val} - {sep}");
                 return Some(VarVal::from_vec(util::split_by_splitters(
                     &val, sep, no_empty,
                 )));
