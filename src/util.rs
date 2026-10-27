@@ -389,6 +389,41 @@ pub fn split_at_pipe(line: &str) -> Vec<String> {
     res
 }
 
+pub fn split_by_splitters(line: &str, splitters: &str, skip_empty: bool) -> Vec<String> {
+    let mut single = true;
+    let splitters = if splitters.ends_with("!!") {
+        splitters[..splitters.len() - 1].to_string()
+    } else if let Some(stripped) = splitters.strip_suffix("!") {
+        single = false;
+        stripped.to_string()
+    } else {
+        splitters[..].to_string()
+    };
+    if single {
+        if skip_empty {
+            line.split(&splitters)
+                .filter(|s| !s.is_empty())
+                .map(str::to_string)
+                .collect::<Vec<String>>()
+        } else {
+            line.split(&splitters)
+                .map(str::to_string)
+                .collect::<Vec<String>>()
+        }
+    } else {
+        if skip_empty {
+            line.split(|c: char| splitters.contains(c))
+                .filter(|s| !s.is_empty())
+                .map(str::to_string)
+                .collect::<Vec<String>>()
+        } else {
+            line.split(|c: char| splitters.contains(c))
+                .map(str::to_string)
+                .collect::<Vec<String>>()
+        }
+    }
+}
+
 pub fn capitalize_first(s: &str) -> String {
     let mut c = s.chars();
     match c.next() {

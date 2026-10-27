@@ -191,7 +191,7 @@ impl VarVal {
             values: vec,
         }
     }
-
+    #[allow(dead_code)]
     pub fn from_iter<'a>(iter: impl Iterator<Item = &'a str>) -> VarVal {
         let mut vec = vec![];
         for el in iter {
@@ -310,6 +310,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
         match c {
             '"' => match state {
                 LexState::Begin => state = LexState::QuotedStart,
+                // TODO InLex may have double quote and in this case paranthesis escaped
                 LexState::InLex | LexState::InParam | LexState::InArrayVal => {
                     buffer[buf_fill] = c;
                     buf_fill += 1;
@@ -2040,26 +2041,26 @@ fn process_lex_header(
         HdrState::InType => {
             lex_type = buf.iter().collect();
         }
-        HdrState::InName => {
+        HdrState::InName | HdrState::InNameQt => {
             name = buf.iter().collect();
         }
         HdrState::InNameBlank => {
             name = buf[0..last_blank].iter().collect();
         }
-        HdrState::InWork => {
+        HdrState::InWork | HdrState::InWorkQt => {
             work_dir = buf.iter().collect();
         }
         HdrState::InWorkBlank => {
             work_dir = buf[0..last_blank].iter().collect();
         }
-        HdrState::InPath => {
+        HdrState::InPath | HdrState::InPathQt => {
             path = buf.into_iter().collect();
         }
         HdrState::InPathBlank => {
             path = buf[0..last_blank].iter().collect();
         }
         HdrState::NameStart | HdrState::WorkDiv | HdrState::PathDiv => (),
-        _ => todo!("state: {:?}", state),
+        // _ => todo!("state: {:?}", state),
     }
     //println!{"=>{lex_type} {name} '{work_dir}' '{path}'"};
     Box::new((

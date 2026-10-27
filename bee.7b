@@ -10,8 +10,8 @@ crate_dir=..${~/~}crates
 doc_dir=..${~/~}docs
 comp opts=[--extern,simzip]
 use_http_get=true
-version=1.19.03
-build=218
+version=1.19.04
+build=220
 
 include(env.7b);
 

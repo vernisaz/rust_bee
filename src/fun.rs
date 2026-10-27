@@ -629,7 +629,7 @@ impl GenBlockTup {
                             &naked_block,
                             prev_res,
                         );
-                        let values = range_as_val.split(sep_val);
+                        let values = util::split_by_splitters(&range_as_val, sep_val, true);
                         for var_el in values {
                             range.push(var_el.to_string())
                         }
@@ -637,7 +637,8 @@ impl GenBlockTup {
                 } else {
                     let Some(sep_can) = &naked_block.flex.clone() else {
                         log.error(&format!(
-                            "A 'for' values separator isn't specified at {}",
+                            "A 'for' values separator isn't specified at {}:{}:",
+                            naked_block.script_path(),
                             naked_block.script_line
                         ));
                         return None;
@@ -647,7 +648,7 @@ impl GenBlockTup {
                         None => sep_can,
                         Some(val) => &val.value.clone(),
                     };
-                    let values = range_as_opt.split(sep_val);
+                    let values = util::split_by_splitters(range_as_opt, sep_val, true);
                     for var_el in values {
                         range.push(var_el.to_string())
                     }
@@ -1793,7 +1794,12 @@ impl GenBlockTup {
                 } else {
                     "\t"
                 };
-                return Some(VarVal::from_iter(val.split(sep)));
+                let no_empty = fun_block.params.len() == 3
+                    && *self.parameter(log, 2, fun_block, res_prev) == "true";
+                    //eprintln!("{val} - {sep}");
+                return Some(VarVal::from_vec(util::split_by_splitters(
+                    &val, sep, no_empty,
+                )));
             }
             "file_filter" => {
                 // remove from an array parameter all matching parameters 1..n
@@ -2592,7 +2598,7 @@ impl GenBlockTup {
                     if fun_block.params.len() > 1 {
                         // TODO currently no streaming
                         fs::write(*self.parameter(log, 0, fun_block, res_prev), &body).ok()?;
-                        return Some(VarVal::from_i32(body.len() as i32))
+                        return Some(VarVal::from_i32(body.len() as i32));
                     } else {
                         return Some(VarVal::from_string(String::from_utf8_lossy(&body)));
                     }
