@@ -63,6 +63,7 @@ enum LexState {
     QuotedStart,
     InLex,
     InQtLex,
+    //InLexQt, // quote inside not quoted lex
     InQtValue,
     Escape,
     EscapeQt, // for Lexem
@@ -306,6 +307,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
     let mut prev_buffer: [char; MAX_LEX_LEN] = [' '; MAX_LEX_LEN];
     // let mut prev_buffer = String::with_capacity(MAX_LEX_LEN);
     let mut buf_prev_fill: usize = 0;
+    let mut met_quote = false;
     while let Some(c) = c1 {
         match c {
             '"' => match state {
@@ -314,6 +316,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                 LexState::InLex | LexState::InParam | LexState::InArrayVal => {
                     buffer[buf_fill] = c;
                     buf_fill += 1;
+                    met_quote = !met_quote;
                 }
                 LexState::InQtLex => {
                     last_nb = buf_fill;
@@ -1290,12 +1293,16 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
             },
             '(' => match state {
                 LexState::InLex => {
+                if !met_quote {
                     state = LexState::StartParam;
                     return (
                         Lexem::Function(buffer[0..buf_fill].iter().collect()),
                         state,
                         reader.line,
-                    );
+                    )} else {
+                        buffer[buf_fill] = c;
+                    buf_fill += 1;
+                    }
                 }
                 LexState::BlankOrEnd => {
                     state = LexState::StartParam;
