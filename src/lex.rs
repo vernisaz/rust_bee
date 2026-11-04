@@ -530,7 +530,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                 }
                 LexState::InLex | LexState::Begin => state = LexState::Escape,
                 LexState::BlankOrEnd => {
-                    state = LexState::InLex;
+                    state = LexState::Escape;
                 }
                 LexState::StartParam | LexState::InParamBlank => {
                     state = LexState::EscapeParam;
@@ -1447,7 +1447,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InParam
                     }
-                    LexState::Escape => {
+                    LexState::Escape  | LexState::BlankOrEnd => {
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                         state = LexState::InLex
@@ -1841,7 +1841,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                 }
                 LexState::EndFunction => {
                     state = LexState::Begin;
-                    log.error(&format!{"Expected ';' or a new line at  {}:{}:{}", reader.file_path, reader.line, reader.line_offset});
+                    log.error(&format!{"Expected ';' or a new line instead of '{c}' at  {}:{}:{}", reader.file_path, reader.line, reader.line_offset});
                     return (Lexem::EOF, state, reader.line);
                 }
                 _ => todo!(
@@ -1907,7 +1907,7 @@ fn process_lex_header(
     _vars: &HashMap<String, VarVal>,
 ) -> Box<(String, String, String, String)> {
     let mut buf = Vec::with_capacity(4096);
-
+//eprintln!("process hdr: {value}");
     let chars = value.chars();
     let mut state = HdrState::InType;
     let mut last_blank = 0;
@@ -2004,8 +2004,12 @@ fn process_lex_header(
                 HdrState::InName => {
                     state = HdrState::InNameQt;
                 }
+                HdrState::InPath => {
+                    buf.push(c)
+                }
                 _ => todo!("header state: {:?}", state),
             },
+            
             _ => {
                 match state {
                     HdrState::WorkDiv => {
