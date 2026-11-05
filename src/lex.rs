@@ -1611,7 +1611,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     }
-                    LexState::Begin => {
+                    LexState::Begin  | LexState::BlankOrEnd => {
                         state = LexState::InLex;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
@@ -2016,7 +2016,7 @@ fn process_lex_header(
                 HdrState::InName => {
                     state = HdrState::InNameQt;
                 }
-                HdrState::InPath => buf.push(c),
+                HdrState::InPath | HdrState::InWork => buf.push(c),
                 HdrState::Esc => {
                     state = save_state;
                     buf.push(c)
@@ -2052,10 +2052,13 @@ fn process_lex_header(
                 HdrState::InWork
                 | HdrState::InPath
                 | HdrState::InNameQt
-                | HdrState::InType
-                | HdrState::InWorkQt => buf.push(c),
+                | HdrState::InType => buf.push(c),
                 HdrState::InPathQt => {
                     save_state = HdrState::InPathQt;
+                    state = HdrState::Esc
+                }
+                HdrState::InWorkQt => {
+                    save_state = HdrState::InWorkQt;
                     state = HdrState::Esc
                 }
                 HdrState::Esc => {
