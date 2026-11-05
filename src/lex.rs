@@ -1611,7 +1611,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buffer[buf_fill] = c;
                         buf_fill += 1;
                     }
-                    LexState::Begin  | LexState::BlankOrEnd => {
+                    LexState::Begin | LexState::BlankOrEnd => {
                         state = LexState::InLex;
                         buffer[buf_fill] = c;
                         buf_fill += 1;
@@ -1958,7 +1958,7 @@ fn process_lex_header(
                         buf.push(c)
                     }
                     HdrState::InNameQt | HdrState::InPathQt | HdrState::InWorkQt => buf.push(c),
-                    _ => todo!("state: {:?}", state),
+                    _ => todo!("hdr state: {c} - {:?}", state),
                 }
             }
             ':' => match state {
@@ -1989,7 +1989,7 @@ fn process_lex_header(
                     state = HdrState::WorkDiv;
                 }
                 HdrState::InNameQt | HdrState::InPathQt | HdrState::InWorkQt => buf.push(c),
-                _ => todo!("state: {:?}", state),
+                _ => todo!("hdr state: {c} - {:?}", state),
             },
             '"' => match state {
                 HdrState::NameStart => {
@@ -2021,7 +2021,7 @@ fn process_lex_header(
                     state = save_state;
                     buf.push(c)
                 }
-                _ => todo!("header state: {:?}", state),
+                _ => todo!("hdr state: {c} - {:?}", state),
             },
             '\\' => match state {
                 HdrState::WorkDiv => {
@@ -2049,10 +2049,9 @@ fn process_lex_header(
                     state = HdrState::InPath;
                     buf.push(c)
                 }
-                HdrState::InWork
-                | HdrState::InPath
-                | HdrState::InNameQt
-                | HdrState::InType => buf.push(c),
+                HdrState::InWork | HdrState::InPath | HdrState::InNameQt | HdrState::InType => {
+                    buf.push(c)
+                }
                 HdrState::InPathQt => {
                     save_state = HdrState::InPathQt;
                     state = HdrState::Esc
@@ -2098,7 +2097,11 @@ fn process_lex_header(
                 | HdrState::InType
                 | HdrState::InPathQt
                 | HdrState::InWorkQt => buf.push(c),
-                _ => todo!("state: {:?}", state),
+                HdrState::Esc => {
+                    state = save_state;
+                    buf.push('\\');
+                    buf.push(c)
+                }
             },
         }
     }
