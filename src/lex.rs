@@ -1130,13 +1130,40 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     buf_fill += 1;
                     state = LexState::InValue
                 }
-                LexState::InValue | LexState::InBreak | LexState::InLex => {
+                LexState::InValue | LexState::InBreak => {
                     state = LexState::Begin;
                     return (
                         Lexem::Value(buffer[0..buf_fill].iter().collect()),
                         state,
                         reader.line,
                     );
+                }
+                // cases below do not make any sense
+                LexState::InLex => {
+                    if met_quote {
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                    } else {
+                        state = LexState::Begin;
+                        return (
+                            Lexem::Value(buffer[0..buf_fill].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
+                }
+                LexState::BlankOrEnd => {
+                    if met_quote {
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                    } else {
+                        state = LexState::Begin;
+                        return (
+                            Lexem::Value(buffer[0..last_nb].iter().collect()),
+                            state,
+                            reader.line,
+                        );
+                    }
                 }
                 LexState::BlankInValue => {
                     state = LexState::Begin;
