@@ -70,11 +70,14 @@ crate_dir=..${~/~}..${~/~}crates
 include(common);
 ```
 
+Since zipping capabilities may inclue a compression, corresponding crates for that need to be built. More
+details are provided in SimZip repository.
+
 ### Color
 Since the product supports a colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
 
 ## Version
-The current version is **1.19.03** (SI edition).
+The current version is **1.19.04** (SI edition).
 
 ## Scripting examples
 
