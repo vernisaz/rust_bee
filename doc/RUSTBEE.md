@@ -27,7 +27,17 @@ The special characters can be escaped instead of quoting, like:
 
     json lib=org.glassfish\:javax.json\:1.1.4:rep-maven
     
-Note that trailing `blank` has to be escaped to get preserved in a name or a value.
+Note that trailing `blank` has to be escaped to get preserved in a name or a value
+
+### type
+The type is an optional attribute, however if it's specified, the the following types are allowed:
+- file - RustBee will try to validate the value as a valid file path
+- prop - the value will be replaced by a property value with a name of the value, otherwise the value remains unchanged
+- rep-crate - the value is validated as the crates.io crate name - name:version
+- env - the value will be replaced by an environment value with a name of the value, otherwise the value remains unchanged
+- rep-maven - the value is validated as the Maven artifact name - vendor:name:version
+
+### reserved names
 
 Although any name is allowed, all names starting with
 *~* and ending with *~* are reserved.
@@ -45,12 +55,14 @@ Although any name is allowed, all names starting with
 
 You can break a line by adding \ at the end.
 
+### function
 A function call is defined as:
 
     function_name[ name](parameter1,....)
 
 If a function parameter includes one of the following symbols `,, ,)` then it has to be escaped as described above.
 
+### target
 A target is defined as :
 
  ```   
@@ -64,6 +76,7 @@ A target is defined as :
      }
 ```
 
+### dependency
 A dependency can be:
 
 - **anynewer**, function with two parameters, path to a file, second file has to be newer, use \* to compare an entire directory content
@@ -75,6 +88,7 @@ A dependency can be:
 Although no other types of dependencies can be used, any RustBee function can be used to evaluate a dependecy as a part of such
 blocks as `eq` and `or`.
 
+## operations
 A body of a target contains a sequence of operators and functions. 
 Currently `if`, `while`, `case`, and `for`  operators are supported. More details on syntax of them:
 
