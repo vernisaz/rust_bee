@@ -411,10 +411,15 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         state = LexState::InQtLex;
                     }
                     LexState::InLex => {
-                        state = LexState::BlankOrEnd;
-                        last_nb = buf_fill;
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
+                        if met_quote {
+                            buffer[buf_fill] = c;
+                            buf_fill += 1;
+                        } else {
+                            state = LexState::BlankOrEnd;
+                            last_nb = buf_fill;
+                            buffer[buf_fill] = c;
+                            buf_fill += 1;
+                        }
                     }
                     LexState::Escape => {
                         state = LexState::InLex;
@@ -1967,7 +1972,7 @@ fn process_lex_header(
     _vars: &HashMap<String, VarVal>,
 ) -> Box<(String, String, String, String)> {
     let mut buf = Vec::with_capacity(4096);
-    //eprintln!("process hdr: {value}");
+    //eprintln!("process hdr: {value:?}");
     let chars = value.chars();
     let mut state = HdrState::InType;
     let mut save_state = HdrState::InType;
