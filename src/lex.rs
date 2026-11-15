@@ -74,7 +74,7 @@ enum LexState {
     RangeStart,
     Comment,
     InType,
-    StartValue,
+    StartValue, // potentially replace with - InValue && buf_fill == 0
     InValue,
     RangeEnd,
     InParam,
@@ -496,9 +496,13 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         state = LexState::BlankInValue;
                     }
                     LexState::InBreak => {
-                        buffer[buf_fill] = c;
-                        buf_fill += 1;
-                        state = LexState::InValue;
+                        if buf_fill > 0 {
+                            buffer[buf_fill] = c;
+                            buf_fill += 1;
+                            state = LexState::InValue;
+                        } else {
+                            state = LexState::StartValue;
+                        }
                     }
                     LexState::EscapeEndArray => {
                         buffer[buf_fill] = '\\';
@@ -741,6 +745,11 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                         buf_fill += 1;
                         state = LexState::InValue
                     }
+                    LexState::QuotedStart => {
+                        buffer[buf_fill] = c;
+                        buf_fill += 1;
+                        state = LexState::InQtValue
+                    }
                     LexState::EscapeQtValue => state = LexState::InQtValue,
                     LexState::EscapeQtParam => {
                         // continue line
@@ -754,11 +763,24 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     }
                     LexState::EscapeParam => state = LexState::InParam,
                     LexState::EscapeEndArray => state = LexState::InArrayVal,
-                    LexState::InLex | LexState::BlankOrEnd => {
-                        state = LexState::BlankOrEnd;
+                    LexState::InLex => {
+                        if met_quote {
+                            buffer[buf_fill] = c;
+                            buf_fill += 1;
+                        } else {
+                            state = LexState::BlankOrEnd;
+                        }
+                    }
+                    LexState::BlankOrEnd => {
+                        //state = LexState::BlankOrEnd;
                     }
                     LexState::EscapeBreakValue | LexState::InBreak => {
                         state = LexState::InBreak;
+                    }
+                    LexState::Escape => {
+                        //buffer[buf_fill] = c;
+                        //buf_fill += 1;
+                        state = LexState::InLex
                     }
                     _ => todo!(
                         "state: {:?} in processing {c} at {}:{}:{}",
