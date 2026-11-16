@@ -71,7 +71,7 @@ include(common);
 ```
 
 Since zipping capabilities may inclue a compression, corresponding crates for that need to be built. More
-details are provided in SimZip repository.
+details are provided in the [SimZip](https://github.com/vernisaz/simple_rust_zip) repository.
 
 ### Color
 Since the product supports a colorized output, it obeys rules used by [SimColor](https://github.com/vernisaz/simcolor).
