@@ -389,26 +389,10 @@ pub fn split_at_pipe(line: &str) -> Vec<String> {
     res
 }
 
-pub fn split_by_splitters(line: &str, splittersp: &str, skip_empty: bool) -> Vec<String> {
-    let mut single = true;
+pub fn split_by_splitters(line: &str, splitters: &str, skip_empty: bool) -> Vec<String> {
     //eprintln!("splits:{splitters}| line:{line:?}|");
-    let splitters = if let Some(stripped) = splittersp.strip_suffix("!!") {
-        if splittersp.len() > 2 {
-            if splittersp.chars().nth_back(2).unwrap() != '!' {
-                &splittersp[..splittersp.len() - 1]
-            } else {
-                single = false;
-                stripped
-            }
-        } else {
-            &splittersp[..splittersp.len() - 1]
-        }
-    } else if let Some(stripped) = splittersp.strip_suffix("!") {
-        single = false;
-        stripped
-    } else {
-        splittersp
-    };
+    let (splitters,single) = get_sep(splitters);
+    
     if single {
         if skip_empty {
             line.split(&splitters)
@@ -432,6 +416,28 @@ pub fn split_by_splitters(line: &str, splittersp: &str, skip_empty: bool) -> Vec
                 .collect::<Vec<String>>()
         }
     }
+}
+
+fn get_sep(orig: &str) -> (&str, bool) {
+    // Try to strip off one ! If we can't return.
+    let Some(first) = orig.strip_suffix("!") else {
+        return (orig, true);
+    };
+
+    // Try to strip off another !, if we can't return
+    // what we had already stripped.
+    let Some(second) = first.strip_suffix("!") else {
+        return (first, false);
+    };
+
+    // Finally, check if there was a third !, if there was
+    // not, then we return only the first split.
+    if !second.ends_with("!") {
+        return (first, true);
+    }
+
+    // Otherwise, accept our second split with true.
+    (second, false)
 }
 
 pub fn capitalize_first(s: &str) -> String {
