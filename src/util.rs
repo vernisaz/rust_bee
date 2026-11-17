@@ -418,6 +418,7 @@ pub fn split_by_splitters(line: &str, splitters: &str, skip_empty: bool) -> Vec<
     }
 }
 
+/// analyse a string as one separator or individual separators in dependency on ending !
 fn get_sep(orig: &str) -> (&str, bool) {
     // Try to strip off one ! If we can't return.
     let Some(first) = orig.strip_suffix("!") else {
@@ -436,7 +437,7 @@ fn get_sep(orig: &str) -> (&str, bool) {
         return (first, true);
     }
 
-    // Otherwise, accept our second split with true.
+    // Otherwise, accept our second strip with false.
     (second, false)
 }
 
