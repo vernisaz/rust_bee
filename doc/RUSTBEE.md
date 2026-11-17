@@ -90,7 +90,7 @@ blocks as `eq` and `or`.
 
 ## operations
 A body of a target contains a sequence of operators and functions. 
-Currently `if`, `while`, `case`, and `for`  operators are supported. More details on syntax of them:
+Currently `if`, `while`, `case`, `when`, and `for`  operators are supported. More details on syntax of them:
 
 ### if
 ```
@@ -149,7 +149,7 @@ Pattern is a particular value, or a value with a wildcard. If a value should inc
     }
 ```
 
-Ifs,  fors, cases, and whiles  can be nested.
+Ifs,  fors, cases, whens, and whiles  can be nested.
 
 ### Closures
 Block of operators can be defined as a `closure`. Closures can be called as a function with the closure name ending by '!'.

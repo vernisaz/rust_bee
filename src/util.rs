@@ -389,16 +389,25 @@ pub fn split_at_pipe(line: &str) -> Vec<String> {
     res
 }
 
-pub fn split_by_splitters(line: &str, splitters: &str, skip_empty: bool) -> Vec<String> {
+pub fn split_by_splitters(line: &str, splittersp: &str, skip_empty: bool) -> Vec<String> {
     let mut single = true;
     //eprintln!("splits:{splitters}| line:{line:?}|");
-    let splitters = if splitters.ends_with("!!") {
-        splitters[..splitters.len() - 1].to_string()
-    } else if let Some(stripped) = splitters.strip_suffix("!") {
+    let splitters = if let Some(stripped) = splittersp.strip_suffix("!!") {
+        if splittersp.len() > 2 {
+            if splittersp.chars().nth_back(2).unwrap() != '!' {
+                &splittersp[..splittersp.len() - 1]
+            } else {
+                single = false;
+                stripped
+            }
+        } else {
+            &splittersp[..splittersp.len() - 1]
+        }
+    } else if let Some(stripped) = splittersp.strip_suffix("!") {
         single = false;
-        stripped.to_string()
+        stripped
     } else {
-        splitters[..].to_string()
+        splittersp
     };
     if single {
         if skip_empty {
