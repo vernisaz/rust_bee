@@ -1388,7 +1388,7 @@ fn read_lex(log: &Log, reader: &mut Reader, mut state: LexState) -> (Lexem, LexS
                     buffer[buf_fill] = c;
                     buf_fill += 1;
                 }
-                LexState::StartParam => {
+                LexState::StartParam | LexState::EscapeParam => {
                     state = LexState::InParam;
                     buffer[buf_fill] = c;
                     buf_fill += 1;
