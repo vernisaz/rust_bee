@@ -109,6 +109,8 @@ enum DateFmtState {
     ss,
     Z,
     z,
+    H,
+    P,
     Esc,
 }
 
@@ -117,11 +119,13 @@ pub const SHORT_MONTH: &[&str] = &[
 ];
 
 pub fn format_time(fmt_str: impl AsRef<str>, time: SystemTime) -> String {
-    let dur = time.duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    let dur = time
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default();
     let tz = time::get_local_timezone_offset();
     let (y, m, d, h, min, s, w) =
         time::get_datetime(1970, ((dur.as_secs() as i64) + (tz as i64) * 60) as u64);
-    let mut res = String::from("");
+    let mut res = String::with_capacity(42);
     let mut state = DateFmtState::default();
     let format_upon_mask = |state| match state {
         DateFmtState::M => format! {"{m}"},
@@ -136,6 +140,15 @@ pub fn format_time(fmt_str: impl AsRef<str>, time: SystemTime) -> String {
         DateFmtState::s | DateFmtState::ss => format! {"{s:0>2}"},
         DateFmtState::W => time::DAYS_OF_WEEK[w as usize].to_string(),
         DateFmtState::z | DateFmtState::Z => format! {"{:0>2}{:0>2}", tz/60, tz%60},
+        DateFmtState::H => format!("{:0>2}", time::convert_24_to_12(h).unwrap_or((0, false)).0),
+        DateFmtState::P => format!(
+            "{}M",
+            if time::convert_24_to_12(h).unwrap_or((0, false)).1 {
+                'P'
+            } else {
+                'A'
+            }
+        ),
         _ => "".to_string(),
     };
     for c in fmt_str.as_ref().chars() {
@@ -199,6 +212,17 @@ pub fn format_time(fmt_str: impl AsRef<str>, time: SystemTime) -> String {
                     state = DateFmtState::h
                 }
             },
+            'H' => match state {
+                DateFmtState::Esc => {
+                    res.push(c);
+                    state = DateFmtState::Relax
+                }
+                DateFmtState::Relax => state = DateFmtState::H,
+                _ => {
+                    res.push_str(&format_upon_mask(state));
+                    state = DateFmtState::H
+                }
+            },
             'm' => match state {
                 DateFmtState::Esc => {
                     res.push('m');
@@ -243,6 +267,17 @@ pub fn format_time(fmt_str: impl AsRef<str>, time: SystemTime) -> String {
                 _ => {
                     res.push_str(&format_upon_mask(state));
                     state = DateFmtState::Z
+                }
+            },
+            'P' => match state {
+                DateFmtState::Esc => {
+                    res.push(c);
+                    state = DateFmtState::Relax
+                }
+                DateFmtState::Relax => state = DateFmtState::P,
+                _ => {
+                    res.push_str(&format_upon_mask(state));
+                    state = DateFmtState::P
                 }
             },
             _ => {
@@ -391,8 +426,8 @@ pub fn split_at_pipe(line: &str) -> Vec<String> {
 
 pub fn split_by_splitters(line: &str, splitters: &str, skip_empty: bool) -> Vec<String> {
     //eprintln!("splits:{splitters}| line:{line:?}|");
-    let (splitters,single) = get_sep(splitters);
-    
+    let (splitters, single) = get_sep(splitters);
+
     if single {
         if skip_empty {
             line.split(&splitters)
